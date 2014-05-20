@@ -1,2 +1,0 @@
-Django, obviously
-django-timezone-field <https://pypi.python.org/pypi/django-timezone-field/>
