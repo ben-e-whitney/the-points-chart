@@ -1,0 +1,67 @@
+body {
+	background-color: #073763;
+}
+
+.header {
+	color: white;
+	font-size: 3em;
+	height: 10%;
+	width: 100%;
+	position: relative;
+}
+
+.left_bar {
+	color: white;
+	float: left;
+	width: 20%;
+	height: 100%;
+	position: relative;
+}
+
+.footer {
+	color: white;
+	clear: both;
+	width: 100%;
+	height: 10%;
+	position: relative;
+}
+
+.main_content {
+	background-color: white;
+	color: black;
+	border-radius: 15px;
+	width: 80%;
+	float: right;
+}
+
+.past {
+	color: #D3D3D3;
+}
+
+.near_future {
+	background-color: #B6D7A8;
+}
+
+.distant_future {
+	color: #D3D3D3;
+}
+
+.needs_sign_up {
+	color: #FF0000;
+}
+
+.needs_sign_off {
+	color: #FF0000;
+}
+
+.voided {
+	color: #C400FF;
+}
+
+.user_signed_up {
+	background-color: #F1C232;
+}
+
+.user_signed_off {
+	background-color: gray;
+}

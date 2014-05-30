@@ -1,0 +1,11 @@
+{% for contact in contacts %}
+BEGIN:VCARD
+VERSION:4.0
+N:{{ contact.last_name }};{{ contact.first_name }};{{ contact.middle_name }};;
+NICKNAME:{{ contact.nickname }}
+FN:{{ contact.full_name }}
+TEL;TYPE=voice,cell,text;VALUE=uri:tel:{{ contact.phone_number }}
+EMAIL:{{ contact.email_address }}
+REV:{{ current_time }}
+END:VCARD
+{% endfor %}

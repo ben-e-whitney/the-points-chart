@@ -26,6 +26,8 @@ TEMPLATE_DEBUG = True
 ALLOWED_HOSTS = []
 
 LOGIN_URL = '/login/'
+# Maybe get rid of this so that there's the same setup with Coop and Cooper?
+AUTH_PROFILE_MODULE = 'profiles.UserProfile'
 
 # Application definition
 
@@ -36,15 +38,17 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'localflavor',
     'timezone_field',
     'chores',
-    'coops',
+    'profiles',
 )
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # IMPORTANT TODO: re-enable this, maybe rewriting AJAX scripts with jQuery.
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -53,7 +57,6 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'the_points_chart.urls'
 
 WSGI_APPLICATION = 'the_points_chart.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
@@ -83,3 +86,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+# TODO: eventually this is all supposed to be moved out of Django or something.
+# See <https://docs.djangoproject.com/en/dev/howto/static-files/>.
+STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
+

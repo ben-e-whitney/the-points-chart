@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+Contact List.
+{% endblock %}
+
+{% block headertext %}
+{{ coop.profile.short_name }}/{{ user }}
+{% endblock %}
+
+{% block body %}
+
+<table>
+	<thead>
+		<title>Contact List for {{ coop.profile.full_name }}</title>
+	</thead>
+	<tbody>
+	<tr><th>Name</th><th>Phone Number</th><th>Email Address</th></tr>
+	{% for contact in contacts %}
+		<tr>
+			<!--TODO: trying this for now to see if we get an extra space. If so, might need a separate field,-->
+			<!--or to make it in the view, or whatever.-->
+			<td>
+				{{ contact.first_name }} {{ contact.middle_name }} {{ contact.last_name }}
+			</td>
+			<td>
+				{{ contact.phone_number }}
+			</td>
+			<td>
+				{{ contact.email_address }}
+			</td>
+		</tr>
+	{% endfor %}
+	</tbody>
+</table>
+<!--TODO: style this.-->
+<a href="/contact/export">Export</a> as a vCard.
+{% endblock %}
