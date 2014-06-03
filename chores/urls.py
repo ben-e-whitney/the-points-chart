@@ -11,4 +11,6 @@ urlpatterns = patterns('', url(r'^$', views.index, name='index'),
     url(r'^me/$' , views.me , name='me'),
     url(r'^sign_up/(?P<instance_id>.+?)/$',  views.sign_up,  name='sign_up'),
     url(r'^sign_off/(?P<instance_id>.+?)/$', views.sign_off, name='sign_off'),
+    url(r'^calendars/(?P<username>.+?)/$', views.create_calendar,
+        name='create_calendar'),
 )

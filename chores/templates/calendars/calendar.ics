@@ -1,0 +1,26 @@
+BEGIN:VCALENDAR
+PRODID:thepointschart.com//{{ coop.profile.short_name }}
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:{{ coop.profile.short_name }} Chores
+X-WR-TIMEZONE:{{ coop.profile.time_zone }}
+{% comment %}
+TODO: look into VTODO for getting sign-offs for chores in the past.
+TODO: look into VALARM. Could allow for texts, emails, notifications, or maybe even something else.
+STATUS and TRANSP are both optional. Check spec for questions about what is required.
+{% endcomment %}
+{% for instance in instances %}
+BEGIN:VEVENT
+DTSTART;TZID={{ coop.profile.time_zone }}:{{ instance.date|date:"Ymd" }}T{{ instance.chore.start_time|date:"His" }}
+DTEND;TZID={{ coop.profile.time_zone }}:{{ instance.date|date:"Ymd" }}T{{ instance.chore.end_time|date:"His" }}
+DTSTAMP:{{ instance.when_signed_up|date:"Ymd" }}T{{ instance.when_signed_up|date:"His" }}
+UID:instance{{ instance.id}}|signed_up{{ instance.when_signed_up|date:"YmdHis" }}@thepointschart.com
+SUMMARY:{{ instance.chore.short_name }}
+DESCRIPTION:{{ instance.chore.short_description }}
+LOCATION:{{ coop.profile.short_name }}
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+END:VEVENT
+{% endfor %}
+END:VCALENDAR

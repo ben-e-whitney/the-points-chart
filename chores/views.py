@@ -8,6 +8,8 @@ import pytz
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test, \
 permission_required
+from django.contrib.auth.models import User
+from django.template import loader, Context
 from profiles.models import UserProfile, GroupProfile
 from chores.models import ChoreInstance
 
@@ -226,3 +228,18 @@ def sign_off(response, instance_id):
         instance.save()
         return HttpResponse(json.dumps({
             'sign_off_sentence': 'You signed off.'}), status=200)
+
+def create_calendar(response, username):
+    # Test to see if that user wants a public calendar. Also do error checking
+    # with this next step.
+    user = User.objects.get(username=username)
+    instances = ChoreInstance.objects.filter(who_signed_up=user)
+    coop = user.get_profile().coop
+    response = HttpResponse(content_type='text/calendar')
+    response['Content-Disposition'] = ('attachment; '
+        'filename="{sho}_chore_calendar.ics"'.format(
+            sho=coop.profile.short_name.replace(' ', '_')))
+    template = loader.get_template('calendars/calendar.ics')
+    context = Context({'coop': coop, 'instances': instances})
+    response.write(template.render(context))
+    return response
