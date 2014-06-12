@@ -18,6 +18,8 @@ class Signature(models.Model):
                                                         dat=self.when)
 
 class Timecard(models.Model):
+    # TODO: making this into an abstract class causes validation to fail
+    # (complaints about ForeignKeys again). Would be nice to figure it out.
     start_date = models.DateField()
     stop_date  = models.DateField()
     # TODO: here or elsewhere, look into ForeignKey limit_choices_to feature.
