@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+All Chores.
+{% endblock %}
+
+{% block headertext %}
+{{ coop }}/{{ user }}
+{% endblock %}
+<!--Logged in as {{ user }}.-->
+
+{% block body %}
+<!--
+    Thinking this should be part of a larger table, put off to the left.
+    Main bit would be the load, and then the other things could explain it a bit.
+    Stewardship points, special points, loan balance, anything else.
+-->
+You are signed up for {{ total_signed_up }} points.<br>
+
+{% if upcoming_chores %}
+	Upcoming chores:
+	<ul>
+		{% for chore in upcoming_chores %}
+			<li> {{ chore.skeleton.short_name }} on {{ chore.start_date }}
+		{% endfor %}
+	</ul>
+{% endif %}
+
+{% if chores_needing_sign_off %}
+	Chores needing sign off ({{ total_needing_sign_off }} points total):
+	<ul>
+		{% for chore in chores_needing_sign_off %}
+			<li> {{ chore.skeleton.short_name }} on {{ chore.start_date }}
+		{% endfor %}
+	</ul>
+{% endif %}
+
+{% endblock %}

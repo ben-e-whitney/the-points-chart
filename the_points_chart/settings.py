@@ -42,6 +42,7 @@ INSTALLED_APPS = (
     'timezone_field',
     'chores',
     'profiles',
+    'stewardships',
 )
 
 MIDDLEWARE_CLASSES = (
