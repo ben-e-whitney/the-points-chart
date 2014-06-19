@@ -15,24 +15,52 @@ All Chores.
     Main bit would be the load, and then the other things could explain it a bit.
     Stewardship points, special points, loan balance, anything else.
 -->
-You are signed up for {{ total_signed_up }} points.<br>
 
-{% if upcoming_chores %}
-	Upcoming chores:
-	<ul>
-		{% for chore in upcoming_chores %}
-			<li> {{ chore.skeleton.short_name }} on {{ chore.start_date }}
+<!--You are signed up for {{ total_signed_up }} points.<br>-->
+
+<!--
+Will this always have data to display? Might even need to cut this out.
+Hopefully can just test against `list_chores`.
+For the rest, I vote doing inclusion/exclusion based on whether there's anything to display inside the view.
+-->
+<h2>Selected Information</h2>
+{% for section in list_information %}
+	<h3>{{ section.title }}</h3>
+	{% for section in section.sections %}
+		<h5>{{ section.title }}</h5>
+		<ul>
+			{% for list_item in section.items %}
+			<li> {{ list_item }}
+			{% endfor %}
+		</ul>
+	{% endfor %}
+{% endfor %}
+
+<h2>Summary Information</h2>
+<table>
+	<!--<caption>Summary for {{ cooper.profile.nickname }}</caption>-->
+	<thead>
+	</thead>
+	<tbody>
+	<tr>
+		<th>Category</th>
+		{% for point_cycle in point_cycles %}
+			<th title="{{ point_cycle.cycle_start }} to {{ point_cycle.cycle_stop }}">
+				Cycle {{ point_cycle.cycle_num }}
+			</th>
 		{% endfor %}
-	</ul>
-{% endif %}
-
-{% if chores_needing_sign_off %}
-	Chores needing sign off ({{ total_needing_sign_off }} points total):
-	<ul>
-		{% for chore in chores_needing_sign_off %}
-			<li> {{ chore.skeleton.short_name }} on {{ chore.start_date }}
+	</tr>
+	{% for section in table_information %}
+		<tr><th>{{ section.title }}</th></tr>
+		{% for section in section.sections %}
+			<tr>
+				<td style="text-align: right">{{ section.title }}</td>
+				{% for point_cycle in section.cycles %}
+					<td title="{{ point_cycle.concatenated_items }}">{{ point_cycle.total }}</td>
+				{% endfor %}
+			</tr>
 		{% endfor %}
-	</ul>
-{% endif %}
-
+	{% endfor %}
+	</tbody>
+</table>
 {% endblock %}

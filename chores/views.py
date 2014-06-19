@@ -5,14 +5,235 @@ from django.shortcuts import render
 import datetime
 import json
 import pytz
+import itertools
+
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test, \
 permission_required
 from django.contrib.auth.models import User
 from django.template import loader, Context
-from profiles.models import UserProfile, GroupProfile
-from chores.models import Chore
 
+from chores.models import Chore
+from profiles.models import UserProfile, GroupProfile
+from stewardships.models import StewardshipSkeleton, Stewardship, Absence, \
+    ShareChange
+
+
+# TODO: put extra functions and lengthy variable definitions in another file.
+# TODO: name needs improving here.
+def sum_chores(chores):
+    '''
+    Returns the sum of the point values of the chores in `chores` and a string
+containing all their names.
+    '''
+    return {'total': sum(map(lambda x: x['skeleton__point_value'],
+                             chores.values('skeleton__point_value'))),
+            'concatenated_items': ', '.join(map(str, chores))}
+
+def get_obligations(user, coop=None):
+
+    def update(dict_, key, data, mode):
+
+        '''
+        Construct and update a dictionary of dictionaries piece-by-piece.
+
+        Arguments:
+            dict_ -- Data structure being modified.
+            key   -- Identifies the entry to create or change.
+            data  -- Used to changing the entry.
+            mode  -- Dictates how `data` will be used to change the entry.
+        '''
+
+        def appender(dict_, key, data):
+            dict_[key]['items'].append(data)
+            dict_[key]['html_titles'].append(', '.join(str(chore) for chore in
+                                                       data))
+            return dict_
+
+        def combiner(dict_, key, data):
+            # TODO: this seems to be the wrong way to go about it.
+            dict_[key]['items'] += list(data)
+            return dict_
+
+        options_by_mode = {
+            'append': {
+                'blank_entry': {'title': None, 'items': [], 'html_titles': []},
+                'updater': appender
+            },
+            'combine': {
+                'blank_entry': {'title': None, 'items': []},
+                'updater': combiner
+            }
+        }
+        try:
+            options = options_by_mode[mode]
+        except KeyError as e:
+            raise KeyError('Unrecognized mode {mod}.'.format(mod=mode))
+
+        if not key in dict_.keys():
+            dict_[key] = options['blank_entry']
+            dict_[key]['title'] = key
+            return update(dict_, key, data, mode)
+        else:
+            return options['updater'](dict_, key, data)
+
+    if coop is None:
+        coop = user.profile.coop
+    # TODO: Still don't like how this is being done. Like the idea of making
+    # repositories and only later organizing them by section, but that's
+    # complicated by needing multiple subsections (e.g. 'Voided') both
+    # 'appended' and 'combined'.
+    list_structure = {
+        'sections': ['Chores', 'Stewardships and Similar', 'Benefit Changes'],
+        'subsections': [['Upcoming', 'Voided', 'Needing Sign Off'],
+                        ['Stewardships', 'Special Points', 'Loans'],
+                        ['Absences', 'Share Changes']]
+    }
+    table_structure = {
+        'sections': ['Summary', 'Chores', 'Stewardships and Similar'],
+        'subsections': [['Load', 'Credits', 'Balance'],
+                        ['Signed Up', 'Signed Off', 'Needing Sign Off',
+                         'Voided'],
+                        ['Stewardships', 'Special Points', 'Loans']]
+    }
+    list_stats = {}
+    table_stats = {}
+
+    cycle_boundaries = []
+    signed_args = [coop, cycle_start, cycle_stop]
+    categories = {
+        'all chores': 
+    cycles = []
+    # TODO: first pull out all the chores, and only then filter by date.
+    for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
+        cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
+                       'cycle_stop': cycle_stop})
+        # TODO: could make a big method in the custom Manager that returns all
+        # of these as a dictionary. That would be very nice. Think of how to
+        # make it efficient if you want to query it multiple times.
+        signed_args = [coop, cycle_start, cycle_stop]
+        my_chores = Chore.objects.signed(
+            *signed_args,
+            signatures=['signed_up'],
+            users=[user]
+        )
+        upcoming_lower_boundary = datetime.date.today()
+        upcoming_upper_boundary = upcoming_lower_boundary+\
+                datetime.timedelta(days=coop.profile.release_buffer)
+        my_chores_upcoming = Chore.objects.signed(coop,
+            upcoming_upper_boundary, upcoming_upper_boundary,
+            signatures=['signed_up'], users=[user])
+        # TODO: this is inefficient. Maybe need to subclass QueryObject to add
+        # in ability to filter by truth value of the Signatures?
+        my_chores_voided = Chore.objects.signed(
+            *signed_args,
+            signatures = ['signed_up', 'voided'],
+            users = [user, None],
+            desired_booleans = [True, False]
+        )
+        my_chores_signed_off = Chore.objects.signed(
+            *signed_args,
+            signatures = ['signed_up', 'voided', 'signed_off'],
+            users = [user, None, None],
+            desired_booleans = [True, False, True]
+        )
+        # TODO: originally we had this filtering by the start_date being less than
+        # the current date. If we drop the assumption that chores have the same
+        # stop and start date, that isn't what's going on here. Also there is the
+        # issue of less than versus less than or equal to. Hopefully can fix this
+        # by allowing us to use `signed` on QueryObjects.
+        my_chores_needing_sign_off = Chore.objects.signed(
+            coop,
+            cycle_start,
+            datetime.date.today(),
+            signatures = ['signed_up', 'voided', 'signed_off'],
+            users = [user, None, None],
+            desired_booleans = [True, False, False]
+        )
+
+        # Be careful here. I'm specifying that these things shouldn't be voided
+        # just for clarity. Right now they never should be voided. If that's added
+        # in, this will need to be inspected a bit more closely.
+        my_stewardships_all = Stewardship.objects.signed(
+            *signed_args,
+            signatures=['signed_up'],
+            users=[user]
+        )
+        # TODO: can bring back something like this when the methods work with
+        # QueryObjects.
+        # my_classical_stewardships = my_stewardships_all.filter(
+            # skeleton__category=StewardshipSkeleton.STEWARDSHIP)
+        # my_special_points = my_stewardships_all.filter(
+            # skeleton__category=StewardshipSkeleton.SPECIAL_POINTS)
+        # my_loans = my_stewardships_all.filter(
+            # skeleton__category=StewardshipSkeleton.LOAN)
+        my_classical_stewardships = [stew for stew in my_stewardships_all if
+            stew.skeleton.category == StewardshipSkeleton.STEWARDSHIP]
+        my_special_points = [stew for stew in my_stewardships_all if
+            stew.skeleton.category == StewardshipSkeleton.SPECIAL_POINTS]
+        my_loans = [stew for stew in my_stewardships_all if
+            stew.skeleton.category == StewardshipSkeleton.LOAN]
+
+        my_absences = Absence.objects.signed(
+            *signed_args,
+            signatures=['signed_up'],
+            users=[user]
+        )
+
+        my_absences = Absence.objects.signed(
+            *signed_args,
+            signatures=['signed_up'],
+            users=[user]
+        )
+        my_share_changes = ShareChange.objects.signed(
+            *signed_args,
+            signatures=['signed_up'],
+            users=[user]
+        )
+        my_accounts = transpose(calculate_loads(user, coop=coop))
+        list_datas = [my_chores_upcoming, my_chores_voided,
+                      my_chores_needing_sign_off, my_classical_stewardships,
+                      my_special_points, my_loans, my_absences,
+                      my_share_changes]
+        table_datas = [my_accounts['load'], my_accounts['credits'],
+                       my_accounts['balance'], my_chores, my_chores_signed_off,
+                       my_chores_needing_sign_off, my_chores_voided,
+                       my_classical_stewardships, my_special_points, my_loans]
+        # TODO: hopefully in rewriting the above you get rid of this repeated
+        # code, here and further below.
+        for key, data in zip(itertools.chain(*list_structure['subsections']),
+                             list_datas):
+            list_stats = update(list_stats, key, data, 'combine')
+        for key, data in zip(itertools.chain(*table_structure['subsections']),
+                                             table_datas):
+            table_stats = update(table_stats, key, data, 'append')
+    list_information = []
+    table_information = []
+    for i, section in enumerate(list_structure['sections']):
+        list_information.append({'title': section, 'sections': []})
+        for subsection in list_structure['subsections'][i]:
+            list_information[i]['sections'].append({
+                'title': subsection,
+                'items': list_stats[subsection]['items'],
+            })
+    for i, section in enumerate(table_structure['sections']):
+        table_information.append({'title': section, 'sections': []})
+        for subsection in table_structure['subsections'][i]:
+            table_information[i]['sections'].append({
+                'title': subsection,
+                'items': table_stats[subsection]['items'],
+                'html_titles': table_stats[subsection]['html_titles']
+            })
+    return {'list_information': list_information,
+            'table_information': table_information,
+            'cycles': cycles}
+    # table_structure = {
+        # 'sections': ['Summary', 'Chores', 'Stewardships and Similar'],
+        # 'subsections': [['Load', 'Credits', 'Balance'],
+                        # ['Signed Up', 'Signed Off', 'Needing Sign Off',
+                         # 'Voided'],
+                        # ['Stewardships', 'Special Points', 'Loans']]
+    # }
 
 def timedelta_in_interval(left, timedelta, right):
     '''
@@ -30,33 +251,89 @@ def timedelta_in_interval(left, timedelta, right):
         right = datetime.timedelta(right)
     return left <= timedelta < right
 
-def timedelta_pretty_print(timedelta):
-    # TODO: this needs testing (including edge conditions).
-    pretty_print = ''
-    abs_td = abs(timedelta)
-    if abs_td < datetime.timedelta(seconds=60):
-        pretty_print += '{num} seconds'.format(num=abs_td.seconds)
-    elif abs_td < datetime.timedelta(seconds=60**2):
-    # For consistency I am not using rounding for these next two. See
-    # <https://docs.python.org/3/library/datetime.html#timedelta-objects>.
-        pretty_print += '{num} minutes'.format(num=abs_td.seconds//60)
-    elif abs_td < datetime.timedelta(days=1):
-        pretty_print += '{num} hours'.format(num=abs_td.seconds//60**2)
-    else:
-        pretty_print += '{num} days'.format(num=abs.td.days)
-    # TODO: based on this, in the description of this function we should note
-    # whether it expects 'now-then' or 'then-now'.
-    if timedelta >= datetime.timedelta(0):
-        pretty_print += ' ago'
-    else:
-        pretty_print += ' from now'
-    return pretty_print
+# TODO: also include here what the load should be. For this we will
+# need a load calculator. Maybe not even a separate function since
+# we've already done so much of the work here.
+def calculate_loads(user, coop=None):
+    if coop is None:
+        coop = user.profile.coop
+    # Storing as a tuple so we can iterate over it multiple times.
+    coopers = tuple(User.objects.filter(profile__coop=coop))
+    subtotals = []
+    for cycle_num, start_date, stop_date in coop.profile.cycles():
+        load = 0
+        signed_up = 0
+        completed = 0
+        signed_args = [coop, start_date, stop_date]
+        chores = Chore.objects.signed(
+            *signed_args,
+            signatures=['voided'],
+            desired_booleans=[False]
+        )
+        stewardships = Stewardship.objects.signed(
+            *signed_args,
+            signatures=['voided'],
+            desired_booleans=[False]
+        )
+        absences = Absence.objects.signed(
+            *signed_args,
+            signatures=['voided'],
+            desired_booleans=[False]
+        )
+        share_changes = ShareChange.objects.signed(
+            *signed_args,
+            signatures=['voided'],
+            desired_booleans=[False]
+        )
+        # TODO: how should this be done?
+        total_points = sum(map(lambda x: x.skeleton__point_value,
+                               itertools.chain(chores, stewardships)))
+        total_presence = -sum(map(lambda x: x.days_gone, absences))
+        total_share = sum(map(lambda x: x.share_change, share_changes))
+        # TODO: put this in a function?
+        for cooper in coopers:
+            total_presence += cooper.profile.presence
+            total_share += cooper.profile.share
+        # TODO: what really seems to be missing here is being able to use the
+        # `signed` method on a QuerySet. There is a way to do this -- look it
+        # up if you decide to go this route.
+        signed_up = sum(
+            map(lambda x: x.skeleton__point_value,
+                Chore.objects.signed(
+                    *signed_args,
+                    signatures=['voided', 'signed_up'],
+                    desired_booleans=[False, True],
+                    users= [None, user])
+           ))
+        completed = sum(
+            map(lambda x: x.skeleton__point_value,
+                Chore.objects.signed(
+                    *signed_args,
+                    signatures=['voided', 'signed_up', 'signed_off'],
+                    desired_booleans=[False, True, True],
+                    users= [None, user, None])
+           ))
+        points_per_day_share = total_points/(total_presence*total_share)
+        load = points_per_day_share*user.profile.presence*user.profile.share
+        subtotals.append({'load': load, 'signed_up': signed_up,
+                         'completed': completed})
+    accounts = []
+    old_balance = 0
+    for i, subtotal in enumerate(subtotals):
+        load = subtotal['load']
+        credits = subtotal['completed' if i < len(subtotals)-1 else
+                           'signed_up']
+        balance = old_balance+credits-load
+        accounts.append({'load': load, 'credits': credits,
+                         'balance': balance})
+        old_balance = balance
+    return accounts
 
 def index(response):
     return HttpResponse('Welcome to the points chart.')
 
 @login_required()
-def all(response):
+def all_users(response):
 
     def find_day_classes(date):
         '''
@@ -159,103 +436,32 @@ def all(response):
             'schedule': chore_dicts,
             'weekday' : weekdays[date.weekday()],
          })
+    # TODO: here also sort by cycle?
     return render(response, 'chores/all.html',
                   dictionary={'coop': coop, 'cooper': response.user,
                               'days': chores_by_date})
 
+# TODO: write a function/URL thing for when they go to 'chores/me/'.
+# TODO: this should now require permissions.
 @login_required()
-def me(response):
-    # TODO: most of this into another function so it can be used in making a
-    # chart that the points steward can look at.
-    def sum_point_values(chores):
-        '''
-        Returns the sum of the point values of the chores in `chores`.
-        '''
-        return sum(map(lambda x: x['skeleton__point_value'],
-                       chores.values('skeleton__point_value')))
-
-    coop = response.user.profile.coop
-    upcoming_lower_boundary = datetime.date.today()
-    # TODO: here and elsewhere, make values like the '3' here either variables
-    # or function arguments.
-    upcoming_upper_boundary = upcoming_lower_boundary+\
-        datetime.timedelta(days=3)
-
-    all_chores = Chore.objects.filter(skeleton__coop=coop)
-    my_chores = all_chores.filter(signed_up__who=response.user)
-    my_upcoming_chores = my_chores.filter(
-        start_date__gte=upcoming_lower_boundary,
-        start_date__lte=upcoming_upper_boundary).order_by('start_date')
-    my_chores_needing_sign_off = my_chores.filter(
-        start_date__lt=upcoming_lower_boundary, voided=False,
-        signed_off=False).order_by('start_date')
-    points_signed_up = sum_point_values(my_chores)
-    points_needing_sign_off = sum_point_values(my_chores_needing_sign_off)
-    return render(response, 'chores/me.html',
-                  dictionary={
-                      'coop': coop,
-                      'total_signed_up': points_signed_up,
-                      'total_needing_sign_off': points_needing_sign_off,
-                      'upcoming_chores': my_upcoming_chores,
-                      'chores_needing_sign_off':
-                          my_chores_needing_sign_off,
-                  })
-
-@login_required()
-def sign_up(response, chore_id):
-    print('In sign_up view.')
-    chore = Chore.objects.get(pk=chore_id)
-    if chore.signed_up:
-        # Error: someone has already signed up. Return who has signed up and
-        # when they signed up. Return an error code so the JavaScript function
-        # can display this in an alert.
-        # TODO: this code is very close to the stuff used in the sign_off
-        # function. Make a separate function.
-        # TODO: after making timezone stuff work here make those changes
-        # everywhere else.
-        return HttpResponse('', reason='{coo} signed up for this chore {tdp}.'\
-            .format(coo=chore.signed_up.who.profile.nickname, tdp=\
-                timedelta_pretty_print(datetime.datetime.now(pytz.utc)-\
-                    chore.when_signed_up)), status=403)
-    else:
-        chore.signed_up.who = response.user
-        chore.signed_up = True
-        chore.when_signed_up = datetime.datetime.now()
-        chore.save()
-        # TODO: some repetition here with the chores templates. How to fix?
-        # TODO: only use "Sign-off needed!" if we're in the past?
-    return HttpResponse(json.dumps({'sign_up_sentence': 'You are signed up.',
-        'sign_off_sentence': 'Sign-off needed!'}), status=200)
-
-@login_required()
-def sign_off(response, chore_id):
-    print('In sign_off view.')
-    chore = Chore.objects.get(pk=chore_id)
-    if not chore.signed_up:
-        # Error: no one has signed up. User should only be able to get here my
-        # manually entering a URL.
-        return HttpResponse('', reason='No one has signed up for this chore.',
-                            status=403)
-    if chore.signed_off:
-        # Error: someone has already signed up. Return who has signed up and
-        # when they signed up. Return an error code so the JavaScript function
-        # can display this in an alert.
-        return HttpResponse('', reason='{coo} signed off on this chore {tdp}.'\
-            .format(coo=chore.who_signed_off.profile.nickname, tpd=\
-                timedelta_pretty_print(datetime.datetime.now()-\
-                    chore.when_signed_off)), status=403)
-    if response.user == chore.signed_up.who:
-        # Error: can't sign off on your own chore. Have this pop up in an
-        # alert.
-        return HttpResponse('', reason="You can't sign off on your own "
-                            "chore.", status=403)
-    else:
-        chore.who_signed_off = response.user
-        chore.signed_off = True
-        chore.when_signed_off = datetime.datetime.now()
-        chore.save()
-        return HttpResponse(json.dumps({
-            'sign_off_sentence': 'You signed off.'}), status=200)
+def one_user(response, username):
+    user = User.objects.get(username=username)
+    coop = user.profile.coop
+    obligations = get_obligations(user, coop=coop)
+    cycles = obligations['cycles']
+    list_information = obligations['list_information']
+    table_information = obligations['table_information']
+    for x in table_information:
+        print(x)
+        print('')
+    render_dictionary = {
+        'coop': coop,
+        'cooper': user,
+        'list_information': list_information,
+        'table_information': table_information,
+        'point_cycles': cycles
+    }
+    return render(response, 'chores/me.html', dictionary=render_dictionary)
 
 def create_calendar(response, username):
     # Test to see if that user wants a public calendar. Also do error checking

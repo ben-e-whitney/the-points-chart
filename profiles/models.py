@@ -3,8 +3,10 @@ from django.db import models
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
-import timezone_field
+
 import localflavor.us.models
+import timezone_field
+import datetime
 
 # TODO: look into the 'unique' field option
 # <https://docs.djangoproject.com/en/dev/ref/models/fields/#unique>
@@ -41,6 +43,24 @@ class GroupProfile(models.Model):
     def __str__(self):
         return 'GroupProfile for {gro}'.format(gro=self.group.name)
 
+    def cycles(self, start_date=None, stop_date=None):
+        if start_date is None:
+            start_date = self.start_date
+        window_width = datetime.timedelta(days=self.cycle_length)
+        if stop_date is None:
+            stop_date = datetime.date.today()+datetime.timedelta(
+                days=self.release_buffer)
+        assert window_width > datetime.timedelta(days=0)
+        assert stop_date >= start_date
+        cycle_num = 1
+        window = [start_date, start_date+window_width]
+        while stop_date >= window[0]:
+            yield cycle_num, window[0], window[1]
+            window = [window[1]+datetime.timedelta(days=1),
+                      window[1]+datetime.timedelta(days=1)+window_width]
+            cycle_num += 1
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, primary_key=True, related_name='profile')
     coop = models.ForeignKey(Group)
@@ -62,6 +82,8 @@ class UserProfile(models.Model):
     phone_carrier = models.CharField(max_length=2**6, blank=True, null=True)
 
     # A standard load of 100% will be stored as 1 here.
-    share_fraction = models.DecimalField(max_digits=3, decimal_places=2)
+    share = models.DecimalField(max_digits=3, decimal_places=2)
+    presence = models.PositiveSmallIntegerField()
     def __str__(self):
         return 'UserProfile for {use}'.format(use=self.user.username)
+    # TODO: add methods here to calculate presence and share?
