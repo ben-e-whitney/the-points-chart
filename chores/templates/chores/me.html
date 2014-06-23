@@ -16,21 +16,19 @@ All Chores.
     Stewardship points, special points, loan balance, anything else.
 -->
 
-<!--You are signed up for {{ total_signed_up }} points.<br>-->
-
 <!--
 Will this always have data to display? Might even need to cut this out.
-Hopefully can just test against `list_chores`.
-For the rest, I vote doing inclusion/exclusion based on whether there's anything to display inside the view.
 -->
+<h1 style="text-align: center">Information for {{ cooper }} </h1>
 <h2>Selected Information</h2>
 {% for section in list_information %}
 	<h3>{{ section.title }}</h3>
-	{% for section in section.sections %}
-		<h5>{{ section.title }}</h5>
+	{% for subsection in section.sections %}
+		<h5>{{ subsection.title }}</h5>
+		<!--TODO: consider changing this to just a paragraph. Will save vertical space/use up horizontal space.-->
 		<ul>
-			{% for list_item in section.items %}
-			<li> {{ list_item }}
+			{% for dictionary in subsection.dictionaries %}
+			<li> {{ dictionary.items }}
 			{% endfor %}
 		</ul>
 	{% endfor %}
@@ -52,11 +50,11 @@ For the rest, I vote doing inclusion/exclusion based on whether there's anything
 	</tr>
 	{% for section in table_information %}
 		<tr><th>{{ section.title }}</th></tr>
-		{% for section in section.sections %}
+		{% for subsection in section.sections %}
 			<tr>
-				<td style="text-align: right">{{ section.title }}</td>
-				{% for point_cycle in section.cycles %}
-					<td title="{{ point_cycle.concatenated_items }}">{{ point_cycle.total }}</td>
+				<td style="text-align: right">{{ subsection.title }}</td>
+				{% for dictionary in subsection.dictionaries %}
+					<td style="text-align: right" title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
 				{% endfor %}
 			</tr>
 		{% endfor %}

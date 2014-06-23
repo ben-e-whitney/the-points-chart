@@ -2,35 +2,36 @@ from django.db import models
 
 # Create your models here.
 
-from chores.models import Skeleton, Timecard, TimeWindowManager as chore_TWM
+from chores.models import Skeleton, Timecard, ChoreQuerySet
+from model_utils.managers import PassThroughManager
 
 # TODO: not sure whether these being so skimpy is a good or bad sign.
 
-class TimeWindowManager(chore_TWM):
+class StewardshipQuerySet(ChoreQuerySet):
 
     '''
-    Modification of `chore_TWM` to allow for different understanding of when a
-    Stewardship falls inside a time window. See `in_window` documetation.
+    Modification of `ChoreQuerySet` to allow for a different understanding of
+    when a Stewardship falls inside a time window. See `in_window`
+    documetation.
     '''
 
-    def in_window(self, coop, start_date, stop_date):
+    def in_window(self, window_start_date, window_stop_date):
         '''
-        Overrides superclass method. Provides the same functionality.
+        Overrides superclass method. Performs same general function.
 
         Arguments:
-            coop       -- Group whose chores we are interested in.
-            start_date -- Beginning of time window.
-            stop_date  -- End of the time window.
+            window_start_date -- Beginning of time window.
+            window_stop_date  -- End of the time window.
 
-        Changes from the superclass method are enclosed in asterisks.
-        Return an iterator yielding those chores which belong to the given
-        `coop`, which start before or on `stop_date`, and which end after or
-        on `start_date`. The results are ordered by starting date.
+        Return those chores which overlap with the given window. That is,
+        return those chores which start before or on `window_stop_date` and
+        end after or on `window_start_date`. (We assume that the stewardship
+        starts before or on the date it ends.) The results are ordered by start
+        date.
         '''
         return self.filter(
-           skeleton__coop=coop,
-            start_date__lte=start_date,
-            stop_date__gte=stop_date
+            start_date__lte=window_stop_date,
+            stop_date__gte=window_start_date
         ).order_by('start_date')
 
 
@@ -51,7 +52,7 @@ class StewardshipSkeleton(Skeleton):
 class Stewardship(Timecard):
     skeleton = models.ForeignKey(StewardshipSkeleton,
                                  related_name='stewardship')
-    objects = TimeWindowManager()
+    objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
 
 # For these objects, changes are made for the cycle(s) spanning the date range.
 # For example, if a user is marked out for two days, then their load will be
@@ -64,10 +65,10 @@ class Absence(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton, related_name='absence')
     # TODO: Superfluous. Use `self.start_date` and `self.stop_date` instead.
     days_gone = models.PositiveSmallIntegerField()
-    objects = TimeWindowManager()
+    objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
 
 class ShareChange(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton,
                                  related_name='share_change')
     share_change = models.DecimalField(max_digits=3, decimal_places=2)
-    objects = TimeWindowManager()
+    objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()

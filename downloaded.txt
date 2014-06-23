@@ -2,3 +2,4 @@ Django, obviously
 django-timezone-field <https://pypi.python.org/pypi/django-timezone-field/>
 /*django-phonenumber-field <https://github.com/stefanfoulis/django-phonenumber-field.git>*/
 django-localflavor <https://django-localflavor.readthedocs.org/en/latest/>
+django-model-utils <https://github.com/carljm/django-model-utils>

@@ -3,7 +3,6 @@ from django.shortcuts import render
 # Create your views here.
 
 import datetime
-import json
 import pytz
 import itertools
 
@@ -18,222 +17,194 @@ from profiles.models import UserProfile, GroupProfile
 from stewardships.models import StewardshipSkeleton, Stewardship, Absence, \
     ShareChange
 
+def calculate_point_sum(chores):
+    return sum(chore.skeleton.point_value for chore in chores)
+
+def make_html_title(chores):
+    return ', '.join(str(chore) for chore in chores)
 
 # TODO: put extra functions and lengthy variable definitions in another file.
 # TODO: name needs improving here.
-def sum_chores(chores):
-    '''
-    Returns the sum of the point values of the chores in `chores` and a string
-containing all their names.
-    '''
-    return {'total': sum(map(lambda x: x['skeleton__point_value'],
-                             chores.values('skeleton__point_value'))),
-            'concatenated_items': ', '.join(map(str, chores))}
+
+# TODO: think I can get rid of this. Currently using this is a sign that you
+# are using the wrong data set.
+# def unique(list_):
+    # already_seen = set(())
+    # unique_list = []
+    # for item in list_:
+        # if item not in already_seen:
+            # unique_list.append(item)
+            # already_seen.add(item)
+    # return unique_list
+
+class DisplayInformation():
+    def __init__(self, name, structure, keys, processor, format_key):
+        self.name = name
+        self.structure = structure
+        self.keys = keys
+        self.processor = processor
+        self.format_key = format_key
+        # TODO: put futher checks here? That or document what structure you're
+        # expecting to get.
+        # TODO: get rid of this temporary stuff.
+
+        try:
+            assert sum(len(section_subsections) for section_subsections in
+                       self.structure['subsections']) == len(self.keys)
+        except AssertionError as e:
+            # raise AssertionError(
+                # sum(len(section_subsections) for section_subsections in
+                       # self.structure['subsections']), len(self.keys)
+            # )
+            raise AssertionError(
+                self.structure['subsections'], self.keys
+            )
+
+    def load_data(self, data):
+        self.data = {
+            key: (data[key][self.format_key] if self.format_key is not None
+                  else data[key]) for key in self.keys
+        }
+
+    # TODO: document this or whatever. Figure out the right way.
+    def process_data(self):
+        # TODO: at the beginning have it just take these in.
+        self.data = {
+            key: self.processor(item) for key, item in
+            self.data.items()
+        }
+
+    def populate_structure(self):
+        self.structured_data = []
+        key_index = 0
+        for i, section in enumerate(self.structure['sections']):
+            self.structured_data.append({'title': section, 'sections': []})
+            # Assuming this is only called once, so that the dictionary we just
+            # appended is located at index `i`.
+            for subsection in self.structure['subsections'][i]:
+                self.structured_data[i]['sections'].append(
+                    {
+                        'title': subsection,
+                        'dictionaries': [
+                            dict_ for dict_ in self.data[self.keys[key_index]]
+                        ]
+                    }
+                )
+                key_index += 1
+
+    def purge_empty(self):
+        # list/dict ('sections')/list/dict ('dictionaries')
+        # test if *that* is [] or whatever
+        # Filter subsections.
+        for big_dict in self.structured_data:
+            # Using mutability/fact that `self.structured_data` stores
+            # references to objects.
+            big_dict['sections'] = [item for item in big_dict['sections'] if
+                                    item['dictionaries']]
+        # Filter sections.
+        self.structured_data = [big_dict for big_dict in self.structured_data
+                                if big_dict['sections']]
+        return None
+
+    def create_template_data(self, data):
+        self.load_data(data)
+        self.process_data()
+        self.populate_structure()
+        self.purge_empty()
+        return self.structured_data
 
 def get_obligations(user, coop=None):
 
-    def update(dict_, key, data, mode):
-
-        '''
-        Construct and update a dictionary of dictionaries piece-by-piece.
-
-        Arguments:
-            dict_ -- Data structure being modified.
-            key   -- Identifies the entry to create or change.
-            data  -- Used to changing the entry.
-            mode  -- Dictates how `data` will be used to change the entry.
-        '''
-
-        def appender(dict_, key, data):
-            dict_[key]['items'].append(data)
-            dict_[key]['html_titles'].append(', '.join(str(chore) for chore in
-                                                       data))
-            return dict_
-
-        def combiner(dict_, key, data):
-            # TODO: this seems to be the wrong way to go about it.
-            dict_[key]['items'] += list(data)
-            return dict_
-
-        options_by_mode = {
-            'append': {
-                'blank_entry': {'title': None, 'items': [], 'html_titles': []},
-                'updater': appender
-            },
-            'combine': {
-                'blank_entry': {'title': None, 'items': []},
-                'updater': combiner
-            }
-        }
-        try:
-            options = options_by_mode[mode]
-        except KeyError as e:
-            raise KeyError('Unrecognized mode {mod}.'.format(mod=mode))
-
-        if not key in dict_.keys():
-            dict_[key] = options['blank_entry']
-            dict_[key]['title'] = key
-            return update(dict_, key, data, mode)
-        else:
-            return options['updater'](dict_, key, data)
-
     if coop is None:
         coop = user.profile.coop
-    # TODO: Still don't like how this is being done. Like the idea of making
-    # repositories and only later organizing them by section, but that's
-    # complicated by needing multiple subsections (e.g. 'Voided') both
-    # 'appended' and 'combined'.
-    list_structure = {
-        'sections': ['Chores', 'Stewardships and Similar', 'Benefit Changes'],
-        'subsections': [['Upcoming', 'Voided', 'Needing Sign Off'],
-                        ['Stewardships', 'Special Points', 'Loans'],
-                        ['Absences', 'Share Changes']]
-    }
-    table_structure = {
-        'sections': ['Summary', 'Chores', 'Stewardships and Similar'],
-        'subsections': [['Load', 'Credits', 'Balance'],
-                        ['Signed Up', 'Signed Off', 'Needing Sign Off',
-                         'Voided'],
-                        ['Stewardships', 'Special Points', 'Loans']]
-    }
-    list_stats = {}
-    table_stats = {}
 
-    cycle_boundaries = []
-    signed_args = [coop, cycle_start, cycle_stop]
-    categories = {
-        'all chores': 
+    upcoming_lower_boundary = datetime.date.today()
+    upcoming_upper_boundary = upcoming_lower_boundary+\
+            datetime.timedelta(days=coop.profile.release_buffer)
+    all_chores = Chore.objects.for_coop(coop).signed_up(user, True)
+    all_stewardships = Stewardship.objects.for_coop(coop).signed_up(
+        user, True)
+    data = {
+        'all chores': all_chores,
+        'upcoming chores': all_chores.in_window(upcoming_lower_boundary,
+                                                upcoming_upper_boundary),
+        'voided': all_chores.voided(user, True),
+        'signed off': all_chores.signed_off(user, True),
+        'not signed off': all_chores.signed_off(user, False),
+        'all stewardships': all_stewardships,
+        # TODO: could new QuerySets/models/whatever in for these.
+        'stewardships': all_stewardships.filter(
+            skeleton__category=StewardshipSkeleton.STEWARDSHIP),
+        'special points': all_stewardships.filter(
+            skeleton__category=StewardshipSkeleton.SPECIAL_POINTS),
+        'loans': all_stewardships.filter(
+            skeleton__category=StewardshipSkeleton.LOAN),
+        'absences': Absence.objects.signed_up(user, True),
+        'share changes': ShareChange.objects.signed_up(user, True)
+    }
+    data['ready for signature'] = data['not signed off'].filter(
+        start_date__lte=datetime.date.today())
+    # Rearranging.
+    for key, item in data.items():
+        data[key] = {'original': item, 'per cycle': []}
     cycles = []
-    # TODO: first pull out all the chores, and only then filter by date.
+    accounts = []
     for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
         cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
                        'cycle_stop': cycle_stop})
-        # TODO: could make a big method in the custom Manager that returns all
-        # of these as a dictionary. That would be very nice. Think of how to
-        # make it efficient if you want to query it multiple times.
-        signed_args = [coop, cycle_start, cycle_stop]
-        my_chores = Chore.objects.signed(
-            *signed_args,
-            signatures=['signed_up'],
-            users=[user]
-        )
-        upcoming_lower_boundary = datetime.date.today()
-        upcoming_upper_boundary = upcoming_lower_boundary+\
-                datetime.timedelta(days=coop.profile.release_buffer)
-        my_chores_upcoming = Chore.objects.signed(coop,
-            upcoming_upper_boundary, upcoming_upper_boundary,
-            signatures=['signed_up'], users=[user])
-        # TODO: this is inefficient. Maybe need to subclass QueryObject to add
-        # in ability to filter by truth value of the Signatures?
-        my_chores_voided = Chore.objects.signed(
-            *signed_args,
-            signatures = ['signed_up', 'voided'],
-            users = [user, None],
-            desired_booleans = [True, False]
-        )
-        my_chores_signed_off = Chore.objects.signed(
-            *signed_args,
-            signatures = ['signed_up', 'voided', 'signed_off'],
-            users = [user, None, None],
-            desired_booleans = [True, False, True]
-        )
-        # TODO: originally we had this filtering by the start_date being less than
-        # the current date. If we drop the assumption that chores have the same
-        # stop and start date, that isn't what's going on here. Also there is the
-        # issue of less than versus less than or equal to. Hopefully can fix this
-        # by allowing us to use `signed` on QueryObjects.
-        my_chores_needing_sign_off = Chore.objects.signed(
-            coop,
-            cycle_start,
-            datetime.date.today(),
-            signatures = ['signed_up', 'voided', 'signed_off'],
-            users = [user, None, None],
-            desired_booleans = [True, False, False]
-        )
+        for key in data:
+            data[key]['per cycle'].append(
+                data[key]['original'].in_window(cycle_start, cycle_stop)
+            )
+    # Rearranging again.
+    data.update(calculate_loads(user, coop=coop))
 
-        # Be careful here. I'm specifying that these things shouldn't be voided
-        # just for clarity. Right now they never should be voided. If that's added
-        # in, this will need to be inspected a bit more closely.
-        my_stewardships_all = Stewardship.objects.signed(
-            *signed_args,
-            signatures=['signed_up'],
-            users=[user]
-        )
-        # TODO: can bring back something like this when the methods work with
-        # QueryObjects.
-        # my_classical_stewardships = my_stewardships_all.filter(
-            # skeleton__category=StewardshipSkeleton.STEWARDSHIP)
-        # my_special_points = my_stewardships_all.filter(
-            # skeleton__category=StewardshipSkeleton.SPECIAL_POINTS)
-        # my_loans = my_stewardships_all.filter(
-            # skeleton__category=StewardshipSkeleton.LOAN)
-        my_classical_stewardships = [stew for stew in my_stewardships_all if
-            stew.skeleton.category == StewardshipSkeleton.STEWARDSHIP]
-        my_special_points = [stew for stew in my_stewardships_all if
-            stew.skeleton.category == StewardshipSkeleton.SPECIAL_POINTS]
-        my_loans = [stew for stew in my_stewardships_all if
-            stew.skeleton.category == StewardshipSkeleton.LOAN]
+    def list_processor(items):
+        return [
+            {'items': item} for item in items if item
+        ]
 
-        my_absences = Absence.objects.signed(
-            *signed_args,
-            signatures=['signed_up'],
-            users=[user]
-        )
+    def table_processor(items):
+        return [
+            {'value': calculate_point_sum(chores),
+             'html_title': make_html_title(chores)}
+            for chores in items
+        ]
 
-        my_absences = Absence.objects.signed(
-            *signed_args,
-            signatures=['signed_up'],
-            users=[user]
-        )
-        my_share_changes = ShareChange.objects.signed(
-            *signed_args,
-            signatures=['signed_up'],
-            users=[user]
-        )
-        my_accounts = transpose(calculate_loads(user, coop=coop))
-        list_datas = [my_chores_upcoming, my_chores_voided,
-                      my_chores_needing_sign_off, my_classical_stewardships,
-                      my_special_points, my_loans, my_absences,
-                      my_share_changes]
-        table_datas = [my_accounts['load'], my_accounts['credits'],
-                       my_accounts['balance'], my_chores, my_chores_signed_off,
-                       my_chores_needing_sign_off, my_chores_voided,
-                       my_classical_stewardships, my_special_points, my_loans]
-        # TODO: hopefully in rewriting the above you get rid of this repeated
-        # code, here and further below.
-        for key, data in zip(itertools.chain(*list_structure['subsections']),
-                             list_datas):
-            list_stats = update(list_stats, key, data, 'combine')
-        for key, data in zip(itertools.chain(*table_structure['subsections']),
-                                             table_datas):
-            table_stats = update(table_stats, key, data, 'append')
-    list_information = []
-    table_information = []
-    for i, section in enumerate(list_structure['sections']):
-        list_information.append({'title': section, 'sections': []})
-        for subsection in list_structure['subsections'][i]:
-            list_information[i]['sections'].append({
-                'title': subsection,
-                'items': list_stats[subsection]['items'],
-            })
-    for i, section in enumerate(table_structure['sections']):
-        table_information.append({'title': section, 'sections': []})
-        for subsection in table_structure['subsections'][i]:
-            table_information[i]['sections'].append({
-                'title': subsection,
-                'items': table_stats[subsection]['items'],
-                'html_titles': table_stats[subsection]['html_titles']
-            })
-    return {'list_information': list_information,
-            'table_information': table_information,
-            'cycles': cycles}
-    # table_structure = {
-        # 'sections': ['Summary', 'Chores', 'Stewardships and Similar'],
-        # 'subsections': [['Load', 'Credits', 'Balance'],
-                        # ['Signed Up', 'Signed Off', 'Needing Sign Off',
-                         # 'Voided'],
-                        # ['Stewardships', 'Special Points', 'Loans']]
-    # }
+    display_infos = [
+        DisplayInformation('list_information', {
+                'sections': ['Chores', 'Stewardships and Similar',
+                             'Benefit Changes'],
+                'subsections': [['Upcoming', 'Voided', 'Ready for Signature'],
+                                ['Stewardships', 'Special Points', 'Loans'],
+                                ['Absences', 'Share Changes']]
+            }, [
+                'upcoming chores', 'voided', 'ready for signature',
+                'stewardships', 'special points', 'loans', 'absences',
+                'share changes'
+            ], list_processor, 'original'),
+        DisplayInformation('table_information', {
+                'sections': ['Chores', 'Stewardships and Similar'],
+                'subsections': [['Signed Up', 'Signed Off', 'Needing Sign Off',
+                                 'Voided'],
+                                ['Stewardships', 'Special Points', 'Loans']]
+            }, [
+                'all chores', 'signed off', 'not signed off', 'voided',
+                'stewardships', 'special points', 'loans'
+            ], table_processor, 'per cycle'),
+        DisplayInformation('summary_information', {
+                'sections': ['Summary'],
+                'subsections': [['Load', 'Credits', 'Balance']]
+            }, [
+                'loads', 'credits', 'balances'
+            ], list_processor, None)
+    ]
+    dict_to_return = {
+        display_info.name: display_info.create_template_data(data) for
+        display_info in display_infos
+    }
+    dict_to_return.update({'point_cycles': cycles})
+    return dict_to_return
 
 def timedelta_in_interval(left, timedelta, right):
     '''
@@ -251,81 +222,61 @@ def timedelta_in_interval(left, timedelta, right):
         right = datetime.timedelta(right)
     return left <= timedelta < right
 
-# TODO: also include here what the load should be. For this we will
-# need a load calculator. Maybe not even a separate function since
-# we've already done so much of the work here.
 def calculate_loads(user, coop=None):
     if coop is None:
         coop = user.profile.coop
     # Storing as a tuple so we can iterate over it multiple times.
     coopers = tuple(User.objects.filter(profile__coop=coop))
     subtotals = []
+    # Note that we're not checking whether stewardships are voided or not
+    # (since currently that doesn't happen/has no meaning/effect). Maybe
+    # should be changed (TODO).
+    data = {
+        'chores': Chore.objects.for_coop(coop).voided(None, False),
+        'stewardships': Stewardship.objects.for_coop(coop),
+        'absences': Absence.objects.for_coop(coop),
+        'share changes': ShareChange.objects.for_coop(coop)
+    }
     for cycle_num, start_date, stop_date in coop.profile.cycles():
         load = 0
         signed_up = 0
         completed = 0
-        signed_args = [coop, start_date, stop_date]
-        chores = Chore.objects.signed(
-            *signed_args,
-            signatures=['voided'],
-            desired_booleans=[False]
+
+        adds_to_points = itertools.chain(
+            data['chores'].in_window(start_date, stop_date),
+            data['stewardships'].in_window(start_date, stop_date)
         )
-        stewardships = Stewardship.objects.signed(
-            *signed_args,
-            signatures=['voided'],
-            desired_booleans=[False]
-        )
-        absences = Absence.objects.signed(
-            *signed_args,
-            signatures=['voided'],
-            desired_booleans=[False]
-        )
-        share_changes = ShareChange.objects.signed(
-            *signed_args,
-            signatures=['voided'],
-            desired_booleans=[False]
-        )
-        # TODO: how should this be done?
-        total_points = sum(map(lambda x: x.skeleton__point_value,
-                               itertools.chain(chores, stewardships)))
-        total_presence = -sum(map(lambda x: x.days_gone, absences))
-        total_share = sum(map(lambda x: x.share_change, share_changes))
-        # TODO: put this in a function?
+        adds_to_presence = data['absences'].in_window(start_date, stop_date)
+        adds_to_share = data['share changes'].in_window(start_date, stop_date)
+        total_points = sum(map(lambda x: x.skeleton.point_value,
+                               adds_to_points))
+        total_presence = -sum(map(lambda x: x.days_gone, adds_to_presence))
+        total_share = sum(map(lambda x: x.share_change, adds_to_share))
         for cooper in coopers:
             total_presence += cooper.profile.presence
             total_share += cooper.profile.share
-        # TODO: what really seems to be missing here is being able to use the
-        # `signed` method on a QuerySet. There is a way to do this -- look it
-        # up if you decide to go this route.
         signed_up = sum(
-            map(lambda x: x.skeleton__point_value,
-                Chore.objects.signed(
-                    *signed_args,
-                    signatures=['voided', 'signed_up'],
-                    desired_booleans=[False, True],
-                    users= [None, user])
+            map(lambda x: x.skeleton.point_value,
+                data['chores'].signed_up(user, True)
            ))
         completed = sum(
-            map(lambda x: x.skeleton__point_value,
-                Chore.objects.signed(
-                    *signed_args,
-                    signatures=['voided', 'signed_up', 'signed_off'],
-                    desired_booleans=[False, True, True],
-                    users= [None, user, None])
+            map(lambda x: x.skeleton.point_value,
+                data['chores'].signed_up(user, True).signed_off(None, True)
            ))
         points_per_day_share = total_points/(total_presence*total_share)
         load = points_per_day_share*user.profile.presence*user.profile.share
         subtotals.append({'load': load, 'signed_up': signed_up,
                          'completed': completed})
-    accounts = []
+    accounts = {'loads': [], 'credits': [], 'balances': []}
     old_balance = 0
     for i, subtotal in enumerate(subtotals):
         load = subtotal['load']
         credits = subtotal['completed' if i < len(subtotals)-1 else
                            'signed_up']
         balance = old_balance+credits-load
-        accounts.append({'load': load, 'credits': credits,
-                         'balance': balance})
+        accounts['loads'].append(load)
+        accounts['credits'].append(credits)
+        accounts['balances'].append(balance)
         old_balance = balance
     return accounts
 
@@ -413,7 +364,7 @@ def all_users(response):
     # adding something in the UserProfile that points to the Group that is a
     # co-op.
     coop = response.user.profile.coop
-    chores = Chore.objects.filter(skeleton__coop=coop)
+    chores = Chore.objects.for_coop(coop)
     chores_by_date = []
     for date in chores.dates('start_date', 'day', 'ASC'):
         chores_today = chores.filter(start_date=date)\
@@ -447,20 +398,11 @@ def all_users(response):
 def one_user(response, username):
     user = User.objects.get(username=username)
     coop = user.profile.coop
-    obligations = get_obligations(user, coop=coop)
-    cycles = obligations['cycles']
-    list_information = obligations['list_information']
-    table_information = obligations['table_information']
-    for x in table_information:
-        print(x)
-        print('')
     render_dictionary = {
         'coop': coop,
         'cooper': user,
-        'list_information': list_information,
-        'table_information': table_information,
-        'point_cycles': cycles
     }
+    render_dictionary.update(get_obligations(user, coop=coop))
     return render(response, 'chores/me.html', dictionary=render_dictionary)
 
 def create_calendar(response, username):

@@ -2,6 +2,69 @@
 # DELETE ME WHEN READY
 ######################
 
+
+######################################
+# from inside get_obligations function
+######################################
+    # Rearranging. TODO: could make this automatic, like by using the same
+    # strings? That seems prone to breaking.
+    for display_data in [list_data, table_data]:
+        for i, key in enumerate(display_data):
+            display_data[i] = data[key]
+    # TODO: hopefully in rewriting the above you get rid of this repeated
+    # code, here and further below.
+    data_for_templates = {'list_for_templates': [], 'table_for_templates': []}
+    structures_for_templates = {'list_for_templates': list_structure,
+                                'table_for_templates': table_structure}
+    list_for_template = []
+    table_for_template = []
+    for key in data_for_templates:
+        for i, section in enumerate(list_structure['sections']):
+            list_for_template.append({'title': section, 'sections': []})
+            for subsection in list_structure['subsections'][i]:
+                list_for_template[i]['sections'].append({
+                    'title': subsection,
+                    'items': list_data[subsection]['items'],
+                })
+
+
+
+    for i, section in enumerate(list_structure['sections']):
+        list_for_template.append({'title': section, 'sections': []})
+        for subsection in list_structure['subsections'][i]:
+            list_for_template[i]['sections'].append({
+                'title': subsection,
+                'items': list_data[subsection]['items'],
+            })
+    for i, section in enumerate(table_structure['sections']):
+        table_for_template.append({'title': section, 'sections': []})
+        for subsection in table_structure['subsections'][i]:
+            table_for_template[i]['sections'].append({
+                'title': subsection,
+                'items': table_data[subsection]['items'],
+                'html_titles': table_data[subsection]['html_titles']
+            })
+    data_for_templates['cycles'] = cycles
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def transpose(dictionaries, keys=None):
     '''
     Returns a dictionary with keys `keys` and values lists whose elements are
@@ -13,6 +76,15 @@ def transpose(dictionaries, keys=None):
     return {
         key: [dictionary[key] for dictionary in dictionaries] for key in keys
     }
+
+def sum_chores(chores):
+    '''
+    Returns the sum of the point values of the chores in `chores` and a string
+containing all their names.
+    '''
+    return {'total': sum(map(lambda x: x['skeleton__point_value'],
+                             chores.values('skeleton__point_value'))),
+            'concatenated_items': ', '.join(map(str, chores))}
 
 def consolidate(dictionaries, keys=None):
     '''

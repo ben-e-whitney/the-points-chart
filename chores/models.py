@@ -3,93 +3,99 @@ from django.db import models, connection
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
+# See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
+from model_utils.managers import PassThroughManager
 
 import datetime
 import itertools
 
-class TimeWindowManager(models.Manager):
+class ChoreQuerySet(models.query.QuerySet):
 
-    '''
-    Extends models.Manager, adding a few filtering methods for convenience.
-    '''
-
-    def in_window(self, coop, start_date, stop_date):
+    def for_coop(self, coop):
         '''
         Query the model database and return an iterator of Chore instances.
 
         Arguments:
-            coop       -- Group whose chores we are interested in.
-            start_date -- Beginning of time window.
-            stop_date  -- End of the time window.
+            coop -- Group whose chores we are interested in.
 
-        Return an iterator yielding those chores which belong to the given
-        `coop`, which start after or on `start_date`, and which end before or
-        on `stop_date`. The results are ordered by starting date.
+        Return an iterator yielding those chores which belong to `coop`.
         '''
+        return self.filter(skeleton__coop=coop)
 
-        # TODO: check whether you can first filter by skeleton__coop and sort,
-        # and optionally later filter by start and stop dates (while preserving
-        # the ordering).
-        if start_date is None or stop_date is None:
-            return self.filter(skeleton__coop=coop).order_by('start_date')
+    def in_window(self, window_start_date, window_stop_date):
+        '''
+        Query the model database and return an iterator of Chore instances.
+
+        Arguments:
+            window_start_date -- Beginning of time window.
+            window_stop_date  -- End of the time window.
+
+        Return those chores which start after or on `window_start_date` and
+        before or on `window_stop_date`. We do not impose any requirements on
+        the stop date to avoid that problem of chores that straddle multiple
+        cycles not being considered to fall in any one of those cycles. The
+        results are ordered by start date.
+        '''
+        return self.filter(
+            start_date__gte=window_start_date,
+            start_date__lte=window_stop_date
+        ).order_by('start_date')
+
+    def signature_check(self, cooper, bool_, sig_name):
+        '''
+        Query the model database and return an iterator of Chore instances.
+
+        Arguments:
+            cooper   -- A User or `None`.
+            bool_    -- Boolean determining whether we want Signature to have
+                been signed.
+            sig_name -- Name of the Signature field we are checking against.
+
+        Return an iterator yielding those chores which have (if `bool_`) or
+        haven't (if `not bool_`) their `sig_name` Signature signed. If `cooper`
+        is None, we don't make any additional demands. If `cooper' is a User,
+        we ask that it be this User that has signed. To be clear:
+            self.signature_check(False, cooper, 'signed_up')
+        will return all chores except those on which `cooper` has signed off.
+        '''
+        kwargs = {sig_name+'__who': cooper}
+        # No cooper specified, so we're just asking generally.
+        if cooper is None:
+            if bool_:
+                return self.exclude(**kwargs)
+            else:
+                return self.filter(**kwargs)
+        # If a cooper is specified, we want that person to be the one having
+        # signed up.
         else:
-            return self.filter(
-               skeleton__coop=coop,
-               start_date__lte=start_date,
-               stop_date__gte=stop_date,
-            ).order_by('start_date')
+            if bool_:
+                return self.filter(**kwargs)
+            else:
+                return self.exclude(**kwargs)
 
-    def signed(self, *args, signatures=None, users=itertools.repeat(None),
-               desired_booleans=itertools.repeat(True)):
-        # TODO: make other docstrings like this. See
-        # <http://legacy.python.org/dev/peps/pep-0257/.
+    def signed_up(self, cooper, bool_):
         '''
-        Calls `in_window` with given arguments and filters based on Signatures.
-
-        Keyword arguments:
-            signatures       -- Iterable that yields attributes that
-                `self.model` has as ForeignKeys to a Signature object.
-            users            -- Iterable yielding a User (for when we care
-                whether a given User has signed the corresponding Signature) or
-                `None` (for when we only care whether any User has signed it).
-            desired_booleans -- Iterable that yields Booleans we want the
-                comparison involving the User and the Signature to return. See
-                `acceptable` method for details.
-
-        Returns an iterator of `self.model` object matches.
-        Careful: if `signatures` is `['voided']`, `users` is `['None']`, and
-        `desired_booleans` is ['True'], then chores which some User (*not*
-        no/'None' User) has voided will be returned.
+        Calls `signature_check` with signature name 'signed_up'.
         '''
+        return self.signature_check(cooper, bool_, 'signed_up')
 
-        def acceptable(chore):
-            '''
-            Judges whether chore satisfies criteria and returns a Boolean.
+    def signed_off(self, cooper, bool_):
+        '''
+        Calls `signature_check` with signature name 'signed_off'.
+        '''
+        return self.signature_check(cooper, bool_, 'signed_off')
 
-            Arguments:
-                chore -- Chore (or similar) instance which is to be tested.
-
-            `chore` is judged acceptable if each Signature object in
-            `signatures` is signed off or signed off by the corresponding User.
-            '''
-            test_results = []
-            for sig, user, desired_bool in zip(signatures, users,
-                                               desired_booleans):
-                if user is None:
-                    result = bool(getattr(chore, sig))
-                else:
-                    result = getattr(chore, sig).who == user
-                test_results.append(result)
-            return all(test_results)
-
-        # TODO: decide what this should return!
-        return list(chore for chore in self.in_window(*args)
-                    if acceptable(chore))
+    def voided(self, cooper, bool_):
+        '''
+        Calls `signature_check` with signature name 'voided'.
+        '''
+        return self.signature_check(cooper, bool_, 'voided')
 
 class Signature(models.Model):
     who = models.ForeignKey(User, null=True, blank=True,
                             related_name='signature')
     when = models.DateTimeField(null=True, blank=True)
+
     def __bool__(self):
         return self.who is not None
 
@@ -138,6 +144,7 @@ class Skeleton(models.Model):
     def __str__(self):
         return '{sn} Skeleton at {co}'.format(sn=self.short_name,
                                      co=self.coop.name)
+
 class ChoreSkeleton(Skeleton):
     point_value = models.PositiveSmallIntegerField()
     start_time = models.TimeField()
@@ -145,7 +152,7 @@ class ChoreSkeleton(Skeleton):
 
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')
-    objects = TimeWindowManager()
+    objects = PassThroughManager.for_queryset_class(ChoreQuerySet)()
     def __str__(self):
         return '{cn} on {da} at {co}'.format(cn=self.skeleton.short_name,
                              da=self.start_date, co=self.skeleton.coop.name)

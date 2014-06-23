@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 
+import json
 import datetime
 from chores.models import Chore
 
