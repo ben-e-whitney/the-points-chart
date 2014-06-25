@@ -1,55 +1,47 @@
-var signUp = function(chore_id) {
-  //Using a closure for something. Forget what.
-  var xhr = new XMLHttpRequest();
-  //Could add some error catching here in the case of very old browsers.
-  xhr.onreadystatechange = function() {
-    if (this.readyState == 4) {
-      if (this.status == 200) {
-        var responseAsObject = JSON.parse(this.response);
-        var elementIdPrefixes = ["sign_up_sentence", "sign_off_sentence"];
-        elementIdPrefixes.forEach(function(key) {
-          document.getElementById(key+"_"+chore_id).innerHTML =
-            responseAsObject[key];
-          return null;
-        })
-        //TODO: use classList.toggle here instead?
-        document.getElementById("chore_"+chore_id).classList.remove(
-            "needs_sign_up")
-        document.getElementById("chore_"+chore_id).classList.add(
-            "user_signed_up")
-        document.getElementById("chore_"+chore_id).classList.add(
-            "needs_sign_off")
-      } else if (this.status == 403) {
-        alert('Error: '+this.statusText+this.responseText);
+var replaceSentencesCreator = function(chore_id) {
+  var replaceSentences = function(data, textStatus, jqXHR) {
+    var responseAsObject = JSON.parse(data);
+    responseAsObject.sentences.forEach(function(sentence) {
+      var sentenceElement = $('#'+sentence.identifier+'_sentence_'+chore_id);
+      sentenceElement.empty();
+      if (sentence.report) {
+        sentenceElement.append(sentence.report_text);
       }
-    }
+      if (sentence.button) {
+        sentenceElement.append('<button class="'+sentence.identifier+'_button"'+
+          'id="'+sentence.identifier+'_button_'+chore_id+'"'+
+          'onclick="'+sentence.JavaScript_function+'('+chore_id+')">'+
+          sentence.button_text+'</button>');
+      }
+      return null;
+    });
+    var choreElement = $('#chore_'+chore_id);
+    choreElement.removeClass();
+    choreElement.addClass(responseAsObject.css_classes);
+    return null;
   };
-  xhr.open('POST', '/chores/sign_up/'+chore_id+'/', true);
-  xhr.send(null);
-}
+  return replaceSentences;
+};
 
-var signOff = function(chore_id) {
-  var xhr = new XMLHttpRequest();
-  //Could add some error catching here in the case of very old browsers.
-  xhr.onreadystatechange = function() {
-    if (this.readyState == 4) {
-      if (this.status == 200) {
-        var responseAsObject = JSON.parse(this.response);
-        var elementIdPrefixes = ["sign_off_sentence"];
-        elementIdPrefixes.forEach(function(key) {
-          document.getElementById(key+"_"+chore_id).innerHTML =
-            responseAsObject[key];
-          return null;
-        })
-        document.getElementById("chore_"+chore_id).classList.remove(
-            "needs_sign_off")
-        document.getElementById("chore_"+chore_id).classList.add(
-            "user_signed_off")
-      } else if (this.status == 403) {
-        alert('Error: '+this.statusText+this.responseText);
-      }
-    }
+var AJAXCreator = function(URL_function) {
+  var inner = function(chore_id) {
+  $.ajax({
+    url: '/chores/'+URL_function+'/'+chore_id+'/',
+    type: 'POST',
+    async: true,
+    success: replaceSentencesCreator(chore_id),
+    error: function(jqXHR, textStatus, errorThrown) {
+      alert('Error: '+jqXHR.statusText+jqXHR.responseText);
+    },
+    complete: function() {}
+  });
   };
-  xhr.open('POST', '/chores/sign_off/'+chore_id+'/', true);
-  xhr.send(null);
-}
+  return inner;
+};
+
+var signUpChore        = AJAXCreator('sign_up');
+var signOffChore       = AJAXCreator('sign_off');
+var voidChore          = AJAXCreator('void');
+var revertSignUpChore  = AJAXCreator('revert_sign_up');
+var revertSignOffChore = AJAXCreator('revert_sign_off');
+var revertVoidChore    = AJAXCreator('revert_void');

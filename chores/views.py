@@ -128,9 +128,11 @@ def get_obligations(user, coop=None):
         'all chores': all_chores,
         'upcoming chores': all_chores.in_window(upcoming_lower_boundary,
                                                 upcoming_upper_boundary),
-        'voided': all_chores.voided(user, True),
-        'signed off': all_chores.signed_off(user, True),
-        'not signed off': all_chores.signed_off(user, False),
+        # For these next three it doesn't matter who has (or hasn't) signed.
+        # off. Putting no checks for validity here.
+        'voided': all_chores.voided(None, True),
+        'signed off': all_chores.signed_off(None, True),
+        'not signed off': all_chores.signed_off(None, False),
         'all stewardships': all_stewardships,
         # TODO: could new QuerySets/models/whatever in for these.
         'stewardships': all_stewardships.filter(
@@ -283,6 +285,147 @@ def calculate_loads(user, coop=None):
 def index(response):
     return HttpResponse('Welcome to the points chart.')
 
+# TODO: another option (attractive) would be to put all of this as methods of
+# the Signature model. I think we would want to subclass that class, but all
+# for the sake of including some view logic in the model? Not sure what is the
+# best course.
+# TODO: possibly roll in the 'calculating' of the CSS classes with this? Some
+# repetition of logic going on.
+class ChoreSentence():
+    chore_attribute = None
+    past_participle = None
+    verb_phrase = None
+    button_action_text = None
+    button_reversion_text = None
+    JavaScript_action_function = None
+    JavaScript_reversion_function = None
+    action_permitted_attribute = None
+    reversion_permitted_attribute = None
+    # Attributes used for the JSON dict. Need to have fallback values.
+    identifier = None
+    button = None
+    button_text = None
+    report = None
+    report_text = None
+    JavaScript_function = None
+
+    # TODO: just stripped out premature optimization with caching the current
+    # date/datetime. Can reinsert if needed.
+    def __init__(self, user, chore, chore_attribute=None):
+        if chore_attribute is not None:
+            self.chore_attribute = chore_attribute
+        # Otherwise use the class attribute.
+        self.current_datetime = datetime.datetime.now()
+        self.current_date = self.current_datetime.date()
+        self.user = user
+        self.chore = chore
+        self.signature = getattr(self.chore, self.chore_attribute)
+        self.owner = self.signature.who
+        self.identifier = self.chore_attribute
+        self.get_button()
+        self.get_report()
+
+    def action_permitted(self):
+        return getattr(self.chore, self.action_permitted_attribute)()
+
+    def reversion_permitted(self):
+        return getattr(self.chore, self.reversion_permitted_attribute)()
+
+    def get_button(self):
+        if self.action_permitted():
+            self.button = True
+            self.JavaScript_function = self.JavaScript_action_function
+            self.button_text = self.button_action_text
+        else:
+            if self.reversion_permitted():
+                self.button = True
+                self.JavaScript_function = self.JavaScript_reversion_function
+                self.button_text = self.button_reversion_text
+            else:
+                self.button = False
+
+    def current_report_text(self):
+        return '{beg} {end}'.format(
+            beg='You are' if self.owner == self.user else '{nam} is'.format(
+                nam=self.owner.profile.nickname),
+            end=self.adjectival_phrase)
+
+    def past_report_text(self):
+        return '{nam} {vpp}.'.format(nam='You' if self.owner == self.user else
+            self.owner.profile.nickname, vpp=self.past_participle)
+
+    def get_report(self):
+        # TODO: worth an `in_the_future`-style method for this? Or give that
+        # method an option or something?
+        self.report = self.signature
+        if self.report:
+            if self.current_date <= self.chore.start_date:
+                self.report_text = self.current_report_text()
+            else:
+                self.report_text = self.past_report_text()
+        else:
+            self.report_text = None
+
+    def dict_for_json(self):
+        return {
+            'identifier': self.identifier,
+            'button': self.button,
+            'button_text': self.button_text,
+            # Need to explicity convert to Boolean here so that JSON doesn't
+            # complain when it is dealt a Signature. For now this is not
+            # necessary with `self.button`.
+            'report': bool(self.report),
+            'report_text': self.report_text,
+            'JavaScript_function': self.JavaScript_function
+        }
+
+class VoidSentence(ChoreSentence):
+    chore_attribute = 'voided'
+    past_participle = 'voided'
+    button_action_text = 'Void'
+    button_reversion_text = 'Revert Void'
+    # Remember that `void` is a JavaScript operator.
+    JavaScript_action_function = 'voidChore'
+    JavaScript_reversion_function = 'revertVoidChore'
+    action_permitted_attribute = 'void_permitted'
+    reversion_permitted_attribute = 'revert_void_permitted'
+
+    def current_report_text(self):
+        return '{nam} {vpp}.'.format(
+            nam='You' if self.owner == self.user else self.owner.nickname,
+            vpp=self.past_participle)
+
+    past_report_text = current_report_text
+
+class SignUpSentence(ChoreSentence):
+    chore_attribute = 'signed_up'
+    past_participle = 'signed up'
+    verb_phrase = 'signed up'
+    button_action_text = 'Sign Up'
+    button_reversion_text = 'Revert Sign-Up'
+    JavaScript_action_function = 'signUpChore'
+    JavaScript_reversion_function = 'revertSignUpChore'
+    action_permitted_attribute = 'sign_up_permitted'
+    reversion_permitted_attribute = 'revert_sign_up_permitted'
+
+class SignOffSentence(ChoreSentence):
+    chore_attribute = 'signed_off'
+    past_participle = 'signed off'
+    verb_phrase = 'signed off'
+    button_action_text = 'Sign Off'
+    button_reversion_text = 'Revert Sign-Off'
+    JavaScript_action_function = 'signOffChore'
+    JavaScript_reversion_function = 'revertSignOffChore'
+    action_permitted_attribute = 'sign_off_permitted'
+    reversion_permitted_attribute = 'revert_sign_off_permitted'
+
+def get_chore_sentences(user, chore):
+    return [
+        SignUpSentence(user, chore),
+        SignOffSentence(user, chore),
+        VoidSentence(user, chore)
+    ]
+
 @login_required()
 def all_users(response):
 
@@ -299,60 +442,6 @@ def all_users(response):
             'distant_future': timedelta_in_interval(3, difference, None)
         }
         return ' '.join([key for key,value in css_classes.items() if value])
-
-    def find_chore_classes(chore, user):
-        # TODO: do we need to make sure that we always return at least one
-        # class?
-        '''
-        Sets flags relating to `chores` that are read by the template. The
-        actual formatting information is kept in a CSS file.
-        '''
-        # TODO: currently unused. Unsure if this level of granularity is
-        # desired.
-        # end_time = datetime.datetime.combine(chore.start_date,
-        #                                      chore.end_time)
-        now = datetime.date.today()
-        css_classes = {
-            'needs_sign_up' : not chore.signed_up and not chore.voided,
-            'needs_sign_off': chore.signed_up and not chore.signed_off \
-                and not chore.voided and now > chore.start_date,
-            'voided': chore.voided,
-            'user_signed_up' : user == chore.signed_up.who,
-            'user_signed_off': user == chore.signed_off.who
-        }
-        return ' '.join([key for key,value in css_classes.items() if value])
-
-    def find_sign_up_sentence(chore, user):
-        if not chore.signed_up:
-            return None
-        sentence = ''
-        now = datetime.date.today()
-        # TODO: try to get rid of repetition here.
-        if user == chore.signed_up.who:
-            sentence += 'You'
-            if now <= chore.start_date:
-                sentence += ' are'
-        else:
-            sentence += chore.signed_up.who.profile.nickname
-            if now <= chore.start_date:
-                sentence += ' is'
-        sentence += ' signed up.'
-        return sentence
-
-    def find_sign_off_sentence(chore, user):
-        if not chore.signed_off:
-            # If in addition it is the user who has signed off, we will display
-            # a sentence reminding the user to get someone to sign off.
-            # Currently this sentence is in the template. Could move it to this
-            # file, though we've probably have to introduce some new stuff.
-            # TODO: figure out how to do this cleanly. Maybe we just need to
-            # introduce a flag/class for 'not signed off, but it's today so we
-            # don't need one yet.'
-            return ''
-            # return None
-        return '{nam} signed off.'.format(nam='You'
-            if user == chore.signed_off.who else
-            chore.signed_off.who.profile.nickname)
 
     weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
                 'Saturday', 'Sunday']
@@ -372,13 +461,12 @@ def all_users(response):
                                     'skeleton__short_name')
         chore_dicts = []
         for chore in chores_today:
+            # TODO: could make some sort of `sentence_args` and
+            # `sentence_kwargs` variables to feed into these.
             chore_dicts.append({
                 'chore': chore,
-                'class': find_chore_classes(chore, response.user),
-                'sign_up_sentence' : find_sign_up_sentence(chore,
-                                                           response.user),
-                'sign_off_sentence': find_sign_off_sentence(chore,
-                                                            response.user)
+                'class': chore.find_CSS_classes(response.user),
+                'sentences': get_chore_sentences(response.user, chore)
             })
 
         chores_by_date.append({

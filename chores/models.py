@@ -108,6 +108,12 @@ class Signature(models.Model):
     def sign(self, user):
         self.who = user
         self.when = datetime.datetime.now()
+        self.save()
+
+    def clear(self):
+        self.who = None
+        self.when = None
+        self.save()
 
 class Timecard(models.Model):
     # TODO: making this into an abstract class causes validation to fail
@@ -127,6 +133,74 @@ class Timecard(models.Model):
             else '<NO CO-OP SET>'
         return '{cn} at {co} with {per} signed up'\
             .format(cn=self.__class__.__name__, co=coop, per=person)
+
+    # Methods for use in the following. If you end up doing stuff like this,
+    # could prepend the function names with however many underscores.
+    def resolved(self):
+        return self.signed_off or self.voided
+
+    def completed(self):
+        return self.signed_up and self.signed_off
+
+    def in_the_future(self):
+        comparison_date = datetime.date.today()
+        return self.start_date > comparison_date
+
+    # These methods return whether any co-oper at all should be allowed to
+    # perform the given action on `self`.
+    # TODO: change 'sign_up' and 'sign_off' to 'sign-up' and 'sign-off'?
+    def sign_up_permitted(self):
+        return (not self.signed_up) and (not self.voided)
+
+    def sign_off_permitted(self):
+        return (not self.resolved() and not self.in_the_future() and
+            self.signed_up)
+
+    # Could make the argument that voiding should be allowed even when someone
+    # has signed off (overriding that person). For now we can void a signed up/
+    # signed off chore by reverting the sign-off and then voiding, or by using
+    # the admin interface.
+    # TODO: are there going to be timezone problems here?
+    def void_permitted(self):
+        return not self.resolved() and not self.in_the_future()
+
+    def revert_sign_up_permitted(self):
+        # TODO: Maybe this should be a parameter for the co-op. For the chore?
+        # I hope not!
+        too_close = (self.start_date-datetime.date.today() <
+            datetime.timedelta(days=2))
+        return self.signed_up and not self.resolved() and not too_close
+
+    def revert_sign_off_permitted(self):
+        return self.signed_off
+
+    def revert_void_permitted(self):
+        return self.voided
+
+    def find_CSS_classes(self, user):
+        '''
+        Sets flags relating to `chores` that are read by the template. The
+        actual formatting information is kept in a CSS file.
+        '''
+        current_date = datetime.date.today()
+        # TODO: to remove once we verify new way is working.
+        # css_classes = {
+            # 'needs_sign_up' : not chore.signed_up and not chore.voided,
+            # 'needs_sign_off': chore.signed_up and not chore.signed_off \
+                # and not chore.voided and current_date > chore.start_date,
+            # 'voided': chore.voided,
+            # 'user_signed_up' : user == chore.signed_up.who,
+            # 'user_signed_off': user == chore.signed_off.who
+        # }
+        css_classes = {
+            'needs_sign_up': self.sign_up_permitted(),
+            'needs_sign_off': self.sign_off_permitted(),
+            'voided': self.revert_void_permitted(),
+            'user_signed_up': user == self.signed_up.who,
+            'user_signed_off': user == self.signed_off.who,
+            'user_voided': user == self.voided.who
+        }
+        return ' '.join([key for key, bool_ in css_classes.items() if bool_])
 
 class Skeleton(models.Model):
     class Meta:

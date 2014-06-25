@@ -2,8 +2,13 @@
 
 {% block head %}
 {% load staticfiles %}
-<script type="text/javascript" src={% static "chores/all_chores.js" %}>
-</script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<!--<script type="text/javascript" src="file:///home/bew/Desktop/toDelete/test/script.js"></script>-->
+<!--<script type="text/javascript" src="">-->
+<!--var signUpChore = function() {alert('sign up');};-->
+<!--var voidChore = function() {alert('voider');};-->
+<!--</script>-->
+<script src={% static "chores/all_chores.js" %}></script>
 {% endblock head %}
 
 {% block pagetitle %}
@@ -21,31 +26,18 @@ All Chores.
 	<ul>
 		{% for schedule_item in day.schedule %}
 			<li class="{{ schedule_item.class }}" id="chore_{{ schedule_item.chore.id }}"> <strong>{{ schedule_item.chore.skeleton.short_name }}.</strong>
-			<span id="sign_up_sentence_{{ schedule_item.chore.id }}">
-				{% if "needs_sign_up" in schedule_item.class %}
-				{% comment %}
-				TODO: understand this syntax/escaping stuff. Better yet, figure out a way to assign these handlers with
-				JavaScript. How to do this when we don't know beforehand what the ids will be?
-				Lucked out, escaping thing not necessary. Still look into using JavaScript.
-				{% endcomment %}
-				<button style="sign_up_button" onclick="signUp({{ schedule_item.chore.id }})">Sign up</button>
-				{% else %}
-					{{ schedule_item.sign_up_sentence }}
-				{% endif %}
-			</span>
-			<span id="sign_off_sentence_{{ schedule_item.chore.id }}">
-				{% if "needs_sign_up" not in schedule_item.class %}
-					{% if "needs_sign_off" not in schedule_item.class %}
-						{{ schedule_item.sign_off_sentence }}
-					{% else %}
-						{% if "user_signed_up" not in schedule_item.class %}
-							<button style="sign_off_button" onclick="signOff({{ schedule_item.chore.id }})">Sign off</button>
-						{% else %}
-							Sign-off needed!
-						{% endif %}
+			{% for sentence in schedule_item.sentences %}
+				<span id="{{ sentence.identifier }}_sentence_{{ schedule_item.chore.id }}">
+					{% if sentence.report %}
+						{{ sentence.report_text }}
 					{% endif %}
-				{% endif %}
-			</span>
+					{% if sentence.button %}
+					<button class="{{ sentence.identifier }}_button" id="{{ sentence.identifier }}_button_{{ schedule_item.chore.id }}" onclick="{{ sentence.JavaScript_function }}({{ schedule_item.chore.id }})">
+							{{ sentence.button_text }}
+					</button>
+					{% endif %}
+				</span>
+			{% endfor %}
 		{% endfor %}
 	</ul>
 	</div>
