@@ -26,7 +26,7 @@ var replaceSentencesCreator = function(chore_id) {
 var AJAXCreator = function(URL_function) {
   var inner = function(chore_id) {
   $.ajax({
-    url: '/chores/'+URL_function+'/'+chore_id+'/',
+    url: '/chores/actions/'+URL_function+'/'+chore_id+'/',
     type: 'POST',
     async: true,
     success: replaceSentencesCreator(chore_id),

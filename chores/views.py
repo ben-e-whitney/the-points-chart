@@ -119,8 +119,8 @@ def get_obligations(user, coop=None):
         coop = user.profile.coop
 
     upcoming_lower_boundary = datetime.date.today()
-    upcoming_upper_boundary = upcoming_lower_boundary+\
-            datetime.timedelta(days=coop.profile.release_buffer)
+    upcoming_upper_boundary = (upcoming_lower_boundary+
+            datetime.timedelta(days=coop.profile.release_buffer))
     all_chores = Chore.objects.for_coop(coop).signed_up(user, True)
     all_stewardships = Stewardship.objects.for_coop(coop).signed_up(
         user, True)
@@ -294,13 +294,13 @@ def index(response):
 class ChoreSentence():
     chore_attribute = None
     past_participle = None
-    verb_phrase = None
+    adjectival_phrase = None
     button_action_text = None
     button_reversion_text = None
     JavaScript_action_function = None
     JavaScript_reversion_function = None
-    action_permitted_attribute = None
-    reversion_permitted_attribute = None
+    action_permission_attribute = None
+    reversion_permission_attribute = None
     # Attributes used for the JSON dict. Need to have fallback values.
     identifier = None
     button = None
@@ -326,10 +326,12 @@ class ChoreSentence():
         self.get_report()
 
     def action_permitted(self):
-        return getattr(self.chore, self.action_permitted_attribute)()
+        return getattr(self.chore, self.action_permission_attribute)(
+            self.user)['boolean']
 
     def reversion_permitted(self):
-        return getattr(self.chore, self.reversion_permitted_attribute)()
+        return getattr(self.chore, self.reversion_permission_attribute)(
+            self.user)['boolean']
 
     def get_button(self):
         if self.action_permitted():
@@ -387,8 +389,8 @@ class VoidSentence(ChoreSentence):
     # Remember that `void` is a JavaScript operator.
     JavaScript_action_function = 'voidChore'
     JavaScript_reversion_function = 'revertVoidChore'
-    action_permitted_attribute = 'void_permitted'
-    reversion_permitted_attribute = 'revert_void_permitted'
+    action_permission_attribute = 'void_permission'
+    reversion_permission_attribute = 'revert_void_permission'
 
     def current_report_text(self):
         return '{nam} {vpp}.'.format(
@@ -400,24 +402,24 @@ class VoidSentence(ChoreSentence):
 class SignUpSentence(ChoreSentence):
     chore_attribute = 'signed_up'
     past_participle = 'signed up'
-    verb_phrase = 'signed up'
+    adjectival_phrase = 'signed up'
     button_action_text = 'Sign Up'
     button_reversion_text = 'Revert Sign-Up'
     JavaScript_action_function = 'signUpChore'
     JavaScript_reversion_function = 'revertSignUpChore'
-    action_permitted_attribute = 'sign_up_permitted'
-    reversion_permitted_attribute = 'revert_sign_up_permitted'
+    action_permission_attribute = 'sign_up_permission'
+    reversion_permission_attribute = 'revert_sign_up_permission'
 
 class SignOffSentence(ChoreSentence):
     chore_attribute = 'signed_off'
     past_participle = 'signed off'
-    verb_phrase = 'signed off'
+    adjectival_phrase = 'signed off'
     button_action_text = 'Sign Off'
     button_reversion_text = 'Revert Sign-Off'
     JavaScript_action_function = 'signOffChore'
     JavaScript_reversion_function = 'revertSignOffChore'
-    action_permitted_attribute = 'sign_off_permitted'
-    reversion_permitted_attribute = 'revert_sign_off_permitted'
+    action_permission_attribute = 'sign_off_permission'
+    reversion_permission_attribute = 'revert_sign_off_permission'
 
 def get_chore_sentences(user, chore):
     return [

@@ -6,8 +6,38 @@ from django.contrib.auth.models import User, Group
 # See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
 from model_utils.managers import PassThroughManager
 
+import pytz
 import datetime
 import itertools
+import functools
+
+# TODO: how do we tie the `signed_up` property, the `sign_up_permission` etc.
+# methods, 'sign up' as a verb, the JavaScript function names, etc?
+
+def timedelta_pretty_print(timedelta):
+    # TODO: this needs testing (including edge conditions).
+    pretty_print = ''
+    abs_td = abs(timedelta)
+    if abs_td < datetime.timedelta(seconds=60):
+        pretty_print += '{num} seconds'.format(num=abs_td.seconds)
+    elif abs_td < datetime.timedelta(seconds=60**2):
+    # For consistency I am not using rounding for these next two. See
+    # <https://docs.python.org/3/library/datetime.html#timedelta-objects>.
+        pretty_print += '{num} minutes'.format(num=abs_td.seconds//60)
+    elif abs_td < datetime.timedelta(days=1):
+        pretty_print += '{num} hours'.format(num=abs_td.seconds//60**2)
+    else:
+        pretty_print += '{num} days'.format(num=abs.td.days)
+    # TODO: based on this, in the description of this function we should note
+    # whether it expects 'now-then' or 'then-now'.
+    if timedelta >= datetime.timedelta(0):
+        pretty_print += ' ago'
+    else:
+        pretty_print += ' from now'
+    return pretty_print
+
+class ChoreError(Exception):
+    pass
 
 class ChoreQuerySet(models.query.QuerySet):
 
@@ -110,6 +140,11 @@ class Signature(models.Model):
         self.when = datetime.datetime.now()
         self.save()
 
+    # TODO: maybe we should save here and not in `clear`?
+    def revert(self, user):
+        # Placeholder for any future logic.
+        self.clear()
+
     def clear(self):
         self.who = None
         self.when = None
@@ -146,36 +181,240 @@ class Timecard(models.Model):
         comparison_date = datetime.date.today()
         return self.start_date > comparison_date
 
-    # These methods return whether any co-oper at all should be allowed to
-    # perform the given action on `self`.
-    # TODO: change 'sign_up' and 'sign_off' to 'sign-up' and 'sign-off'?
-    def sign_up_permitted(self):
-        return (not self.signed_up) and (not self.voided)
-
-    def sign_off_permitted(self):
-        return (not self.resolved() and not self.in_the_future() and
-            self.signed_up)
+    def get_scoop_message(self, user, attribute, verb):
+        owner = getattr(self, attribute).who
+        return '{coo} {ver} this chore {tdp}.'.format(
+            coo='You' if owner == user else owner.profile.nickname,
+            ver=verb,
+            # TODO: make sure that you're not making an assumption about the
+            # timezone here. TODO: this was `datetime.datetime.now(pytz.utc)`.
+            # Removing `pytz.utc` both to make it work and for a reminder that
+            # we have to resolve this.
+            # TODO: error can happen here if you have a Signature with a
+            # co-oper but no datetime (will be subtracting a datetime with
+            # `None`. Figure out what to do.
+            tdp=(timedelta_pretty_print(datetime.datetime.now()-
+                getattr(self, attribute).when))
+        )
 
     # Could make the argument that voiding should be allowed even when someone
     # has signed off (overriding that person). For now we can void a signed up/
     # signed off chore by reverting the sign-off and then voiding, or by using
     # the admin interface.
     # TODO: are there going to be timezone problems here?
-    def void_permitted(self):
-        return not self.resolved() and not self.in_the_future()
 
-    def revert_sign_up_permitted(self):
-        # TODO: Maybe this should be a parameter for the co-op. For the chore?
-        # I hope not!
-        too_close = (self.start_date-datetime.date.today() <
-            datetime.timedelta(days=2))
-        return self.signed_up and not self.resolved() and not too_close
+    def permission_creator(conditions, potential_msgs):
+        # TODO: mark in docstring that `conditions`/`potential_msgs` should be
+        # ordered according to decreasing priority.
+        def permission(self, user):
+            for condition, potential_msg in zip(conditions, potential_msgs):
+                # TODO: adapt this so that condition need not be callable. This
+                # might not be possible, since I don't think you have a notion
+                # of `self` whenever these are compiled, or whatever. Would
+                # need to wrap them in another method? Tired.
+                if condition(self, user):
+                    if callable(potential_msg):
+                        message = potential_msg(self, user)
+                    else:
+                        message = potential_msg
+                    return {'boolean': False, 'message': message}
+            return {'boolean': True, 'message': ''}
+        return permission
 
-    def revert_sign_off_permitted(self):
-        return self.signed_off
+    # TODO: change 'sign_up' and 'sign_off' to 'sign-up' and 'sign-off'?
+    sign_up_permission = permission_creator(
+        [
+            lambda self, user: self.voided,
+            lambda self, user: self.signed_up
+        ], [
+            lambda self, user: self.get_scoop_message(user, 'voided',
+                                                      'voided'),
+            lambda self, user: self.get_scoop_message(user, 'signed_up',
+                                             'signed up for')
+        ]
+    )
+    sign_off_permission = permission_creator(
+        [
+            lambda self, user: not self.signed_up,
+            lambda self, user: self.signed_up.who == user,
+            lambda self, user: self.in_the_future(),
+            lambda self, user: self.signed_off,
+            lambda self, user: self.voided
+        ], [
+            'No one has signed up for that chore.',
+            "You can't sign off on your own chore.",
+            "You can't sign off on a chore before it has been done.",
+            lambda self, user: self.get_scoop_message(user, 'signed_off',
+                                             'signed off on'),
+            lambda self, user: self.get_scoop_message(user, 'voided',
+                                                      'voided')
+        ]
+    )
+    void_permission = permission_creator(
+        [
+            lambda self, user: self.in_the_future(),
+            lambda self, user: self.voided,
+            lambda self, user: self.signed_off
+        ], [
+            "You can't void a chore before it has been done.",
+            lambda self, user: self.get_scoop_message(user, 'voided',
+                                                      'voided'),
+            lambda self, user: self.get_scoop_message(user, 'signed_off',
+                                             'signed off on')
+        ]
+    )
+    revert_sign_up_permission = permission_creator(
+        [
+            lambda self, user: self.signed_up.who != user,
+            lambda self, user: (self.start_date-datetime.date.today() <
+                                datetime.timedelta(days=2)),
+            lambda self, user: self.voided,
+            lambda self, user: self.signed_off
+        ], [
+            "You didn't sign up for that chore.",
+            ("It's too close to the chore. Talk to {ste} if you really can't "
+             'do it.').format(ste=None),
+            lambda self, user: self.get_scoop_message(user, 'voided',
+                                                     'voided'),
+            lambda self, user: self.get_scoop_message(user, 'signed_off',
+                                                      'signed off')
+        ]
+    )
+    revert_sign_off_permission = permission_creator(
+        [lambda self, user: self.signed_off.who != user],
+        "You didn't sign off on that chore.")
+    revert_void_permission = permission_creator(
+        [lambda self, user: self.voided.who != user],
+        "You didn't void that chore.")
 
-    def revert_void_permitted(self):
-        return self.voided
+    # TODO: remove once the other way is working.
+    # def sign_up_permission(self, user):
+        # bool_ = True
+        # message = ''
+        # if self.signed_up:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'signed_up',
+                                             # 'signed up for')
+        # if self.voided:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'voided', 'voided')
+        # return {'boolean': bool_, 'message': message}
+
+    # def sign_off_permission(self, user):
+        # bool_ = True
+        # message = ''
+        # if self.voided:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'voided', 'voided')
+        # if self.signed_off:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'signed_off',
+                                             # 'signed off on')
+        # if self.in_the_future():
+            # bool_ = False
+            # message = "You can't sign off on a chore before it has been done."
+        # if not self.signed_up:
+            # bool_ = False
+            # message = 'No one has signed up for that chore.'
+        # return {'boolean': bool_, 'message': message}
+
+    # def void_permission(self, user):
+        # bool_ = True
+        # message = ''
+        # if self.signed_off:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'signed_off',
+                                             # 'signed off on')
+        # if self.voided:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'voided', 'voided')
+        # if self.in_the_future():
+            # bool_ = False
+            # message = "You can't void a chore before it has been done."
+        # return {'boolean': bool_, 'message': message}
+
+    # def revert_sign_up_permission(self, user):
+        # bool_ = True
+        # message = ''
+        # if self.signed_off:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'signed_off', 'signed off')
+        # if self.voided:
+            # bool_ = False
+            # message = self.get_scoop_message(user, 'voided', 'voided')
+        # # TODO: Maybe this should be a parameter for the co-op. For the chore?
+        # # I hope not!
+        # if (self.start_date-datetime.date.today() <
+            # datetime.timedelta(days=2)):
+            # bool_ = False
+            # # TODO: decide on how to get the name of the points steward.
+            # message = ("It's too close to the chore. Talk to {ste} if you"
+               # "really can't do it.").format(ste=None)
+        # if self.signed_up.who != user:
+            # bool_ = False
+            # message = "You didn't sign up for that chore."
+        # return {'boolean': bool_, 'message': message}
+
+    # def revert_sign_off_permission(self):
+        # bool_ = True
+        # message = ''
+        # if self.signed_off.who != user:
+            # bool_ = False
+            # message = "You didn't sign off on that chore."
+        # return {'boolean': bool_, 'message': message}
+
+    # def revert_void_permission(self):
+        # bool_ = True
+        # message = ''
+        # if self.voided.who != user:
+            # bool_ = False
+            # message = "You didn't void that chore."
+        # return {'boolean': bool_, 'message': message}
+
+    # TODO: remove once the other way is working.
+    # def sign_up(self, user):
+        # permission = self.sign_up_permission()
+        # if permission['boolean']:
+            # self.signed_up.sign(user)
+        # else:
+            # raise ChoreError(permission['message'], status=403)
+
+    # def sign_off(self, user):
+        # permission = self.sign_off_permission()
+        # if permission['boolean']:
+            # self.signed_off.sign(user)
+        # else:
+            # raise ChoreError(permission['message'], status=403)
+
+    # def void(self, user):
+        # permission = self.void_permission()
+        # if permission['boolean']:
+            # self.void.sign(user)
+        # else:
+            # raise ChoreError(permission['message'], status=403)
+
+    def actor_creator(permission_method_name, signature_name, action_name):
+        def actor(self, user):
+            permission = getattr(self, permission_method_name)(user)
+            # raise TypeError(permission)
+            if permission['boolean']:
+                getattr(getattr(self, signature_name), action_name)(user)
+            else:
+                permission.update({'status': 403})
+                raise ChoreError(permission)
+        return actor
+
+    # TODO: should we be using functools for all of this, then? Or maybe for
+    # none of it?
+    signer_creator   = functools.partial(actor_creator, action_name='sign')
+    reverter_creator = functools.partial(actor_creator, action_name='revert')
+    sign_up  = signer_creator('sign_up_permission', 'signed_up')
+    sign_off = signer_creator('sign_off_permission', 'signed_off')
+    void     = signer_creator('void_permission', 'voided')
+    revert_sign_up  = reverter_creator('revert_sign_up_permission', 'signed_up')
+    revert_sign_off = reverter_creator('revert_sign_off_permission',
+                                       'signed_off')
+    revert_void     = reverter_creator('revert_void_permission', 'voided')
 
     def find_CSS_classes(self, user):
         '''
@@ -183,19 +422,11 @@ class Timecard(models.Model):
         actual formatting information is kept in a CSS file.
         '''
         current_date = datetime.date.today()
-        # TODO: to remove once we verify new way is working.
-        # css_classes = {
-            # 'needs_sign_up' : not chore.signed_up and not chore.voided,
-            # 'needs_sign_off': chore.signed_up and not chore.signed_off \
-                # and not chore.voided and current_date > chore.start_date,
-            # 'voided': chore.voided,
-            # 'user_signed_up' : user == chore.signed_up.who,
-            # 'user_signed_off': user == chore.signed_off.who
-        # }
         css_classes = {
-            'needs_sign_up': self.sign_up_permitted(),
-            'needs_sign_off': self.sign_off_permitted(),
-            'voided': self.revert_void_permitted(),
+            # TODO: names are outdated. Need to fix!
+            'needs_sign_up': self.sign_up_permission(user)['boolean'],
+            'needs_sign_off': self.sign_off_permission(user)['boolean'],
+            'voided': self.revert_void_permission(user)['boolean'],
             'user_signed_up': user == self.signed_up.who,
             'user_signed_off': user == self.signed_off.who,
             'user_voided': user == self.voided.who
