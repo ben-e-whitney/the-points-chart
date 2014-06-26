@@ -5,3 +5,4 @@ django-localflavor <https://django-localflavor.readthedocs.org/en/latest/>
 django-model-utils <https://github.com/carljm/django-model-utils>
 jQuery <http://jquery.com/>
 Python-gitignore <https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore>
+Vim-gitignore <https://github.com/github/gitignore/blob/master/Global/vim.gitignore>

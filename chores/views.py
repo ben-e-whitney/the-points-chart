@@ -26,17 +26,6 @@ def make_html_title(chores):
 # TODO: put extra functions and lengthy variable definitions in another file.
 # TODO: name needs improving here.
 
-# TODO: think I can get rid of this. Currently using this is a sign that you
-# are using the wrong data set.
-# def unique(list_):
-    # already_seen = set(())
-    # unique_list = []
-    # for item in list_:
-        # if item not in already_seen:
-            # unique_list.append(item)
-            # already_seen.add(item)
-    # return unique_list
-
 class DisplayInformation():
     def __init__(self, name, structure, keys, processor, format_key):
         self.name = name
@@ -46,16 +35,10 @@ class DisplayInformation():
         self.format_key = format_key
         # TODO: put futher checks here? That or document what structure you're
         # expecting to get.
-        # TODO: get rid of this temporary stuff.
-
         try:
             assert sum(len(section_subsections) for section_subsections in
                        self.structure['subsections']) == len(self.keys)
         except AssertionError as e:
-            # raise AssertionError(
-                # sum(len(section_subsections) for section_subsections in
-                       # self.structure['subsections']), len(self.keys)
-            # )
             raise AssertionError(
                 self.structure['subsections'], self.keys
             )
@@ -289,8 +272,6 @@ def index(response):
 # the Signature model. I think we would want to subclass that class, but all
 # for the sake of including some view logic in the model? Not sure what is the
 # best course.
-# TODO: possibly roll in the 'calculating' of the CSS classes with this? Some
-# repetition of logic going on.
 class ChoreSentence():
     chore_attribute = None
     past_participle = None
