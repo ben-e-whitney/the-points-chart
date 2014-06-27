@@ -16,7 +16,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-with open('SECRET_KEY.txt', 'r') as f:
+# TODO: supposed to remove reliance on actual name of project.
+project_name = 'the_points_chart'
+with open(os.path.join(BASE_DIR, project_name, 'SECRET_KEY.txt'), 'r') as f:
     SECRET_KEY = f.read().rstrip()
 
 # SECURITY WARNING: don't run with debug turned on in production!
