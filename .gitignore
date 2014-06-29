@@ -1,5 +1,6 @@
 # Added manually.
 SECRET_KEY.txt
+db.sqlite3
 
 # Copied from <https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore>.
 

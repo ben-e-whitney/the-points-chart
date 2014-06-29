@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+{% load staticfiles %}
+<head>
+<title>{% block pagetitle %}{% endblock %}</title>
+<link type="text/css" rel="stylesheet" href={% static "stylesheet.css" %}/>
+{% block head %}
+{% endblock head %}
+</head>
+
+<body>
+<div id="header">
+	{% block headertext %}
+	<span id="logo">
+		the points chart
+	</span>
+	<div class="nav_bar">
+		<span class="nav_button">
+			<a href="http://127.0.0.1:8000/contacts/">
+			contacts
+			<object class="nav_icon" data={% static "icons/white/love2_red.svg" %}>
+				contacts button
+			</object>
+			</a>
+		</span>
+		<div class="nav_button">
+			<a href="http://127.0.0.1:8000/chores/{{ user }}/">
+				stats
+				<object class="nav_icon" data={% static "icons/white/calculator_red.svg" %}>
+					stats button
+				</object>
+			</a>
+		</div>
+		<div class="nav_button">
+			<a href="http://127.0.0.1:8000/chores/">
+				chores
+				<object class="nav_icon" data={% static "icons/white/house_red.svg" %}>
+					chores button
+				</object>
+			</a>
+		</div>
+		<div class="nav_button">
+			<a href="http://127.0.0.1:8000/settings/">
+				settings
+				<object class="nav_icon" data={% static "icons/white/cog_red.svg" %}>
+					settings button
+				</object>
+			</a>
+		</div>
+		<div class="nav_button">
+			<a href="http://127.0.0.1:8000/logout/">
+				log out
+				<object class="nav_icon" data={% static "icons/white/forward2_red.svg" %}>
+					log out button
+				</object>
+			</a>
+		</div>
+	</div>
+	{% endblock %}
+</div>
+<div class="left_bar"></div>
+<div class="main_content">
+{% block body %}
+{% endblock %}
+</div>
+
+<div id="footer">
+	<div class="nav_bar">
+		<div class="nav_button">
+			<a href="http://127.0.0.1:8000/about/">
+				about
+				<object class="nav_icon" data={% static "icons/white/question2_red.svg" %}>
+					about button
+				</object>
+			</a>
+		</div>
+	</div>
+</div>
+</body>
+</html>

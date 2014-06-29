@@ -328,7 +328,7 @@ class ChoreSentence():
                 self.button = False
 
     def current_report_text(self):
-        return '{beg} {end}'.format(
+        return '{beg} {end}.'.format(
             beg='You are' if self.owner == self.user else '{nam} is'.format(
                 nam=self.owner.profile.nickname),
             end=self.adjectival_phrase)
@@ -375,7 +375,8 @@ class VoidSentence(ChoreSentence):
 
     def current_report_text(self):
         return '{nam} {vpp}.'.format(
-            nam='You' if self.owner == self.user else self.owner.nickname,
+            nam='You' if self.owner == self.user else
+                self.owner.profile.nickname,
             vpp=self.past_participle)
 
     past_report_text = current_report_text
@@ -409,8 +410,16 @@ def get_chore_sentences(user, chore):
         VoidSentence(user, chore)
     ]
 
+# TODO: use an id (or something else?) to make it open to the current day.
 @login_required()
 def all_users(response):
+
+    def find_day_id(date):
+        now = datetime.date.today()
+        if date == now:
+            return 'today'
+        else:
+            return ''
 
     def find_day_classes(date):
         '''
@@ -455,6 +464,7 @@ def all_users(response):
         chores_by_date.append({
             'date'    : date,
             'class'   : find_day_classes(date),
+            'id'      : find_day_id(date),
             'schedule': chore_dicts,
             'weekday' : weekdays[date.weekday()],
          })

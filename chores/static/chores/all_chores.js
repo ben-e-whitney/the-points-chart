@@ -26,6 +26,7 @@ var replaceSentencesCreator = function(chore_id) {
 var AJAXCreator = function(URL_function) {
   var inner = function(chore_id) {
   $.ajax({
+    //TODO: send in `chore_id` as data, not as part of the URL.
     url: '/chores/actions/'+URL_function+'/'+chore_id+'/',
     type: 'POST',
     async: true,

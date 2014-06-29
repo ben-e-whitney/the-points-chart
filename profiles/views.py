@@ -5,20 +5,23 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User, Group
+from django.core.exceptions import ValidationError
 from django.template import loader, Context
-from profiles.models import UserProfile, GroupProfile
+
+from profiles.models import UserProfile, GroupProfile, UserProfileForm
 import datetime
+import json
 
 @login_required()
 def index(response):
-    coop = response.user.get_profile().coop
-    coopers = coop.user_set.all()
+    coop = response.user.profile.coop
+    coopers = coop.user_set.all().order_by('profile__first_name')
     # TODO: consider putting stewardship or any other info here. Consider also
     # any highlighting of self, presidents, etc.
-    contacts = sorted(map(lambda x: x.get_profile(), coopers), key=lambda y:
-                      y.first_name)
+    # contacts = sorted(map(lambda x: x.profile, coopers), key=lambda y:
+                      # y.first_name)
     return render(response, 'profiles/index.html',
-                  dictionary={'coop': coop, 'contacts': contacts})
+                  dictionary={'coop': coop, 'coopers': coopers})
 
 # TODO: try getting it exported as a PDF.
 @login_required()
@@ -43,3 +46,39 @@ def export(response):
                        'current_time': current_time})
     response.write(template.render(context))
     return response
+
+@login_required()
+# TODO: here and elsewhere, change the function parameter name to 'request'.
+def profile_form(response):
+    # TODO: this shouldn't ever be hit (POST hits `profile_edit`). Remove.
+    if response.method == 'POST':
+        form = UserProfileForm(response.POST)
+        try:
+            if form.is_valid():
+                pass
+            form.clean()
+        except ValidationError as e:
+            return HttpResponse('', reason=form.errors, status=999)
+        # if form.is_valid():
+            # # Make and save changes.
+            # return HttpResponse('something here')
+        # else:
+            # return HttpResponse('something else')
+    else:
+        form = UserProfileForm(instance=response.user.profile)
+    return render(response, 'profiles/profile_form.html', {'form': form})
+
+def profile_edit(response):
+    form = UserProfileForm(response.POST)
+    # if form.is_valid():
+        # print("it's valid")
+    # else:
+        # print("it isn't valid")
+        # for field in form.errors:
+            # print(' '.join(form.errors[field]))
+    return HttpResponse(json.dumps({
+        'errors': {
+            field: ' '.join(form.errors[field]) for field in form.errors
+        },
+        'non_field_errors': list(form.non_field_errors())
+    }), status=200)

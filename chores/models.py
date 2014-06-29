@@ -12,7 +12,7 @@ import itertools
 import functools
 
 # TODO: how do we tie the `signed_up` property, the `sign_up_permission` etc.
-# methods, 'sign up' as a verb, the JavaScript function names, etc?
+# methods, 'sign up' as a verb, the JavaScript function names, etc.?
 
 def timedelta_pretty_print(timedelta):
     # TODO: this needs testing (including edge conditions).
@@ -174,8 +174,8 @@ class Timecard(models.Model):
     def resolved(self):
         return self.signed_off or self.voided
 
-    def completed(self):
-        return self.signed_up and self.signed_off
+    def completed_successfully(self):
+        return self.signed_up and self.signed_off and not self.voided
 
     def in_the_future(self):
         comparison_date = datetime.date.today()
@@ -193,8 +193,10 @@ class Timecard(models.Model):
             # TODO: error can happen here if you have a Signature with a
             # co-oper but no datetime (will be subtracting a datetime with
             # `None`. Figure out what to do.
-            tdp=(timedelta_pretty_print(datetime.datetime.now()-
-                getattr(self, attribute).when))
+            # TODO: commenting out to get the rest running. Need to fix later.
+            tdp=None
+            # (timedelta_pretty_print(datetime.datetime.now(pytz.utc)-
+                # getattr(self, attribute).when))
         )
 
     # Could make the argument that voiding should be allowed even when someone
@@ -320,6 +322,7 @@ class Timecard(models.Model):
             # TODO: names are outdated. Need to fix!
             'needs_sign_up': self.sign_up_permission(user)['boolean'],
             'needs_sign_off': self.sign_off_permission(user)['boolean'],
+            'completed_successfully': self.completed_successfully(),
             'voided': self.revert_void_permission(user)['boolean'],
             'user_signed_up': user == self.signed_up.who,
             'user_signed_off': user == self.signed_off.who,
@@ -352,6 +355,17 @@ class ChoreSkeleton(Skeleton):
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')
     objects = PassThroughManager.for_queryset_class(ChoreQuerySet)()
+
+    # Just writing this for testing. TODO: figure out how it should work.
+    # def __init__(self, skeleton, start_date, stop_date, signed_up, signed_off,
+                 # voided):
+        # self.skeleton = skeleton
+        # self.start_date = start_date
+        # self.stop_date = stop_date
+        # self.signed_up = signed_up
+        # self.signed_off = signed_off
+        # self.voided = voided
+
     def __str__(self):
         return '{cn} on {da} at {co}'.format(cn=self.skeleton.short_name,
                              da=self.start_date, co=self.skeleton.coop.name)

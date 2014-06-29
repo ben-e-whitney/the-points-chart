@@ -25,6 +25,9 @@ with open(os.path.join(BASE_DIR, project_name, 'SECRET_KEY.txt'), 'r') as f:
 DEBUG = True
 
 TEMPLATE_DEBUG = True
+TEMPLATE_DIRS = (
+    os.path.join(BASE_DIR, 'templates'),
+)
 
 ALLOWED_HOSTS = []
 

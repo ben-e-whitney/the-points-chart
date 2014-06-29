@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+Contact List.
+{% endblock %}
+
+{% block head %}
+{% load staticfiles %}
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src={% static "profiles/profile_edit.js" %}></script>
+{% endblock head %}
+
+{% comment %}
+{% block headertext %}
+{{ coop.profile.short_name }}/{{ user }}
+{% endblock %}
+{% endcomment %}
+
+{% block body %}
+<div class="form_container">
+	<form id="profile_form" method="post">
+		<table>
+			<!--<div class="form_fields">-->
+						{% comment %}
+						{% csrf_token %}
+						{% endcomment %}
+						{{ form.as_table }}
+			<!--</div>-->
+			<!--<div>-->
+				<tr>
+					<td></td>
+					<td>
+						<input class="submit_button" type="submit" value="Submit Changes"/>
+					</td>
+					<td class="form_icon"></td>
+				</tr>
+			<!--</div>-->
+	</table>
+	</form>
+</div>
+{% endblock %}

@@ -3,11 +3,6 @@
 {% block head %}
 {% load staticfiles %}
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-<!--<script type="text/javascript" src="file:///home/bew/Desktop/toDelete/test/script.js"></script>-->
-<!--<script type="text/javascript" src="">-->
-<!--var signUpChore = function() {alert('sign up');};-->
-<!--var voidChore = function() {alert('voider');};-->
-<!--</script>-->
 <script src={% static "chores/all_chores.js" %}></script>
 {% endblock head %}
 
@@ -15,14 +10,16 @@
 All Chores.
 {% endblock %}
 
+{% comment %}
 {% block headertext %}
-{{ coop }}/{{ user }}
+<!--the points chart-->
 {% endblock %}
+{% endcomment %}
 
 {% block body %}
 {% for day in days %}
-	<div class="{{ day.class }}">
-	<h1> {{ day.weekday }}, {{ day.date }} </h1>
+<div class="{{ day.class }}">
+	<h1 id="{{ day.id }}"> {{ day.weekday }}, {{ day.date }} </h1>
 	<ul>
 		{% for schedule_item in day.schedule %}
 			<li class="{{ schedule_item.class }}" id="chore_{{ schedule_item.chore.id }}"> <strong>{{ schedule_item.chore.skeleton.short_name }}.</strong>
