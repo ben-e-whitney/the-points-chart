@@ -1,24 +1,91 @@
+html, body {
+	height: 100%;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+}
+
 body {
 	background-color: #073763;
 }
 
-#header {
-	background-color: #073763;
+#wrapper {
+	min-height: 100%;
+	position: relative;
+}
+
+#header, #footer, #sidebar {
 	color: white;
+}
+
+#header, #footer {
+	width: 100%;
+}
+
+#header {
 	top: 0em;
 	height: 3.5em;
-	width: 100%;
-	position: fixed;
+	/*position: fixed;*/
 	/*border: 5px solid white;*/
 }
 
-/*TODO: clean up all this repetition. Not taking advantage of CSS stuff.*/
 #footer {
-	color: white;
 	clear: both;
-	width: 100%;
 	height: 3em;
-	position: relative;
+	position: absolute;
+	width: 100%;
+	bottom: 0;
+	left: 0;
+}
+
+#middle_section {
+	/*display: table-row;*/
+	width: 100%;
+	/*position: relative;*/
+	/*min-height: 80%;*/
+	height: 100%;
+	width: 100%;
+	/*This should be the height of the footer.*/
+	padding-bottom: 3em;
+}
+
+#sidebar, #main_content {
+	/*display: table-cell;*/
+	min-height: 100%;
+	/*height: 100%;*/
+}
+
+#sidebar {
+	position: fixed;
+	top: 100%;
+	/*vertical-align: baseline;*/
+	text-align: center;
+	/*This is the number of icons times their heights.*/
+	/*Plus whatever extra space you add I guess.*/
+	margin-top: -15em;
+	/*TODO: look up what this does.*/
+	z-index: 1;
+}
+
+#main_content {
+	/*position: absolute;*/
+	/*float: right;*/
+	border-radius: 15px;
+	/*max-width: 90%;*/
+	background-color: white;
+	color: black;
+	padding: 1em;
+	margin-left: 5em;
+	/*margin-left: 3.5em;*/
+	/*margin-top: 3.5em;*/
+}
+
+#sidebar.nav_icon {
+	margin-left: 0em;
+}
+
+#sidebar .nav_button a:hover {
+	margin-left: 1em;
 }
 
 #logo {
@@ -35,7 +102,7 @@ body {
 }
 
 /*TODO: I don't know why we need this.*/
-#footer .nav_bar {
+#footer.nav_bar {
 	margin-right: 0em;
 }
 
@@ -51,46 +118,30 @@ body {
 	color: white;
 }
 
-.nav_button a:hover {
+#header .nav_button a:hover {
 	/*border: 0.05em solid #F1C232;*/
 	/*border-radius: 5%;*/
 	color: #F1C232;
+	margin-top: 0.5em;
 	/*font-weight: bold;*/
 }
 
-/*TODO: clean this up.*/
 .nav_icon {
 	vertical-align: middle;
 	margin-left: -0.2em;
 }
 
-.left_bar {
-	color: white;
-	float: left;
-	width: 15%;
-	height: 100%;
-	position: relative;
+ul.chores_list {
+	columns: 2;
+	-webkit-columns: 2;
+	-moz-columns: 2;
+	list-style-type: none;
 }
 
-.main_content {
-	margin-top: 3.5em;
-	/*margin: 3.5em;*/
-	background-color: white;
-	color: black;
-	border-radius: 15px;
-	width: 85%;
-	float: right;
-	/*padding-left: 1em;*/
-	padding: 1em;
-}
 
 .past {
 	/*background-color: #D3D3D3;*/
 	opacity: 0.5;
-}
-
-.past:hover {
-	opacity: 1;
 }
 
 .near_future {
@@ -98,6 +149,11 @@ body {
 }
 
 .distant_future {
+	opacity: 0.75
+}
+
+.past:hover, .distant_future:hover {
+	opacity: 1;
 }
 
 .needs_sign_up {
@@ -128,7 +184,7 @@ form th {
 	text-align: left;
 }
 
-form .submit_button {
+form.submit_button {
 	/*text-align: right;*/
 	float: right;
 }

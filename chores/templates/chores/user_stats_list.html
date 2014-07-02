@@ -21,11 +21,11 @@ All Chores.
 Will this always have data to display? Might even need to cut this out.
 -->
 <h1 style="text-align: center">Information for {{ cooper.profile.nickname }} </h1>
-<h2>Selected Information</h2>
+<!--<h2>Selected Information</h2>-->
 {% for section in list_information %}
 	<h3>{{ section.title }}</h3>
 	{% for subsection in section.sections %}
-		<h5>{{ subsection.title }}</h5>
+		<h4>{{ subsection.title }}</h4>
 		<!--TODO: consider changing this to just a paragraph. Will save vertical space/use up horizontal space.-->
 		<ul>
 			{% for dictionary in subsection.dictionaries %}

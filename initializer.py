@@ -1,6 +1,24 @@
+from django.contrib.auth.models import User, Group
+
 from chores.models import ChoreSkeleton, Chore, Timecard, Signature
 
 import datetime
+
+dudley = Group(name='Dudley')
+dudley.save()
+
+for name in ['Indy', 'Alex', 'Ruthe', 'Parker']:
+    TODO: set groups as well.
+    name = name.lower()
+    User.objects.create_user(name, '{nam}@dudley.coop'.format(nam=name), name)
+
+options = [
+    {},
+    {},
+]
+
+for option in options:
+    ChoreSkeleton(**options).save()
 
 today = datetime.date.today()
 for skeleton in ChoreSkeleton.objects.all():
@@ -17,4 +35,5 @@ for skeleton in ChoreSkeleton.objects.all():
         chore = Chore(skeleton=skeleton, start_date=date, stop_date=date,
                       signed_up=sig1, signed_off=sig2,
                       voided=sig3)
+        # TODO: could to do signing up, signing off, and voiding here.
         chore.save()

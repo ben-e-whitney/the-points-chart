@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+Steward View.
+{% endblock %}
+
+{% comment %}
+{% block headertext %}
+{% endblock %}
+{% endcomment %}
+<!--Logged in as {{ user }}.-->
+
+{% block body %}
+
+<h1 style="text-align: center">Information for {{ cooper.profile.nickname }} </h1>
+
+<h2>Summary Information</h2>
+<table>
+	<thead>
+	</thead>
+	<tbody>
+	<tr>
+		<th>Co-oper</th>
+		{% for point_cycle in point_cycles %}
+			<th title="{{ point_cycle.cycle_start }} to {{ point_cycle.cycle_stop }}">
+				Cycle {{ point_cycle.cycle_num }}
+			</th>
+		{% endfor %}
+	</tr>
+	{% for section in rows %}
+		<!--<tr><th>{{ section.title }}</th></tr>-->
+		{% for subsection in section.sections %}
+			<tr>
+				<td style="text-align: right">{{ subsection.title }}</td>
+				{% for dictionary in subsection.dictionaries %}
+					<td style="text-align: right" title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
+				{% endfor %}
+			</tr>
+		{% endfor %}
+	{% endfor %}
+	</tbody>
+</table>
+{% endblock %}

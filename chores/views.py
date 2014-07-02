@@ -5,6 +5,7 @@ from django.shortcuts import render
 import datetime
 import pytz
 import itertools
+import decimal
 
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test, \
@@ -17,15 +18,8 @@ from profiles.models import UserProfile, GroupProfile
 from stewardships.models import StewardshipSkeleton, Stewardship, Absence, \
     ShareChange
 
-def calculate_point_sum(chores):
-    return sum(chore.skeleton.point_value for chore in chores)
-
-def make_html_title(chores):
-    return ', '.join(str(chore) for chore in chores)
-
 # TODO: put extra functions and lengthy variable definitions in another file.
 # TODO: name needs improving here.
-
 class DisplayInformation():
     def __init__(self, name, structure, keys, processor, format_key):
         self.name = name
@@ -33,7 +27,7 @@ class DisplayInformation():
         self.keys = keys
         self.processor = processor
         self.format_key = format_key
-        # TODO: put futher checks here? That or document what structure you're
+        # TODO: put further checks here? That or document what structure you're
         # expecting to get.
         try:
             assert sum(len(section_subsections) for section_subsections in
@@ -95,178 +89,6 @@ class DisplayInformation():
         self.populate_structure()
         self.purge_empty()
         return self.structured_data
-
-def get_obligations(user, coop=None):
-
-    if coop is None:
-        coop = user.profile.coop
-
-    upcoming_lower_boundary = datetime.date.today()
-    upcoming_upper_boundary = (upcoming_lower_boundary+
-            datetime.timedelta(days=coop.profile.release_buffer))
-    all_chores = Chore.objects.for_coop(coop).signed_up(user, True)
-    all_stewardships = Stewardship.objects.for_coop(coop).signed_up(
-        user, True)
-    data = {
-        'all chores': all_chores,
-        'upcoming chores': all_chores.in_window(upcoming_lower_boundary,
-                                                upcoming_upper_boundary),
-        # For these next three it doesn't matter who has (or hasn't) signed.
-        # off. Putting no checks for validity here.
-        'voided': all_chores.voided(None, True),
-        'signed off': all_chores.signed_off(None, True),
-        'not signed off': all_chores.signed_off(None, False),
-        'all stewardships': all_stewardships,
-        # TODO: could new QuerySets/models/whatever in for these.
-        'stewardships': all_stewardships.filter(
-            skeleton__category=StewardshipSkeleton.STEWARDSHIP),
-        'special points': all_stewardships.filter(
-            skeleton__category=StewardshipSkeleton.SPECIAL_POINTS),
-        'loans': all_stewardships.filter(
-            skeleton__category=StewardshipSkeleton.LOAN),
-        'absences': Absence.objects.signed_up(user, True),
-        'share changes': ShareChange.objects.signed_up(user, True)
-    }
-    data['ready for signature'] = data['not signed off'].filter(
-        start_date__lte=datetime.date.today())
-    # Rearranging.
-    for key, item in data.items():
-        data[key] = {'original': item, 'per cycle': []}
-    cycles = []
-    accounts = []
-    for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
-        cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
-                       'cycle_stop': cycle_stop})
-        for key in data:
-            data[key]['per cycle'].append(
-                data[key]['original'].in_window(cycle_start, cycle_stop)
-            )
-    # Rearranging again.
-    data.update(calculate_loads(user, coop=coop))
-
-    def list_processor(items):
-        return [
-            {'items': item} for item in items if item
-        ]
-
-    def table_processor(items):
-        return [
-            {'value': calculate_point_sum(chores),
-             'html_title': make_html_title(chores)}
-            for chores in items
-        ]
-
-    display_infos = [
-        DisplayInformation('list_information', {
-                'sections': ['Chores', 'Stewardships and Similar',
-                             'Benefit Changes'],
-                'subsections': [['Upcoming', 'Voided', 'Ready for Signature'],
-                                ['Stewardships', 'Special Points', 'Loans'],
-                                ['Absences', 'Share Changes']]
-            }, [
-                'upcoming chores', 'voided', 'ready for signature',
-                'stewardships', 'special points', 'loans', 'absences',
-                'share changes'
-            ], list_processor, 'original'),
-        DisplayInformation('table_information', {
-                'sections': ['Chores', 'Stewardships and Similar'],
-                'subsections': [['Signed Up', 'Signed Off', 'Needing Sign Off',
-                                 'Voided'],
-                                ['Stewardships', 'Special Points', 'Loans']]
-            }, [
-                'all chores', 'signed off', 'not signed off', 'voided',
-                'stewardships', 'special points', 'loans'
-            ], table_processor, 'per cycle'),
-        DisplayInformation('summary_information', {
-                'sections': ['Summary'],
-                'subsections': [['Load', 'Credits', 'Balance']]
-            }, [
-                'loads', 'credits', 'balances'
-            ], list_processor, None)
-    ]
-    dict_to_return = {
-        display_info.name: display_info.create_template_data(data) for
-        display_info in display_infos
-    }
-    dict_to_return.update({'point_cycles': cycles})
-    return dict_to_return
-
-def timedelta_in_interval(left, timedelta, right):
-    '''
-    Tests whether `timedelta` is contained in the half-open interval
-    [`left` days, `right` days). If `left` is `None` then it is interpreted
-    as ∞; similarly for `right`.
-    '''
-    if left is None:
-        left = datetime.timedelta.min
-    else:
-        left = datetime.timedelta(left)
-    if right is None:
-        right = datetime.timedelta.max
-    else:
-        right = datetime.timedelta(right)
-    return left <= timedelta < right
-
-def calculate_loads(user, coop=None):
-    if coop is None:
-        coop = user.profile.coop
-    # Storing as a tuple so we can iterate over it multiple times.
-    coopers = tuple(User.objects.filter(profile__coop=coop))
-    subtotals = []
-    # Note that we're not checking whether stewardships are voided or not
-    # (since currently that doesn't happen/has no meaning/effect). Maybe
-    # should be changed (TODO).
-    data = {
-        'chores': Chore.objects.for_coop(coop).voided(None, False),
-        'stewardships': Stewardship.objects.for_coop(coop),
-        'absences': Absence.objects.for_coop(coop),
-        'share changes': ShareChange.objects.for_coop(coop)
-    }
-    for cycle_num, start_date, stop_date in coop.profile.cycles():
-        load = 0
-        signed_up = 0
-        completed = 0
-
-        adds_to_points = itertools.chain(
-            data['chores'].in_window(start_date, stop_date),
-            data['stewardships'].in_window(start_date, stop_date)
-        )
-        adds_to_presence = data['absences'].in_window(start_date, stop_date)
-        adds_to_share = data['share changes'].in_window(start_date, stop_date)
-        total_points = sum(map(lambda x: x.skeleton.point_value,
-                               adds_to_points))
-        total_presence = -sum(map(lambda x: x.days_gone, adds_to_presence))
-        total_share = sum(map(lambda x: x.share_change, adds_to_share))
-        for cooper in coopers:
-            total_presence += cooper.profile.presence
-            total_share += cooper.profile.share
-        signed_up = sum(
-            map(lambda x: x.skeleton.point_value,
-                data['chores'].signed_up(user, True)
-           ))
-        completed = sum(
-            map(lambda x: x.skeleton.point_value,
-                data['chores'].signed_up(user, True).signed_off(None, True)
-           ))
-        points_per_day_share = total_points/(total_presence*total_share)
-        load = points_per_day_share*user.profile.presence*user.profile.share
-        subtotals.append({'load': load, 'signed_up': signed_up,
-                         'completed': completed})
-    accounts = {'loads': [], 'credits': [], 'balances': []}
-    old_balance = 0
-    for i, subtotal in enumerate(subtotals):
-        load = subtotal['load']
-        credits = subtotal['completed' if i < len(subtotals)-1 else
-                           'signed_up']
-        balance = old_balance+credits-load
-        accounts['loads'].append(load)
-        accounts['credits'].append(credits)
-        accounts['balances'].append(balance)
-        old_balance = balance
-    return accounts
-
-def index(response):
-    return HttpResponse('Welcome to the points chart.')
 
 # TODO: another option (attractive) would be to put all of this as methods of
 # the Signature model. I think we would want to subclass that class, but all
@@ -410,10 +232,209 @@ def get_chore_sentences(user, chore):
         VoidSentence(user, chore)
     ]
 
+def timedelta_in_interval(left, timedelta, right):
+    '''
+    Tests whether `timedelta` is contained in the half-open interval
+    [`left` days, `right` days). If `left` is `None` then it is interpreted
+    as ∞; similarly for `right`.
+    '''
+    if left is None:
+        left = datetime.timedelta.min
+    else:
+        left = datetime.timedelta(left)
+    if right is None:
+        right = datetime.timedelta.max
+    else:
+        right = datetime.timedelta(right)
+    return left <= timedelta < right
+
+def get_obligations(user, coop=None):
+
+    if coop is None:
+        coop = user.profile.coop
+
+    upcoming_lower_boundary = datetime.date.today()
+    upcoming_upper_boundary = (upcoming_lower_boundary+
+            datetime.timedelta(days=coop.profile.release_buffer))
+    all_chores = (Chore.objects.for_coop(coop).signed_up(user, True)
+                     .order_by('start_date'))
+    all_stewardships = Stewardship.objects.for_coop(coop).signed_up(
+        user, True).order_by('start_date')
+    data = {
+        'all chores': all_chores,
+        'upcoming chores': all_chores.in_window(upcoming_lower_boundary,
+                                                upcoming_upper_boundary),
+        # For these next three it doesn't matter who has (or hasn't) signed.
+        # off. Putting no checks for validity here.
+        'voided': all_chores.voided(None, True),
+        'signed off': all_chores.signed_off(None, True),
+        'not signed off': all_chores.signed_off(None, False),
+        'all stewardships': all_stewardships,
+        # TODO: could new QuerySets/models/whatever in for these.
+        'stewardships': all_stewardships.filter(
+            skeleton__category=StewardshipSkeleton.STEWARDSHIP),
+        'special points': all_stewardships.filter(
+            skeleton__category=StewardshipSkeleton.SPECIAL_POINTS),
+        'loans': all_stewardships.filter(
+            skeleton__category=StewardshipSkeleton.LOAN),
+        'absences': Absence.objects.signed_up(user, True),
+        'share changes': ShareChange.objects.signed_up(user, True)
+    }
+    data['ready for signature'] = (data['not signed off'].voided(None, False)
+                               .filter(start_date__lte=datetime.date.today()))
+    # Rearranging.
+    for key, item in data.items():
+        data[key] = {'original': item, 'per cycle': []}
+    cycles = []
+    accounts = []
+    for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
+        cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
+                       'cycle_stop': cycle_stop})
+        for key in data:
+            data[key]['per cycle'].append(
+                data[key]['original'].in_window(cycle_start, cycle_stop)
+            )
+    # Rearranging again.
+    data.update(calculate_loads(user=user, coop=coop)[0])
+
+    def list_processor(items):
+        return [
+            {'items': item} for item in items if item
+        ]
+
+    def table_processor(items):
+
+        def make_html_title(chores):
+            return ', '.join(str(chore) for chore in chores)
+
+        return [
+            {'value': sum(chores),
+             'html_title': make_html_title(chores)}
+            for chores in items
+        ]
+
+    def summary_processor(items):
+        def convert_to_integer(x):
+        # TODO: this is wasteful when `value` is already an integer (which
+        # has happened, at least with toy data).
+        # TODO:  I think those 'integers' might be like 'Decimal('1')'. Check.
+            return decimal.Decimal(x).to_integral_value()
+        return [
+            {'value': convert_to_integer(value),
+             'html_title': 'Exact value: {val}'.format(val=value)}
+            for value in items
+        ]
+
+    display_infos = [
+        DisplayInformation('list_information', {
+                'sections': ['Chores', 'Stewardships and Similar',
+                             'Benefit Changes'],
+                'subsections': [['Upcoming', 'Voided', 'Ready for Signature'],
+                                ['Stewardships', 'Special Points', 'Loans'],
+                                ['Absences', 'Share Changes']]
+            }, [
+                'upcoming chores', 'voided', 'ready for signature',
+                'stewardships', 'special points', 'loans', 'absences',
+                'share changes'
+            ], list_processor, 'original'),
+        DisplayInformation('table_information', {
+                'sections': ['Chores', 'Stewardships and Similar'],
+            # TODO: should 'Needing Sign Off' be renamed 'Ready for Signature'?
+                'subsections': [['Signed Up', 'Signed Off', 'Needing Sign Off',
+                                 'Voided'],
+                                ['Stewardships', 'Special Points', 'Loans']]
+            }, [
+                'all chores', 'signed off', 'ready for signature', 'voided',
+                'stewardships', 'special points', 'loans'
+            ], table_processor, 'per cycle'),
+        DisplayInformation('summary_information', {
+                'sections': ['Summary'],
+                'subsections': [['New Due', 'New Credited',
+                                 'Cumulative Balance']]
+            }, [
+                'load', 'credits', 'balance'
+            ], summary_processor, None)
+    ]
+    dict_to_return = {
+        display_info.name: display_info.create_template_data(data) for
+        display_info in display_infos
+    }
+    dict_to_return['table_information'].insert(0,
+        dict_to_return['summary_information'][0])
+    dict_to_return.update({'point_cycles': cycles})
+    return dict_to_return
+
+def calculate_loads(user=None, coop=None):
+    if coop is None:
+        if user is None:
+            raise TypeError('Must specify user or co-op.')
+        else:
+            coop = user.profile.coop
+    today = datetime.date.today()
+    # Storing as a tuple so we can iterate over it multiple times without extra
+    # cost. TODO: is this how this works?
+    all_coopers = tuple(coop.user_set.all())
+    if user is None:
+        user_set = all_coopers
+    else:
+        user_set = (user,)
+    accounts = [{'user': user, 'load': [], 'credits': [], 'balance': []}
+                for user in user_set]
+    # Note that we're not checking whether stewardships are voided or not
+    # (since currently that doesn't happen/has no meaning/effect). Maybe
+    # should be changed (TODO).
+    data = {
+        'chores': Chore.objects.for_coop(coop).voided(None, False),
+        'stewardships': Stewardship.objects.for_coop(coop),
+        'absences': Absence.objects.for_coop(coop),
+        'share changes': ShareChange.objects.for_coop(coop)
+    }
+    for cycle_num, start_date, stop_date in coop.profile.cycles():
+        cycle_data = {key: value.in_window(start_date, stop_date)
+                      for key, value in data.items()}
+        # TODO: not sure exactly how this should be done. Just getting it
+        # working for now.
+        adds_to_points = tuple(itertools.chain(cycle_data['chores'],
+                                               cycle_data['stewardships']))
+        adds_to_presence = cycle_data['absences']
+        adds_to_share = cycle_data['share changes']
+
+        # TODO: could move around to iterate through only once.
+        total_points   =  sum(adds_to_points)
+        total_presence = -sum(adds_to_presence)+sum(cooper.profile.presence for
+                                                    cooper in all_coopers)
+        total_share    =  sum(adds_to_share)+sum(cooper.profile.share for
+                                                 cooper in all_coopers)
+        # 'ppds' stands for 'points per day-share.'
+        ppds = total_points/(total_presence*total_share)
+
+        for dict_ in accounts:
+            user = dict_['user']
+            # load = 0
+            # signed_up = 0
+            # completed = 0
+            load = ppds*user.profile.presence*user.profile.share
+            user_signed_up_chores = cycle_data['chores'].signed_up(user, True)
+            total_signed_up = sum(user_signed_up_chores)
+            total_completed = sum(user_signed_up_chores.signed_off(None, True))
+            credits = (total_signed_up if today <= stop_date else
+                total_completed)
+            if dict_['balance']:
+                old_balance = dict_['balance'][-1]
+            else:
+                old_balance = 0
+            balance = credits-load+old_balance
+            dict_['load'].append(load)
+            dict_['credits'].append(credits)
+            dict_['balance'].append(balance)
+    return accounts
+
 # TODO: use an id (or something else?) to make it open to the current day.
 @login_required()
-def all_users(response):
+def chores_list(request):
 
+    # TODO: Would be nice to able for selecting by 'today' as well as by a
+    # date like '2014-01-01'.
     def find_day_id(date):
         now = datetime.date.today()
         if date == now:
@@ -444,21 +465,21 @@ def all_users(response):
     # going to make points stewards/presidents ugly? Could address this by
     # adding something in the UserProfile that points to the Group that is a
     # co-op.
-    coop = response.user.profile.coop
+    coop = request.user.profile.coop
     chores = Chore.objects.for_coop(coop)
     chores_by_date = []
     for date in chores.dates('start_date', 'day', 'ASC'):
-        chores_today = chores.filter(start_date=date)\
+        chores_today = (chores.filter(start_date=date)
                           .order_by('skeleton__start_time',
-                                    'skeleton__short_name')
+                                    'skeleton__short_name'))
         chore_dicts = []
         for chore in chores_today:
             # TODO: could make some sort of `sentence_args` and
             # `sentence_kwargs` variables to feed into these.
             chore_dicts.append({
                 'chore': chore,
-                'class': chore.find_CSS_classes(response.user),
-                'sentences': get_chore_sentences(response.user, chore)
+                'class': chore.find_CSS_classes(request.user),
+                'sentences': get_chore_sentences(request.user, chore)
             })
 
         chores_by_date.append({
@@ -469,14 +490,14 @@ def all_users(response):
             'weekday' : weekdays[date.weekday()],
          })
     # TODO: here also sort by cycle?
-    return render(response, 'chores/all.html',
-                  dictionary={'coop': coop, 'cooper': response.user,
+    return render(request, 'chores/chores_list.html',
+                  dictionary={'coop': coop, 'cooper': request.user,
                               'days': chores_by_date})
 
 # TODO: write a function/URL thing for when they go to 'chores/me/'.
 # TODO: this should now require permissions.
 @login_required()
-def one_user(response, username):
+def user_stats_list(request, username):
     user = User.objects.get(username=username)
     coop = user.profile.coop
     render_dictionary = {
@@ -484,14 +505,59 @@ def one_user(response, username):
         'cooper': user,
     }
     render_dictionary.update(get_obligations(user, coop=coop))
-    return render(response, 'chores/me.html', dictionary=render_dictionary)
+    return render(request, 'chores/user_stats_list.html',
+                  dictionary=render_dictionary)
 
-def create_calendar(response, username):
+# TODO: should be some test here.
+# TODO: with not too much effort this could be changed to use the
+# DisplayInformation class, as is done in `user_stats_list`.
+def users_stats_summarize(request):
+
+    # TODO: seems like we're just undoing the work that will be done in the
+    # `DisplayInformation` methods.
+    def balance_processor(items):
+        # TODO: this is repeated code.
+        def convert_to_integer(x):
+            return decimal.Decimal(x).to_integral_value()
+        return [{
+            'value': convert_to_integer(item),
+            'html_title': 'Exact value: {val}'.format(val=item)}
+            for item in items
+        ]
+
+    coop = request.user.profile.coop
+    cycles = []
+    for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
+        cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
+                       'cycle_stop': cycle_stop})
+    accounts = calculate_loads(coop=coop)
+    accounts.sort(key=lambda x: x['user'].profile.nickname)
+    # TODO: could move around to iterate through only once.
+    nicknames = [row['user'].profile.nickname for row in accounts]
+    user_ids = [row['user'].id for row in accounts]
+    accounts = {row['user'].id: balance_processor(row['balance']) for row in
+                accounts}
+    display_info = DisplayInformation('rows', {'sections': [None],
+        'subsections': [nicknames]}, user_ids, lambda x: x, None)
+    render_dictionary = {
+        'point_cycles': cycles,
+        'rows': display_info.create_template_data(accounts)
+    }
+    print(render_dictionary['rows'])
+    return render(request, 'chores/users_stats_summarize.html',
+                  render_dictionary)
+
+# TODO: allow for people to download it either way if they're logged in?
+def calendar_create(request, username):
     # Test to see if that user wants a public calendar. Also do error checking
     # with this next step.
     user = User.objects.get(username=username)
-    chores = Chore.objects.filter(signed_up__who=user)
+    if not user.profile.public_calendar:
+        return HttpResponse('User has not enabled a public calendar.',
+                            status=403)
     coop = user.profile.coop
+    # TODO: could remove voided chores.
+    chores = Chore.objects.for_coop(coop).signed_up(user, True)
     response = HttpResponse(content_type='text/calendar')
     response['Content-Disposition'] = ('attachment; '
         'filename="{sho}_chore_calendar.ics"'.format(

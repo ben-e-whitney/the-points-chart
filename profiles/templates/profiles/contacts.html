@@ -9,6 +9,7 @@ Contact List.
 {{ coop.profile.short_name }}/{{ user }}
 {% endblock %}
 {% endcomment %}
+{% load staticfiles %}
 
 {% block body %}
 
@@ -31,10 +32,26 @@ Contact List.
 			<td>
 				{{ cooper.profile.email_address }}
 			</td>
+			<td></td>
 		</tr>
 	{% endfor %}
+	<tr>
+		<td></td>
+		<td></td>
+		<td>
+			<form action="/contacts/export/">
+				<input type="submit" class="submit_button" value="Export as vCard">
+			</form>
+		</td>
+		<td>
+			<object class="nav_icon" data={% static "icons/download.svg" %}>
+				export button
+			</object>
+		</td>
 	</tbody>
 </table>
 <!--TODO: style this.-->
+{% comment %}
 <a href="/contacts/export">Export</a> as a vCard.
+{% endcomment %}
 {% endblock %}

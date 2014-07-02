@@ -20,7 +20,7 @@ All Chores.
 {% for day in days %}
 <div class="{{ day.class }}">
 	<h1 id="{{ day.id }}"> {{ day.weekday }}, {{ day.date }} </h1>
-	<ul>
+	<ul class="chores_list">
 		{% for schedule_item in day.schedule %}
 			<li class="{{ schedule_item.class }}" id="chore_{{ schedule_item.chore.id }}"> <strong>{{ schedule_item.chore.skeleton.short_name }}.</strong>
 			{% for sentence in schedule_item.sentences %}

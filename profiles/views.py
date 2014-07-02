@@ -13,24 +13,24 @@ import datetime
 import json
 
 @login_required()
-def index(response):
-    coop = response.user.profile.coop
+def contacts_list(request):
+    coop = request.user.profile.coop
     coopers = coop.user_set.all().order_by('profile__first_name')
     # TODO: consider putting stewardship or any other info here. Consider also
     # any highlighting of self, presidents, etc.
     # contacts = sorted(map(lambda x: x.profile, coopers), key=lambda y:
                       # y.first_name)
-    return render(response, 'profiles/index.html',
+    return render(request, 'profiles/contacts.html',
                   dictionary={'coop': coop, 'coopers': coopers})
 
 # TODO: try getting it exported as a PDF.
 @login_required()
-def export(response):
-    coop = response.user.get_profile().coop
+def contacts_export(request):
+    coop = request.user.get_profile().coop
     coopers = coop.user_set.all()
     contacts = sorted(map(lambda x: x.get_profile(), coopers), key=lambda y:
                       y.first_name)
-    contacts.remove(response.user.get_profile())
+    contacts.remove(request.user.get_profile())
     # Here we are assuming that the site is using the UTC timezone.
     # TODO: check if this works as you are expecting.
     current_time = datetime.datetime.now().isoformat()\
@@ -48,34 +48,15 @@ def export(response):
     return response
 
 @login_required()
-# TODO: here and elsewhere, change the function parameter name to 'request'.
-def profile_form(response):
-    # TODO: this shouldn't ever be hit (POST hits `profile_edit`). Remove.
-    if response.method == 'POST':
-        form = UserProfileForm(response.POST)
-        try:
-            if form.is_valid():
-                pass
-            form.clean()
-        except ValidationError as e:
-            return HttpResponse('', reason=form.errors, status=999)
-        # if form.is_valid():
-            # # Make and save changes.
-            # return HttpResponse('something here')
-        # else:
-            # return HttpResponse('something else')
-    else:
-        form = UserProfileForm(instance=response.user.profile)
-    return render(response, 'profiles/profile_form.html', {'form': form})
+def profile_form(request):
+    return render(request, 'profiles/profile_form.html',
+                  {'form': UserProfileForm(instance=request.user.profile)})
 
-def profile_edit(response):
-    form = UserProfileForm(response.POST)
-    # if form.is_valid():
-        # print("it's valid")
-    # else:
-        # print("it isn't valid")
-        # for field in form.errors:
-            # print(' '.join(form.errors[field]))
+@login_required()
+def profile_edit(request):
+    form = UserProfileForm(request.POST)
+    if form.is_valid():
+        form.save()
     return HttpResponse(json.dumps({
         'errors': {
             field: ' '.join(form.errors[field]) for field in form.errors

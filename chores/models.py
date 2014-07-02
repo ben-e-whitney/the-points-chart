@@ -3,6 +3,7 @@ from django.db import models, connection
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
+from django.forms import ModelForm
 # See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
 from model_utils.managers import PassThroughManager
 
@@ -161,13 +162,22 @@ class Timecard(models.Model):
     signed_off = models.ForeignKey(Signature,
                                    related_name='timecard_signed_off')
     voided = models.ForeignKey(Signature, related_name='timecard_voided')
-    def __str__(self):
+
+    # TODO: figure out what exactly this is being used for. Decide whether you
+    # really want to use `__str__`, or maybe something else.
+    def __repr__(self):
         person = self.signed_up.who.profile.nickname \
                 if self.signed_up else 'no one'
         coop = self.skeleton.coop.name if hasattr(self, 'skeleton') \
             else '<NO CO-OP SET>'
         return '{cn} at {co} with {per} signed up'\
             .format(cn=self.__class__.__name__, co=coop, per=person)
+
+    def __str__(self):
+        raise NotImplementedError
+
+    def __radd__(self, other):
+        raise NotImplementedError
 
     # Methods for use in the following. If you end up doing stuff like this,
     # could prepend the function names with however many underscores.
@@ -343,6 +353,7 @@ class Skeleton(models.Model):
     coop = models.ForeignKey(Group)
     short_name = models.CharField(max_length=2**6)
     short_description = models.TextField()
+
     def __str__(self):
         return '{sn} Skeleton at {co}'.format(sn=self.short_name,
                                      co=self.coop.name)
@@ -352,20 +363,35 @@ class ChoreSkeleton(Skeleton):
     start_time = models.TimeField()
     end_time   = models.TimeField()
 
+class ChoreSkeletonForm(ModelForm):
+    class Meta:
+        model = ChoreSkeleton
+        fields = ['short_name', 'short_description', 'start_time', 'end_time',
+                  'point_value']
+    error_css_class = 'form_error'
+
+    def clean(self):
+        super().clean()
+        # if self.receive_email_reminders and self.email_address = '':
+            # raise ValidationError('...')
+        # if self.receive_text_reminders and (self.phone_number = '' or
+                                            # self.phone_carrier is None):
+            # raise ValidationError('...')
+        return self.cleaned_data
+
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')
     objects = PassThroughManager.for_queryset_class(ChoreQuerySet)()
 
-    # Just writing this for testing. TODO: figure out how it should work.
-    # def __init__(self, skeleton, start_date, stop_date, signed_up, signed_off,
-                 # voided):
-        # self.skeleton = skeleton
-        # self.start_date = start_date
-        # self.stop_date = stop_date
-        # self.signed_up = signed_up
-        # self.signed_off = signed_off
-        # self.voided = voided
-
     def __str__(self):
-        return '{cn} on {da} at {co}'.format(cn=self.skeleton.short_name,
-                             da=self.start_date, co=self.skeleton.coop.name)
+        return '{cn} on {dat}'.format(cn=self.skeleton.short_name,
+                                   dat=self.start_date.isoformat())
+
+    def __radd__(self, other):
+        return self.skeleton.point_value+other
+
+class ChoreForm(ModelForm):
+    class Meta:
+        model = Chore
+        fields = ['skeleton', 'start_date', 'stop_date']
+    error_css_class = 'form_error'
