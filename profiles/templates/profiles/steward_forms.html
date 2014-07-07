@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+Contact List.
+{% endblock %}
+
+{% block head %}
+{% load staticfiles %}
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src={% static "profiles/profile_edit.js" %}></script>
+{% endblock head %}
+
+{% block body %}
+{% for form in forms %}
+<h1>{{ form.title }}</h1>
+	<div class="form_container">
+		<form id="{{ form.html_id }}" method="post">
+			<table>
+				<!--<div class="form_fields">-->
+							{% comment %}
+							{% csrf_token %}
+							{% endcomment %}
+							{{ form.form_content.as_table }}
+				<!--</div>-->
+				<!--<div>-->
+					<tr>
+						<td></td>
+						<td>
+							<input class="submit_button" type="submit" value="Submit Changes"/>
+						</td>
+						<td class="form_icon"></td>
+					</tr>
+				<!--</div>-->
+		</table>
+		</form>
+	</div><br>
+{% endfor %}
+{% endblock %}

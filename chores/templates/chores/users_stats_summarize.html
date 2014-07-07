@@ -8,7 +8,6 @@ Steward View.
 {% block headertext %}
 {% endblock %}
 {% endcomment %}
-<!--Logged in as {{ user }}.-->
 
 {% block body %}
 
@@ -31,7 +30,11 @@ Steward View.
 		<!--<tr><th>{{ section.title }}</th></tr>-->
 		{% for subsection in section.sections %}
 			<tr>
-				<td style="text-align: right">{{ subsection.title }}</td>
+				<td style="text-align: right">
+					<a href="/chores/{{ subsection.title.username }}">
+						{{ subsection.title.profile.nickname }}
+					</a>
+				</td>
 				{% for dictionary in subsection.dictionaries %}
 					<td style="text-align: right" title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
 				{% endfor %}

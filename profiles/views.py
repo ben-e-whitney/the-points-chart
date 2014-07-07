@@ -9,6 +9,9 @@ from django.core.exceptions import ValidationError
 from django.template import loader, Context
 
 from profiles.models import UserProfile, GroupProfile, UserProfileForm
+from chores.models import ChoreSkeletonForm, ChoreForm
+from stewardships.models import (ClassicalStewardshipSkeletonForm,
+         ClassicalStewardshipForm, AbsenceForm, ShareChangeFormCreator)
 import datetime
 import json
 
@@ -63,3 +66,31 @@ def profile_edit(request):
         },
         'non_field_errors': list(form.non_field_errors())
     }), status=200)
+
+
+# TODO: what is the idiomatic way to do this? Better as a lambda expression?
+class HTMLForm():
+    def __init__(self, html_id, title, form_content):
+        self.html_id = html_id
+        self.title = title
+        self.form_content = form_content
+
+# TODO: put steward test here.
+@login_required()
+def steward_forms(request):
+    HTML_form = lambda html_id, title, form_content: {'html_id': html_id,
+        'title': title, 'form_content': form_content}
+    coop = request.user.profile.coop
+    forms = [HTML_form(*args) for args in (
+        ('chore_skeleton_form', 'Create a New Chore Skeleton',
+                 ChoreSkeletonForm()),
+        ('chore_form', 'Create a New Chore', ChoreForm()),
+        ('classical_stewardship_skeleton_form', 'Create a New '
+                 'Stewardship Skeleton', ClassicalStewardshipSkeletonForm()),
+        ('classical_stewardship_form', 'Create a New Stewardship',
+                 ClassicalStewardshipForm()),
+        ('absence_form', 'Create a New Absence', AbsenceForm()),
+        ('share_change_form', 'Create a New Share Change',
+                 ShareChangeFormCreator(coop))
+    )]
+    return render(request, 'profiles/steward_forms.html', {'forms': forms})

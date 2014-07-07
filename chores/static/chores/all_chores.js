@@ -17,7 +17,13 @@ var replaceSentencesCreator = function(chore_id) {
     });
     var choreElement = $('#chore_'+chore_id);
     choreElement.removeClass();
-    choreElement.addClass(responseAsObject.css_classes);
+    choreElement.addClass(responseAsObject.CSS_classes);
+
+    var currentBalance = $('#current_balance');
+    currentBalance.empty();
+    currentBalance.append(responseAsObject.current_balance.value);
+    currentBalance.removeClass();
+    currentBalance.addClass(responseAsObject.current_balance.CSS_class);
     return null;
   };
   return replaceSentences;

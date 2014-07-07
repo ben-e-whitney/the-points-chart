@@ -6,18 +6,34 @@ import json
 import pytz
 import datetime
 from chores.models import Chore, ChoreError
-from chores.views import get_chore_sentences
+from chores.views import get_chore_sentences, calculate_balance
+
+
+# TODO: still not used here!
+def add_current_balance(f):
+
+    def inner(*args, **kwargs):
+        request = args[0]
+        response = f(*args, **kwargs)
+        # response['current_balance'] = calculate_balance(request.user)
+        # TODO: only do this when the status is 200 (success) or similar? Might
+        # have to make a check in the JavaScript function, which would be fine.
+        response['current_balance'] = calculate_balance(request.user)
+        return response
+
+    return inner
 
 def action_response(user, chore):
     sentences = get_chore_sentences(user, chore)
+    # TODO: get rid of this? Skimming now seems to do nothing.
     for sentence in sentences:
         json.dumps({'sentence': sentence.dict_for_json()})
-    json.dumps({'css_classes': chore.find_CSS_classes(user)})
-
+    json.dumps({'CSS_classes': chore.find_CSS_classes(user)})
     return HttpResponse(json.dumps({
         'sentences': [sentence.dict_for_json() for sentence in
                       get_chore_sentences(user, chore)],
-        'css_classes': chore.find_CSS_classes(user)
+        'CSS_classes': chore.find_CSS_classes(user),
+        'current_balance': calculate_balance(user)
     }), status=200)
 
 @login_required()

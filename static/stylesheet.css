@@ -9,6 +9,11 @@ body {
 	background-color: #073763;
 }
 
+a {
+	text-decoration: none;
+	color: inherit;
+}
+
 #wrapper {
 	min-height: 100%;
 	position: relative;
@@ -39,10 +44,7 @@ body {
 }
 
 #middle_section {
-	/*display: table-row;*/
 	width: 100%;
-	/*position: relative;*/
-	/*min-height: 80%;*/
 	height: 100%;
 	width: 100%;
 	/*This should be the height of the footer.*/
@@ -67,13 +69,51 @@ body {
 	z-index: 1;
 }
 
+#current_balance { 
+	position: fixed;
+	/*All other em measurements are in multiples of this font size.*/
+	font-size: 3em;
+	/*This is the height of the footer.*/
+	bottom: 1em;
+	right: 1em;
+	text-align: center;
+	vertical-align: middle;
+	line-height: 1em;
+	padding: 0.25em;
+	z-index: 1;
+	color: #FFFFFF;
+	border-radius: 0.333333em;
+	text-align: center;
+}
+
+#current_balance.very_low_balance {
+	background-color: #FF0000;
+}
+
+#current_balance.low_balance {
+	background-color: #FF9900;
+}
+
+#current_balance.OK_balance {
+	background-color: #000000;
+}
+
+#current_balance.high_balance {
+	background-color: #00FF00;
+}
+
+#current_balance.very_high_balance {
+	background-color: #38761D;
+}
+
 #main_content {
 	/*position: absolute;*/
 	/*float: right;*/
-	border-radius: 15px;
+	border-radius: 1em;
 	/*max-width: 90%;*/
 	background-color: white;
 	color: black;
+	/*TODO: make this into `padding-left`, I think. That messes up the top a little.*/
 	padding: 1em;
 	margin-left: 5em;
 	/*margin-left: 3.5em;*/
@@ -114,15 +154,11 @@ body {
 
 .nav_button a {
 	display: block;
-	text-decoration: none;
-	color: white;
 }
 
 #header .nav_button a:hover {
-	/*border: 0.05em solid #F1C232;*/
-	/*border-radius: 5%;*/
 	color: #F1C232;
-	margin-top: 0.5em;
+	margin-top: 0.25em;
 	/*font-weight: bold;*/
 }
 

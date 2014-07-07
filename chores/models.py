@@ -3,39 +3,18 @@ from django.db import models, connection
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
-from django.forms import ModelForm
+from django import forms
 # See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
 from model_utils.managers import PassThroughManager
 
-import pytz
 import datetime
+import pytz
 import itertools
 import functools
+from chores import timedelta
 
 # TODO: how do we tie the `signed_up` property, the `sign_up_permission` etc.
 # methods, 'sign up' as a verb, the JavaScript function names, etc.?
-
-def timedelta_pretty_print(timedelta):
-    # TODO: this needs testing (including edge conditions).
-    pretty_print = ''
-    abs_td = abs(timedelta)
-    if abs_td < datetime.timedelta(seconds=60):
-        pretty_print += '{num} seconds'.format(num=abs_td.seconds)
-    elif abs_td < datetime.timedelta(seconds=60**2):
-    # For consistency I am not using rounding for these next two. See
-    # <https://docs.python.org/3/library/datetime.html#timedelta-objects>.
-        pretty_print += '{num} minutes'.format(num=abs_td.seconds//60)
-    elif abs_td < datetime.timedelta(days=1):
-        pretty_print += '{num} hours'.format(num=abs_td.seconds//60**2)
-    else:
-        pretty_print += '{num} days'.format(num=abs.td.days)
-    # TODO: based on this, in the description of this function we should note
-    # whether it expects 'now-then' or 'then-now'.
-    if timedelta >= datetime.timedelta(0):
-        pretty_print += ' ago'
-    else:
-        pretty_print += ' from now'
-    return pretty_print
 
 class ChoreError(Exception):
     pass
@@ -205,7 +184,7 @@ class Timecard(models.Model):
             # `None`. Figure out what to do.
             # TODO: commenting out to get the rest running. Need to fix later.
             tdp=None
-            # (timedelta_pretty_print(datetime.datetime.now(pytz.utc)-
+            # (timedelta.pretty_print(datetime.datetime.now(pytz.utc)-
                 # getattr(self, attribute).when))
         )
 
@@ -361,9 +340,11 @@ class Skeleton(models.Model):
 class ChoreSkeleton(Skeleton):
     point_value = models.PositiveSmallIntegerField()
     start_time = models.TimeField()
+    # TODO: consider changing the name of this to `stop_time` to match with
+    # `start_date` and `stop_date`.
     end_time   = models.TimeField()
 
-class ChoreSkeletonForm(ModelForm):
+class ChoreSkeletonForm(forms.ModelForm):
     class Meta:
         model = ChoreSkeleton
         fields = ['short_name', 'short_description', 'start_time', 'end_time',
@@ -390,7 +371,7 @@ class Chore(Timecard):
     def __radd__(self, other):
         return self.skeleton.point_value+other
 
-class ChoreForm(ModelForm):
+class ChoreForm(forms.ModelForm):
     class Meta:
         model = Chore
         fields = ['skeleton', 'start_date', 'stop_date']

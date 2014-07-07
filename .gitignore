@@ -4,6 +4,9 @@ db.sqlite3
 static/icons
 static/400 Hand-Drawn
 rhc
+initializer.py
+test.py
+db_basic.sqlite3
 
 # Copied from <https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore>.
 

@@ -41,3 +41,9 @@ All Chores.
 {% endfor %}
 
 {% endblock %}
+
+{% block current_balance %}
+<div id="current_balance" class="{{ current_balance.CSS_class }}">
+	{{ current_balance.value }}
+</div>
+{% endblock %}

@@ -6,17 +6,18 @@ import datetime
 import pytz
 import itertools
 import decimal
+from chores import timedelta
 
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required, user_passes_test, \
-permission_required
+from django.contrib.auth.decorators import (login_required, user_passes_test,
+permission_required)
 from django.contrib.auth.models import User
 from django.template import loader, Context
 
 from chores.models import Chore
 from profiles.models import UserProfile, GroupProfile
-from stewardships.models import StewardshipSkeleton, Stewardship, Absence, \
-    ShareChange
+from stewardships.models import (StewardshipSkeleton, Stewardship, Absence, \
+    ShareChange)
 
 # TODO: put extra functions and lengthy variable definitions in another file.
 # TODO: name needs improving here.
@@ -232,22 +233,6 @@ def get_chore_sentences(user, chore):
         VoidSentence(user, chore)
     ]
 
-def timedelta_in_interval(left, timedelta, right):
-    '''
-    Tests whether `timedelta` is contained in the half-open interval
-    [`left` days, `right` days). If `left` is `None` then it is interpreted
-    as ∞; similarly for `right`.
-    '''
-    if left is None:
-        left = datetime.timedelta.min
-    else:
-        left = datetime.timedelta(left)
-    if right is None:
-        right = datetime.timedelta.max
-    else:
-        right = datetime.timedelta(right)
-    return left <= timedelta < right
-
 def get_obligations(user, coop=None):
 
     if coop is None:
@@ -295,7 +280,7 @@ def get_obligations(user, coop=None):
                 data[key]['original'].in_window(cycle_start, cycle_stop)
             )
     # Rearranging again.
-    data.update(calculate_loads(user=user, coop=coop)[0])
+    data.update(calculate_load_info(user=user, coop=coop)[0])
 
     def list_processor(items):
         return [
@@ -364,7 +349,7 @@ def get_obligations(user, coop=None):
     dict_to_return.update({'point_cycles': cycles})
     return dict_to_return
 
-def calculate_loads(user=None, coop=None):
+def calculate_load_info(user=None, coop=None):
     if coop is None:
         if user is None:
             raise TypeError('Must specify user or co-op.')
@@ -406,6 +391,7 @@ def calculate_loads(user=None, coop=None):
         total_share    =  sum(adds_to_share)+sum(cooper.profile.share for
                                                  cooper in all_coopers)
         # 'ppds' stands for 'points per day-share.'
+        # TODO: here and elsewhere, add error handling (for division).
         ppds = total_points/(total_presence*total_share)
 
         for dict_ in accounts:
@@ -429,6 +415,29 @@ def calculate_loads(user=None, coop=None):
             dict_['balance'].append(balance)
     return accounts
 
+def calculate_balance(user, coop=None):
+    endpoints = (-float('inf'), -0.3, -0.15, 0.15, 0.3, float('inf'))
+    CSS_classes = ('very_low_balance', 'low_balance', 'OK_balance',
+                   'high_balance', 'very_high_balance')
+    assert len(endpoints) == len(CSS_classes)+1
+
+    load_info = calculate_load_info(user=user, coop=coop)[0]
+    balance = load_info['balance'][-1]
+    load    = load_info['load'][-1]
+    try:
+        ratio = balance/load
+    except decimal.DivisionByZero as e:
+        ratio = endpoints[-1]+1 if balance >= 0 else endpoints[0]-1
+    for i, CSS_class in enumerate(CSS_classes):
+        if endpoints[i] <= ratio < endpoints[i+1]:
+            # We will use the value of `CSS_class`. If we never make it to this
+            # block, `CSS_class` will end up `CSS_classes[-1]`.
+            break
+    return {'value': '{sgn}{val}'.format(sgn= '+'if balance >= 0 else '-',
+                 # TODO: how to decide how to zfill?
+                 val=str(abs(balance).to_integral_value()).zfill(2)),
+            'CSS_class': CSS_class}
+
 # TODO: use an id (or something else?) to make it open to the current day.
 @login_required()
 def chores_list(request):
@@ -450,9 +459,9 @@ def chores_list(request):
         now = datetime.date.today()
         difference = date-now
         css_classes = {
-            'past'    : timedelta_in_interval(None, difference, 0),
-            'near_future'   : timedelta_in_interval(0, difference, 3),
-            'distant_future': timedelta_in_interval(3, difference, None)
+            'past'    : timedelta.in_interval(None, difference, 0),
+            'near_future'   : timedelta.in_interval(0, difference, 3),
+            'distant_future': timedelta.in_interval(3, difference, None)
         }
         return ' '.join([key for key,value in css_classes.items() if value])
 
@@ -489,10 +498,11 @@ def chores_list(request):
             'schedule': chore_dicts,
             'weekday' : weekdays[date.weekday()],
          })
-    # TODO: here also sort by cycle?
     return render(request, 'chores/chores_list.html',
                   dictionary={'coop': coop, 'cooper': request.user,
-                              'days': chores_by_date})
+                              'days': chores_by_date,
+                              'current_balance':
+                                  calculate_balance(request.user, coop)})
 
 # TODO: write a function/URL thing for when they go to 'chores/me/'.
 # TODO: this should now require permissions.
@@ -511,6 +521,7 @@ def user_stats_list(request, username):
 # TODO: should be some test here.
 # TODO: with not too much effort this could be changed to use the
 # DisplayInformation class, as is done in `user_stats_list`.
+# TODO: include also lists of all stewardships, absences, etc.
 def users_stats_summarize(request):
 
     # TODO: seems like we're just undoing the work that will be done in the
@@ -530,15 +541,16 @@ def users_stats_summarize(request):
     for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
         cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
                        'cycle_stop': cycle_stop})
-    accounts = calculate_loads(coop=coop)
+    accounts = calculate_load_info(coop=coop)
     accounts.sort(key=lambda x: x['user'].profile.nickname)
     # TODO: could move around to iterate through only once.
-    nicknames = [row['user'].profile.nickname for row in accounts]
+    # TODO: `users` is used in a pretty hacky way in the template.
+    users = [row['user'] for row in accounts]
     user_ids = [row['user'].id for row in accounts]
     accounts = {row['user'].id: balance_processor(row['balance']) for row in
                 accounts}
     display_info = DisplayInformation('rows', {'sections': [None],
-        'subsections': [nicknames]}, user_ids, lambda x: x, None)
+        'subsections': [users]}, user_ids, lambda x: x, None)
     render_dictionary = {
         'point_cycles': cycles,
         'rows': display_info.create_template_data(accounts)
@@ -566,3 +578,4 @@ def calendar_create(request, username):
     context = Context({'coop': coop, 'chores': chores})
     response.write(template.render(context))
     return response
+
