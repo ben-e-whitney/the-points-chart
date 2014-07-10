@@ -91,19 +91,26 @@ a {
 }
 
 #current_balance.low_balance {
-	background-color: #FF9900;
+	/*background-color: #FF9900;*/
+	background-color: #FF8080;
 }
 
 #current_balance.OK_balance {
-	background-color: #000000;
+	/*background-color: #000000;*/
+	background-color: #FFFFFF;
+	color: #000000;
+	/*TODO: figure out how to do this in a way that doesn't make the thing bigger, or whatever.*/
+	border: 0.25em solid #000000;
 }
 
 #current_balance.high_balance {
-	background-color: #00FF00;
+	/*background-color: #00FF00;*/
+	background-color: #FF8080;
 }
 
 #current_balance.very_high_balance {
-	background-color: #38761D;
+	/*background-color: #38761D;*/
+	background-color: #FF0000;
 }
 
 #main_content {
@@ -135,16 +142,17 @@ a {
 
 .nav_bar {
 	float: right;
-	font-size: 1.5em;
+	font-size: 2em;
 	/*TODO: this is gross. Figure out how to do it the right way.*/
-	margin-top: 0.5em;
+	margin-top: 0.25em;
 	margin-right: 0.75em;
 }
 
-/*TODO: I don't know why we need this.*/
-#footer.nav_bar {
-	margin-right: 0em;
-}
+/*TODO: see whether you do need this. Might have 'fixed itself.'*/
+/*[>TODO: I don't know why we need this.<]*/
+/*#footer.nav_bar {*/
+  /*margin-right: 0em;*/
+/*}*/
 
 .nav_button {
 	float: left;
@@ -156,9 +164,9 @@ a {
 	display: block;
 }
 
-#header .nav_button a:hover {
+#header .nav_button a:hover, #footer .nav_button a:hover {
 	color: #F1C232;
-	margin-top: 0.25em;
+	/*margin-top: 0.25em;*/
 	/*font-weight: bold;*/
 }
 

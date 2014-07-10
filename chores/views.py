@@ -390,15 +390,38 @@ def calculate_load_info(user=None, coop=None):
                                                     cooper in all_coopers)
         total_share    =  sum(adds_to_share)+sum(cooper.profile.share for
                                                  cooper in all_coopers)
+
         # 'ppds' stands for 'points per day-share.'
         # TODO: here and elsewhere, add error handling (for division).
-        ppds = total_points/(total_presence*total_share)
+        # base_presence = sum(cooper.profile.presence*cooper.profile.share for
+                            # cooper in all_coopers)
+
+
+        # TODO: sum product of share and presence (inc. special).
+        # print('adds_to_points: {tp}'.format(tp=adds_to_points))
+        # print('adds_to_presence: {tp}'.format(tp=adds_to_presence))
+        # print('adds_to_share: {tp}'.format(tp=adds_to_share))
+        # print('total_points: {tp}'.format(tp=total_points))
+        # print('total_presence: {tp}'.format(tp=total_presence))
+        # print('total_share: {tp}'.format(tp=total_share))
+        # print('ppds: {ppds}'.format(ppds=ppds))
+
+        total_presence_share = 0
+        for cooper in all_coopers:
+            presence = cooper.profile.presence-sum(cycle_data['absences']
+                                                   .signed_up(cooper, True))
+            share = cooper.profile.share+sum(cycle_data['share changes']
+                                             .signed_up(cooper, True))
+            total_presence_share += presence*share
+        ppds = total_points/total_presence_share
 
         for dict_ in accounts:
             user = dict_['user']
             # load = 0
             # signed_up = 0
             # completed = 0
+            # TODO: factor in Absences and ShareChanges. Do this in the above
+            # loop.
             load = ppds*user.profile.presence*user.profile.share
             user_signed_up_chores = cycle_data['chores'].signed_up(user, True)
             total_signed_up = sum(user_signed_up_chores)

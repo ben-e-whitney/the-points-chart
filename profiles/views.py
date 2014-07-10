@@ -8,12 +8,16 @@ from django.contrib.auth.models import User, Group
 from django.core.exceptions import ValidationError
 from django.template import loader, Context
 
-from profiles.models import UserProfile, GroupProfile, UserProfileForm
-from chores.models import ChoreSkeletonForm, ChoreForm
-from stewardships.models import (ClassicalStewardshipSkeletonForm,
-         ClassicalStewardshipForm, AbsenceForm, ShareChangeFormCreator)
 import datetime
 import json
+
+from profiles.forms import UserProfileForm
+from chores.forms import ChoreSkeletonForm, ChoreForm
+from stewardships.forms import (ClassicalStewardshipSkeletonForm,
+    ClassicalStewardshipFormCreator, SpecialPointsFormCreator, LoanFormCreator,
+    AbsenceFormCreator, ShareChangeFormCreator)
+
+from profiles.models import UserProfile, GroupProfile
 
 @login_required()
 def contacts_list(request):
@@ -54,20 +58,6 @@ def contacts_export(request):
 def profile_form(request):
     return render(request, 'profiles/profile_form.html',
                   {'form': UserProfileForm(instance=request.user.profile)})
-
-@login_required()
-def profile_edit(request):
-    form = UserProfileForm(request.POST)
-    if form.is_valid():
-        form.save()
-    return HttpResponse(json.dumps({
-        'errors': {
-            field: ' '.join(form.errors[field]) for field in form.errors
-        },
-        'non_field_errors': list(form.non_field_errors())
-    }), status=200)
-
-
 # TODO: what is the idiomatic way to do this? Better as a lambda expression?
 class HTMLForm():
     def __init__(self, html_id, title, form_content):
@@ -88,8 +78,11 @@ def steward_forms(request):
         ('classical_stewardship_skeleton_form', 'Create a New '
                  'Stewardship Skeleton', ClassicalStewardshipSkeletonForm()),
         ('classical_stewardship_form', 'Create a New Stewardship',
-                 ClassicalStewardshipForm()),
-        ('absence_form', 'Create a New Absence', AbsenceForm()),
+                 ClassicalStewardshipFormCreator(coop)),
+        ('special_points_form', 'Create a New Special Points',
+                 SpecialPointsFormCreator(coop)),
+        ('absence_form', 'Create a New Absence', AbsenceFormCreator(coop)),
+        ('loan_form', 'Create a New Loan', LoanFormCreator(coop)),
         ('share_change_form', 'Create a New Share Change',
                  ShareChangeFormCreator(coop))
     )]

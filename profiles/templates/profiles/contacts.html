@@ -30,7 +30,9 @@ Contact List.
 				{{ cooper.profile.phone_number }}
 			</td>
 			<td>
-				{{ cooper.profile.email_address }}
+				<a href="mailto:{{ cooper.profile.email_address }}">
+					{{ cooper.profile.email_address }}
+				</a>
 			</td>
 			<td></td>
 		</tr>

@@ -1,18 +1,25 @@
 {% extends 'base.html' %}
 
 {% block pagetitle %}
-Contact List.
+Points Steward.
 {% endblock %}
 
 {% block head %}
 {% load staticfiles %}
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-<script src={% static "profiles/profile_edit.js" %}></script>
+
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+
+<script src={% static "profiles/function_creators.js" %}></script>
+<script src={% static "profiles/steward_edit.js" %}></script>
 {% endblock head %}
 
 {% block body %}
+<div id="form_accordion">
 {% for form in forms %}
-<h1>{{ form.title }}</h1>
+<!--<div class="form_unit">-->
+<h3>{{ form.title }}</h3>
 	<div class="form_container">
 		<form id="{{ form.html_id }}" method="post">
 			<table>
@@ -33,6 +40,9 @@ Contact List.
 				<!--</div>-->
 		</table>
 		</form>
-	</div><br>
+	</div>
+	<!--<br>-->
+<!--</div>-->
 {% endfor %}
+</div>
 {% endblock %}

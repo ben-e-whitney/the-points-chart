@@ -3,7 +3,6 @@ from django.db import models, connection
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
-from django import forms
 # See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
 from model_utils.managers import PassThroughManager
 
@@ -344,22 +343,6 @@ class ChoreSkeleton(Skeleton):
     # `start_date` and `stop_date`.
     end_time   = models.TimeField()
 
-class ChoreSkeletonForm(forms.ModelForm):
-    class Meta:
-        model = ChoreSkeleton
-        fields = ['short_name', 'short_description', 'start_time', 'end_time',
-                  'point_value']
-    error_css_class = 'form_error'
-
-    def clean(self):
-        super().clean()
-        # if self.receive_email_reminders and self.email_address = '':
-            # raise ValidationError('...')
-        # if self.receive_text_reminders and (self.phone_number = '' or
-                                            # self.phone_carrier is None):
-            # raise ValidationError('...')
-        return self.cleaned_data
-
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')
     objects = PassThroughManager.for_queryset_class(ChoreQuerySet)()
@@ -371,8 +354,3 @@ class Chore(Timecard):
     def __radd__(self, other):
         return self.skeleton.point_value+other
 
-class ChoreForm(forms.ModelForm):
-    class Meta:
-        model = Chore
-        fields = ['skeleton', 'start_date', 'stop_date']
-    error_css_class = 'form_error'

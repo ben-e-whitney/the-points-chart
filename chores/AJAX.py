@@ -5,7 +5,9 @@ from django.core.exceptions import ObjectDoesNotExist
 import json
 import pytz
 import datetime
-from chores.models import Chore, ChoreError
+from profiles.AJAX import make_form_response
+from chores.models import Chore, ChoreError, Signature
+from chores.forms import ChoreSkeletonForm, ChoreForm
 from chores.views import get_chore_sentences, calculate_balance
 
 
@@ -53,3 +55,39 @@ def act(response, method_name, chore_id):
         return HttpResponse('', reason=e.args[0]['message'],
                             status=e.args[0]['status'])
     return action_response(response.user, chore)
+
+# TODO: another permissions test here, and for the rest.
+@login_required()
+def chore_skeleton_create(request):
+    form = ChoreSkeletonForm(request.POST)
+    if form.is_valid():
+        skeleton = form.save(commit=False)
+        skeleton.coop = request.user.profile.coop
+        skeleton.save()
+    return make_form_response(form)
+
+@login_required()
+def chore_create(request):
+    print('got to here')
+    form = ChoreForm(request.POST)
+    print('about to check whether form is valid')
+    try:
+        form.is_valid()
+    except Exception as e:
+        print(e)
+        raise e
+    if form.is_valid():
+        print('form is valid')
+        try:
+            chore = form.save(commit=False)
+            for signature in ('signed_up', 'signed_off', 'voided'):
+                sig = Signature()
+                sig.save()
+                setattr(chore, signature, sig)
+            chore.save()
+        except Exception as e:
+            print(e)
+            raise e
+    else:
+        print('form is not valid')
+    return make_form_response(form)

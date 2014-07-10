@@ -3,7 +3,6 @@ from django.db import models
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
-from django.forms import ModelForm
 from django.core.exceptions import ValidationError
 
 import localflavor.us.models
@@ -89,18 +88,9 @@ class GroupProfile(models.Model):
             window = [window[1]+datetime.timedelta(days=1),
                       window[1]+datetime.timedelta(days=1)+window_width]
 
-class UserProfileForm(ModelForm):
-    class Meta:
-        model = UserProfile
-        fields = ['nickname', 'first_name', 'middle_name', 'last_name',
-                  'email_address', 'phone_number', 'phone_carrier']
-    error_css_class = 'form_error'
-
-    def clean(self):
-        super().clean()
-        # if self.receive_email_reminders and self.email_address = '':
-            # raise ValidationError('...')
-        # if self.receive_text_reminders and (self.phone_number = '' or
-                                            # self.phone_carrier is None):
-            # raise ValidationError('...')
-        return self.cleaned_data
+    def get_cycle_endpoints(self, cycle_num):
+        cycle_start_date = self.start_date+datetime.timedelta(
+            days=1+self.cycle_length)*(cycle_num-1)
+        cycle_stop_date = cycle_start_date+datetime.timedelta(
+            days=self.cycle_length)
+        return (cycle_start_date, cycle_stop_date)
