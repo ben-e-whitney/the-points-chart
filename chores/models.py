@@ -8,7 +8,6 @@ from model_utils.managers import PassThroughManager
 
 import datetime
 import pytz
-import itertools
 import functools
 from chores import timedelta
 

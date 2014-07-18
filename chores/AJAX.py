@@ -3,8 +3,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 
 import json
-import pytz
-import datetime
 from profiles.AJAX import make_form_response
 from chores.models import Chore, ChoreError, Signature
 from chores.forms import ChoreSkeletonForm, ChoreForm

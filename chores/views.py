@@ -15,8 +15,8 @@ from django.contrib.auth.models import User
 from django.template import loader, Context
 
 from chores.models import Chore
-from profiles.models import UserProfile, GroupProfile
-from stewardships.models import (StewardshipSkeleton, Stewardship, Absence, \
+from profiles.models import UserProfile
+from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
     ShareChange)
 
 # TODO: put extra functions and lengthy variable definitions in another file.
