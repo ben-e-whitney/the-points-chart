@@ -75,7 +75,7 @@ class Absence(Timecard):
     objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
 
     def __radd__(self, other):
-        return (self.stop_date-self.start_date).days()+other
+        return (self.stop_date-self.start_date).days+other
 
 class ShareChange(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton,

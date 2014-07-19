@@ -29,26 +29,27 @@ var replaceSentencesCreator = function(chore_id) {
   return replaceSentences;
 };
 
-var AJAXCreator = function(URL_function) {
+var AJAXCreator = function(URL_function, signature_name) {
   var inner = function(chore_id) {
-  $.ajax({
-    //TODO: send in `chore_id` as data, not as part of the URL.
-    url: '/chores/actions/'+URL_function+'/'+chore_id+'/',
-    type: 'POST',
-    async: true,
-    success: replaceSentencesCreator(chore_id),
-    error: function(jqXHR, textStatus, errorThrown) {
-      alert('Error: '+jqXHR.statusText+jqXHR.responseText);
-    },
-    complete: function() {}
-  });
+    $('#'+signature_name+'_button_'+chore_id).prop('disabled', true);
+    $.ajax({
+      //TODO: send in `chore_id` as data, not as part of the URL.
+      url: '/chores/actions/'+URL_function+'/'+chore_id+'/',
+      type: 'POST',
+      async: true,
+      success: replaceSentencesCreator(chore_id),
+      error: function(jqXHR, textStatus, errorThrown) {
+	alert('Error: '+jqXHR.statusText+jqXHR.responseText);
+      },
+      complete: function() {}
+    });
   };
   return inner;
 };
 
-var signUpChore        = AJAXCreator('sign_up');
-var signOffChore       = AJAXCreator('sign_off');
-var voidChore          = AJAXCreator('void');
-var revertSignUpChore  = AJAXCreator('revert_sign_up');
-var revertSignOffChore = AJAXCreator('revert_sign_off');
-var revertVoidChore    = AJAXCreator('revert_void');
+var signUpChore        = AJAXCreator('sign_up', 'signed_up');
+var signOffChore       = AJAXCreator('sign_off', 'signed_off');
+var voidChore          = AJAXCreator('void', 'voided');
+var revertSignUpChore  = AJAXCreator('revert_sign_up', 'signed_up');
+var revertSignOffChore = AJAXCreator('revert_sign_off', 'signed_off');
+var revertVoidChore    = AJAXCreator('revert_void', 'voided');
