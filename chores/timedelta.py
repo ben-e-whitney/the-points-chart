@@ -1,6 +1,6 @@
 import datetime
 
-def in_interval(left, timedelta, right):
+def in_interval(left, timedelta, right, unit='days'):
     '''
     Tests whether `timedelta` is contained in the half-open interval
     [`left` days, `right` days). If `left` is `None` then it is interpreted
@@ -9,11 +9,11 @@ def in_interval(left, timedelta, right):
     if left is None:
         left = datetime.timedelta.min
     else:
-        left = datetime.timedelta(left)
+        left = datetime.timedelta(**{unit: left})
     if right is None:
         right = datetime.timedelta.max
     else:
-        right = datetime.timedelta(right)
+        right = datetime.timedelta(**{unit: right})
     return left <= timedelta < right
 
 def pretty_print(timedelta):

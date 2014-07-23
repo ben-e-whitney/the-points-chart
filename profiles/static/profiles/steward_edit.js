@@ -1,9 +1,10 @@
 $(document).ready(function() {
   $('.date_picker').datepicker();
   $('#form_accordion').accordion({active: false, collapsible: true,
-    heightStyle: "content"});
+    heightStyle: "content", animate: false});
   var chores_create_URL = '/chores/actions/create/';
   var stewardships_create_URL = '/stewardships/actions/create/';
+  var profiles_create_URL = '/profiles/actions/create/';
   var ids_and_URLs = [
     ['chore_skeleton_form', chores_create_URL+'chore_skeleton/'],
     ['chore_form', chores_create_URL+'chore/'],
@@ -15,8 +16,9 @@ $(document).ready(function() {
     ['loan_form', stewardships_create_URL+'loan/'],
     ['absence_form', stewardships_create_URL+'absence/'],
     ['share_change_form', stewardships_create_URL+'share_change/'],
+    ['user_form', profiles_create_URL]
   ];
-  ids_and_URLs.forEach(function(args) {
-    $('#'+args[0]).submit(submit_function_creator(args[1]));
+  $.each(ids_and_URLs, function(key, arguments) {
+    $('#'+arguments[0]).submit(submit_function_creator(arguments[1]));
   });
 });

@@ -349,6 +349,8 @@ def get_obligations(user, coop=None):
     dict_to_return.update({'point_cycles': cycles})
     return dict_to_return
 
+# TODO: this method is quite long. See if there's a way to pull some of it out
+# into another function.
 def calculate_load_info(user=None, coop=None):
     if coop is None:
         if user is None:
@@ -395,16 +397,6 @@ def calculate_load_info(user=None, coop=None):
         # TODO: here and elsewhere, add error handling (for division).
         # base_presence = sum(cooper.profile.presence*cooper.profile.share for
                             # cooper in all_coopers)
-
-
-        # TODO: sum product of share and presence (inc. special).
-        # print('adds_to_points: {tp}'.format(tp=adds_to_points))
-        # print('adds_to_presence: {tp}'.format(tp=adds_to_presence))
-        # print('adds_to_share: {tp}'.format(tp=adds_to_share))
-        # print('total_points: {tp}'.format(tp=total_points))
-        # print('total_presence: {tp}'.format(tp=total_presence))
-        # print('total_share: {tp}'.format(tp=total_share))
-        # print('ppds: {ppds}'.format(ppds=ppds))
 
         total_presence_share = 0
         for cooper in all_coopers:
@@ -456,10 +448,13 @@ def calculate_balance(user, coop=None):
             # We will use the value of `CSS_class`. If we never make it to this
             # block, `CSS_class` will end up `CSS_classes[-1]`.
             break
-    return {'value': '{sgn}{val}'.format(sgn= '+'if balance >= 0 else '-',
-                 # TODO: how to decide how to zfill?
-                 val=str(abs(balance).to_integral_value()).zfill(2)),
-            'CSS_class': CSS_class}
+    approx_balance = balance.to_integral_value()
+    return {
+        'value': '{sgn}{val}'.format(sgn='+'if approx_balance >= 0 else '-',
+            # TODO: how to decide how to zfill?
+            val=str(abs(approx_balance)).zfill(2)),
+        'CSS_class': CSS_class
+    }
 
 # TODO: use an id (or something else?) to make it open to the current day.
 @login_required()

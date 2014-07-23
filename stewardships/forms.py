@@ -6,9 +6,9 @@ from chores.forms import BasicForm, ChoreSkeletonForm, ChoreForm
 
 def cycle_field_creator(coop):
     CYCLE_CHOICES = tuple(
-        (int(cycle_num),
-         'Cycle {num} ({stadat} to {stodat})'.format(num=cycle_num,
-             stadat=cycle_start.isoformat(), stodat=cycle_stop.isoformat()))
+        (int(cycle_num), 'Cycle {num} ({stadat} to {stodat})'
+             .format(num=cycle_num, stadat=cycle_start.isoformat(),
+                     stodat=cycle_stop.isoformat()))
         for cycle_num, cycle_start, cycle_stop in coop.profile.cycles()
     )
     # TODO: figure out if default is allowed here, or how to do it.

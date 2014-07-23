@@ -3,6 +3,8 @@ from django.db import models, connection
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
+#TODO: use this instead of datetime. Need to check all files.
+from django.utils import timezone
 # See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
 from model_utils.managers import PassThroughManager
 
@@ -13,6 +15,9 @@ from chores import timedelta
 
 # TODO: how do we tie the `signed_up` property, the `sign_up_permission` etc.
 # methods, 'sign up' as a verb, the JavaScript function names, etc.?
+
+MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP = 2
+REVERT_SIGN_UP_GRACE_PERIOD_HOURS = 1
 
 class ChoreError(Exception):
     pass
@@ -99,6 +104,17 @@ class ChoreQuerySet(models.query.QuerySet):
         '''
         return self.signature_check(cooper, bool_, 'voided')
 
+    def create_blank(self, skeleton=None, start_date=None, stop_date=None):
+        signatures = {}
+        for signature_name in ('signed_up', 'signed_off', 'voided'):
+            signature = Signature()
+            signature.save()
+            signatures.update({signature_name: signature})
+        chore = Chore(skeleton=skeleton, start_date=start_date,
+                      stop_date=stop_date, **signatures)
+        chore.save()
+        return chore
+
 class Signature(models.Model):
     who = models.ForeignKey(User, null=True, blank=True,
                             related_name='signature')
@@ -115,7 +131,7 @@ class Signature(models.Model):
                                                         dat=self.when)
     def sign(self, user):
         self.who = user
-        self.when = datetime.datetime.now()
+        self.when = timezone.now()
         self.save()
 
     # TODO: maybe we should save here and not in `clear`?
@@ -129,6 +145,7 @@ class Signature(models.Model):
         self.save()
 
 class Timecard(models.Model):
+    # TODO: make an __init__ method creating empy Signatures?
     # TODO: making this into an abstract class causes validation to fail
     # (complaints about ForeignKeys again). Would be nice to figure it out.
     start_date = models.DateField()
@@ -164,9 +181,22 @@ class Timecard(models.Model):
     def completed_successfully(self):
         return self.signed_up and self.signed_off and not self.voided
 
+    # TODO: use timedelta.in_interval for these two? Should we pay attention to
+    # anything other than days?
+    # TODO: should use co-op's timezone for these two.
     def in_the_future(self):
-        comparison_date = datetime.date.today()
-        return self.start_date > comparison_date
+        return self.start_date > timezone.now().date()
+
+    def in_the_past(self):
+        return self.start_date < timezone.now().date()
+
+    def in_grace_period(self):
+        return timedelta.in_interval(0, timezone.now()-self.signed_up.when,
+        REVERT_SIGN_UP_GRACE_PERIOD_HOURS, unit='hours')
+
+    def too_close_to_revert_sign_up(self):
+        return timedelta.in_interval(0, self.start_date-timezone.now().date(),
+                                     MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
 
     def get_scoop_message(self, user, attribute, verb):
         owner = getattr(self, attribute).who
@@ -174,16 +204,12 @@ class Timecard(models.Model):
             coo='You' if owner == user else owner.profile.nickname,
             ver=verb,
             # TODO: make sure that you're not making an assumption about the
-            # timezone here. TODO: this was `datetime.datetime.now(pytz.utc)`.
-            # Removing `pytz.utc` both to make it work and for a reminder that
-            # we have to resolve this.
+            # timezone here.
             # TODO: error can happen here if you have a Signature with a
             # co-oper but no datetime (will be subtracting a datetime with
             # `None`. Figure out what to do.
-            # TODO: commenting out to get the rest running. Need to fix later.
-            tdp=None
-            # (timedelta.pretty_print(datetime.datetime.now(pytz.utc)-
-                # getattr(self, attribute).when))
+            tdp=(timedelta.pretty_print(timezone.now()-
+                 getattr(self, attribute).when))
         )
 
     # Could make the argument that voiding should be allowed even when someone
@@ -255,18 +281,21 @@ class Timecard(models.Model):
     revert_sign_up_permission = permission_creator(
         [
             lambda self, user: self.signed_up.who != user,
-            lambda self, user: (self.start_date-datetime.date.today() <
-                                datetime.timedelta(days=2)),
             lambda self, user: self.voided,
-            lambda self, user: self.signed_off
+            lambda self, user: self.signed_off,
+            lambda self, user: (self.too_close_to_revert_sign_up() and
+                                not self.in_grace_period()),
+            lambda self, user: (self.in_the_past() and
+                                not self.in_grace_period())
         ], [
             "You didn't sign up for that chore.",
-            ("It's too close to the chore. Talk to {ste} if you really can't "
-             'do it.').format(ste=None),
             lambda self, user: self.get_scoop_message(user, 'voided',
                                                      'voided'),
             lambda self, user: self.get_scoop_message(user, 'signed_off',
-                                                      'signed off')
+                                                      'signed off'),
+            ("It's too close to the chore. Talk to {ste} if you really can't "
+             'do it.').format(ste=None),
+            "The chore's already past. Void instead."
         ]
     )
     revert_sign_off_permission = permission_creator(
@@ -279,7 +308,6 @@ class Timecard(models.Model):
     def actor_creator(permission_method_name, signature_name, action_name):
         def actor(self, user):
             permission = getattr(self, permission_method_name)(user)
-            # raise TypeError(permission)
             if permission['boolean']:
                 getattr(getattr(self, signature_name), action_name)(user)
             else:
@@ -304,13 +332,18 @@ class Timecard(models.Model):
         Sets flags relating to `chores` that are read by the template. The
         actual formatting information is kept in a CSS file.
         '''
-        current_date = datetime.date.today()
+        # TODO: seems like an example of somewhere we want to use the
+        # GroupProfile time zone.
+        current_date = timezone.now().date()
         css_classes = {
             # TODO: names are outdated. Need to fix!
             'needs_sign_up': self.sign_up_permission(user)['boolean'],
             'needs_sign_off': self.sign_off_permission(user)['boolean'],
             'completed_successfully': self.completed_successfully(),
-            'voided': self.revert_void_permission(user)['boolean'],
+            #TODO: here you were checking whether the user voided, it looks
+            #like. Keeping for the time being; to delete when comfortable.
+            #'voided': self.revert_void_permission(user)['boolean'],
+            'voided': self.voided,
             'user_signed_up': user == self.signed_up.who,
             'user_signed_off': user == self.signed_off.who,
             'user_voided': user == self.voided.who

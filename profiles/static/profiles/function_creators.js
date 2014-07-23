@@ -1,9 +1,16 @@
-var report_form_finish = function(form, icon_URL, icon_description) {
-  //TODO: 'static' here is replacing '{% static %} in the Django template'.
-  var form_icon = form.find('.form_icon');
-  form_icon.empty();
-  form_icon.append('<object data="/static/'+icon_URL+'">'+icon_description+
-      '</object>');
+var report_form_finish = function(form, icon_URL, icon_description, non_field_errors) {
+  var form_status = form.find('.form_status');
+  form_status.empty();
+  if (non_field_errors == undefined) {
+    non_field_errors = '';
+  }
+  //This should be the same as settings.STATIC_URL.
+  var STATIC_URL = '/static/'
+  var status = '<object data="'+STATIC_URL+icon_URL+'">'+icon_description+'</object>';
+  if (non_field_errors != undefined) {
+    status += ' '+non_field_errors;
+  }
+  form_status.append(status);
   form.find('.submit_button').prop('disabled', false);
   return null;
 };
@@ -12,7 +19,7 @@ var report_success_creator = function(form) {
   var report_success = function(returnedData, textStatus, jqXHR) {
     var icon_URL = 'icons/checkmark.svg';
     var icon_description = 'checkmark';
-    var form_icon = form.find('.form_icon');
+    var form_status = form.find('.form_status');
     report_form_finish(form, icon_URL, icon_description);
     return null;
   };
@@ -21,41 +28,30 @@ var report_success_creator = function(form) {
 
 var report_errors_creator = function(form) {
   var report_errors = function(returnedData, textStatus, jqXHR) {
-    returnedData = JSON.parse(returnedData);
-    alert('in report_errors');
-    alert(JSON.stringify(returnedData));
-    alert('did JSON parse');
-    alert('right before first forEach');
-    returnedData.errors.forEach(function(key) {
-      $('#id_'+key).closest('tr').append("<td class='form_error'>"+ errors[key]+
-        "</td>");
+    responseText = JSON.parse(returnedData.responseText);
+    errors           = responseText.errors;
+    non_field_errors = responseText.non_field_errors;
+    $.each(errors, function(key, value) {
+      $('#id_'+key).closest('tr').append("<td class='form_error'>"+
+        value+"</td>");
+      return null;
     });
-    alert('right before second forEach');
-    returnedData.non_field_errors.forEach(function(key) {
-      //TODO: put these somewhere.
-    });
-    alert('right after all forEaches');
     var icon_URL = 'icons/delete.svg';
     var icon_description = 'error';
-    report_form_finish(form, icon_URL, icon_description);
-    report('about to leave report_errors');
+    report_form_finish(form, icon_URL, icon_description, non_field_errors);
     return null;
   };
   return report_errors;
 };
 
-//TODO: can test whether binding `this` to the argument `that` is needed. Tend
-//to think that this is unneeded, but haven't tested and it depends on how the
-//jQuery `submit` method works.
 var submit_function_creator = function(post_URL) {
-  //TODO: disable the submit button!
   var submit_function = function(e) {
     //Override the form's normal POST action.
     e.preventDefault();
     var data = {};
     var form = $(this);
     form.find('.submit_button').prop('disabled', true);
-    form.serializeArray().forEach(function(form_element) {
+    $.each(form.serializeArray(), function(key, form_element) {
       data[form_element.name] = form_element.value;
     });
     $.ajax({

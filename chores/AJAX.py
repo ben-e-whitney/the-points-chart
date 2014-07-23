@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 
+import datetime
 import json
 from profiles.AJAX import make_form_response
 from chores.models import Chore, ChoreError, Signature
@@ -66,24 +67,35 @@ def chore_skeleton_create(request):
 
 @login_required()
 def chore_create(request):
+    #TODO: clean this up.
     print('got to here')
     form = ChoreForm(request.POST)
     print('about to check whether form is valid')
     try:
         form.is_valid()
     except Exception as e:
+        print('error in checking whether form was valid')
         print(e)
         raise e
     if form.is_valid():
         print('form is valid')
+        #Django (as of version 1.6.5) doesn't permit bulk creation of
+        #inherited models, and Chore inherits from Timecard. So we have to do
+        #it one-by-one. Haven't managed to get it working with Signatures,
+        #either. Guessing a problem with pk? See <https://docs.djangoproject
+        #.com/en/dev/ref/models/querysets/#bulk-create>.
+        repeat_interval = datetime.timedelta(days=form.cleaned_data[
+            'repeat_interval'])
         try:
-            chore = form.save(commit=False)
-            for signature in ('signed_up', 'signed_off', 'voided'):
-                sig = Signature()
-                sig.save()
-                setattr(chore, signature, sig)
-            chore.save()
+            for repeat in range(form.cleaned_data['number_of_repeats']):
+                shift = repeat*repeat_interval
+                chore = Chore.objects.create_blank(
+                    skeleton=form.cleaned_data['skeleton'],
+                    start_date=form.cleaned_data['start_date']+shift,
+                    stop_date=form.cleaned_data['stop_date']+shift,
+                )
         except Exception as e:
+            print('error in doing chores')
             print(e)
             raise e
     else:

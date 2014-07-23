@@ -11,7 +11,7 @@ from django.template import loader, Context
 import datetime
 import json
 
-from profiles.forms import UserProfileForm
+from profiles.forms import UserProfileForm, UserFormCreator
 from chores.forms import ChoreSkeletonForm, ChoreForm
 from stewardships.forms import (ClassicalStewardshipSkeletonForm,
     ClassicalStewardshipFormCreator, SpecialPointsFormCreator, LoanFormCreator,
@@ -79,11 +79,13 @@ def steward_forms(request):
                  'Stewardship Skeleton', ClassicalStewardshipSkeletonForm()),
         ('classical_stewardship_form', 'Create a New Stewardship',
                  ClassicalStewardshipFormCreator(coop)),
+        # TODO: rename this to 'Special Points Grant'?
         ('special_points_form', 'Create a New Special Points',
                  SpecialPointsFormCreator(coop)),
         ('absence_form', 'Create a New Absence', AbsenceFormCreator(coop)),
         ('loan_form', 'Create a New Loan', LoanFormCreator(coop)),
         ('share_change_form', 'Create a New Share Change',
-                 ShareChangeFormCreator(coop))
+                 ShareChangeFormCreator(coop)),
+        ('user_form', 'Create a New User', UserFormCreator(coop))
     )]
     return render(request, 'profiles/steward_forms.html', {'forms': forms})

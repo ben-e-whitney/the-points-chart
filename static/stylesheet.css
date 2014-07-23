@@ -91,25 +91,21 @@ a {
 }
 
 #current_balance.low_balance {
-	/*background-color: #FF9900;*/
 	background-color: #FF8080;
 }
 
 #current_balance.OK_balance {
-	/*background-color: #000000;*/
-	background-color: #FFFFFF;
-	color: #000000;
+	background-color: #7E7E7E;
+	/*color: #000000;*/
 	/*TODO: figure out how to do this in a way that doesn't make the thing bigger, or whatever.*/
-	border: 0.25em solid #000000;
+	/*border: 0.25em solid #000000;*/
 }
 
 #current_balance.high_balance {
-	/*background-color: #00FF00;*/
 	background-color: #FF8080;
 }
 
 #current_balance.very_high_balance {
-	/*background-color: #38761D;*/
 	background-color: #FF0000;
 }
 
@@ -200,20 +196,23 @@ ul.chores_list {
 	opacity: 1;
 }
 
+/*TODO: define opacities here?*/
 .needs_sign_up {
 	background-color: #CFE2F3;
 }
 
 .needs_sign_off {
-	background-color: #F3E0CF;
+	/*background-color: #F3E0CF;*/
+	background-color: #B6D7A8;
 }
 
 .completed_successfully {
-	background-color: #E2F3CF;
+	/*background-color: #E2F3CF;*/
 }
 
 .voided {
-	background-color: #E0CFF3;
+	/*background-color: #E0CFF3;*/
+	background-color: #C400FF;
 }
 
 .user_signed_up {
@@ -221,7 +220,7 @@ ul.chores_list {
 }
 
 .user_signed_off {
-	background-color: #C1F132;
+	/*background-color: #C1F132;*/
 }
 
 form th {
@@ -233,7 +232,7 @@ form.submit_button {
 	float: right;
 }
 
-.form_error {
+.form_error, .form_status {
 	color: red;
 }
 
@@ -243,4 +242,8 @@ form.submit_button {
 
 .form_fields {
 	display: table-row;
+}
+
+.form_report {
+	color: red;
 }

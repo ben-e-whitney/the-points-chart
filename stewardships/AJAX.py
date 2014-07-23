@@ -64,6 +64,9 @@ def loan_create(request):
         skeleton.save()
         loan = form.save(commit=False)
         loan.skeleton = skeleton
+        # TODO: could make a `create_blank`-esque method for the Timecard
+        # QuerySet that would make this smoother, and hopefully reuse it for
+        # Chores. Might not work.
         signed_up = Signature()
         signed_up.sign(User.objects.get(pk=form.data['cooper']))
         loan.signed_up = signed_up
