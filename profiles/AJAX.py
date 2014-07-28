@@ -3,8 +3,7 @@ from django.contrib.auth.decorators import login_required
 
 import json
 
-from profiles.models import UserProfile
-from profiles.forms import UserProfileForm, UserFormCreator
+from profiles.forms import UserProfileForm, GroupProfileForm
 
 # TODO: this should be stored in some site-wide directory.
 def make_form_response(form):
@@ -49,30 +48,19 @@ def profile_edit(request):
     return make_form_response(form)
 
 @login_required()
-def user_create(request):
-    print('***in user_create***')
-    coop = request.user.profile.coop
-    form = UserFormCreator(coop)(request.POST)
+def group_profile_edit(request):
+    print('in group_profile_edit')
+    try:
+        form = GroupProfileForm(request.POST,
+                                instance=request.user.profile.coop.profile)
+    except Exception as e:
+        print('error in making form')
+        print(e)
+        raise e
     if form.is_valid():
         print('form is valid')
-        new_user = form.save()
-        coop.user_set.add(new_user)
-        try:
-            profile = UserProfile(user=new_user, coop=coop,
-                                  nickname=form.cleaned_data['nickname'],
-                                  email_address=form.cleaned_data['email_address'],
-                                  presence=form.cleaned_data['presence'],
-                                  share=form.cleaned_data['share']
-            )
-            profile.save()
-        except Exception as e:
-            print('error in making the profile')
-            print(e)
-            raise e
-        # TODO: email new user here with instructions. CC steward (maybe just
-        # CC the person who made the request, to allow for other people to
-        # create users in the future).
+        form.save()
     else:
         print('form is not valid')
-        print(form.errors)
     return make_form_response(form)
+

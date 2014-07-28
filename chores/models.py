@@ -22,6 +22,19 @@ REVERT_SIGN_UP_GRACE_PERIOD_HOURS = 1
 class ChoreError(Exception):
     pass
 
+class ChoreSkeletonQuerySet(models.query.QuerySet):
+
+    def for_coop(self, coop):
+        #'''
+        #Query the model database and return an iterator of ChoreSkeleton instances.
+
+        #Arguments:
+            #coop -- Group whose chores skeletons we are interested in.
+
+        #Return an iterator yielding those chores skeletons which belong to `coop`.
+        #'''
+        return self.filter(coop=coop)
+
 class ChoreQuerySet(models.query.QuerySet):
 
     def for_coop(self, coop):
@@ -130,6 +143,8 @@ class Signature(models.Model):
             return 'Signature of {use} at {dat}'.format(use=self.who,
                                                         dat=self.when)
     def sign(self, user):
+        print('{user} signing!! (this is in models/Signature)'.format(
+            user=user))
         self.who = user
         self.when = timezone.now()
         self.save()
@@ -374,6 +389,7 @@ class ChoreSkeleton(Skeleton):
     # TODO: consider changing the name of this to `stop_time` to match with
     # `start_date` and `stop_date`.
     end_time   = models.TimeField()
+    objects = PassThroughManager.for_queryset_class(ChoreSkeletonQuerySet)()
 
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')

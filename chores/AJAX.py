@@ -1,14 +1,19 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 
 import datetime
 import json
 from profiles.AJAX import make_form_response
-from chores.models import Chore, ChoreError, Signature
+from chores.models import Chore, ChoreSkeleton, ChoreError
 from chores.forms import ChoreSkeletonForm, ChoreForm
 from chores.views import get_chore_sentences, calculate_balance
 
+#TODO: remove.
+from chores.models import Signature
+from stewardships.forms import ClassicalStewardshipFormCreator
+from django.contrib.auth.models import User
 
 # TODO: still not used here!
 def add_current_balance(f):
@@ -55,15 +60,93 @@ def act(response, method_name, chore_id):
                             status=e.args[0]['status'])
     return action_response(response.user, chore)
 
-# TODO: another permissions test here, and for the rest.
-@login_required()
-def chore_skeleton_create(request):
-    form = ChoreSkeletonForm(request.POST)
-    if form.is_valid():
-        skeleton = form.save(commit=False)
-        skeleton.coop = request.user.profile.coop
-        skeleton.save()
-    return make_form_response(form)
+def create_function_creator(model=None, model_callable=None, model_form=None,
+                            model_form_callable=None):
+    #TODO: another permissions test here.
+    @login_required
+    def create_function(request, model=model, model_callable=model_callable,
+                        model_form=model_form,
+                        model_form_callable=model_form_callable):
+        print('in create_function')
+        if model is None:
+            model = model_callable(request)
+        if model_form is None:
+            model_form = model_form_callable(request)
+        print(model.__name__)
+        print(model_form.__name__)
+        form = model_form(request.POST)
+        if form.is_valid():
+            print('about to call form.create_object')
+            try:
+                form.create_object(request=request)
+            except Exception as e:
+                print('error in calling form.create_object')
+                print(e)
+                raise e
+        return make_form_response(form)
+    return create_function
+
+def edit_function_creator(model=None, model_callable=None, model_form=None,
+                          model_form_callable=None):
+    #TODO: another permissions test here.
+    @login_required()
+    def edit_function(request, model=model, model_callable=model_callable,
+                      model_form=model_form,
+                      model_form_callable=model_form_callable):
+        print('in the edit_function')
+        print('model is:')
+        print(model)
+        print('model form is:')
+        print(model_form)
+        try:
+            #model = model or model_callable(request)
+            #model_form = model_form or model_form_callable(request)
+            if model is None:
+                model = model_callable(request)
+            if model_form is None:
+                model_form = model_form_callable(request)
+        except Exception as e:
+            print('error in assigning model and model_form')
+            print(e)
+            raise e
+        print('made it past the first try/except block')
+        try:
+            object_id = int(getattr(request, request.method)['choice_id'])
+        except Exception as e:
+            print('error in assigning object_id')
+            print(e)
+            raise e
+        print('about to test request.method')
+        if request.method == 'GET':
+            print('request method is GET')
+            # TODO: error checking here.
+            #TODO: no need to assign the actual variable -- just put in render
+            #arguments.
+            #TODO: make not explaining why the order of operations is slightly
+            #different here when compared with `create_function`. We can't
+            #create the form without giving it instance (I think).
+            form = model_form(instance=model.objects.get(pk=object_id))
+            return render(request, 'form.html', {'form': form})
+        elif request.method == 'POST':
+            try:
+                print('request method is POST')
+                form = model_form.edit_object(request=request,
+                                              object_id=object_id)
+                return make_form_response(form)
+
+            except Exception as e:
+                print('error in doing the post bit')
+                print(e)
+                raise e
+
+        return None
+
+    return edit_function
+
+chore_skeleton_create = create_function_creator(model=ChoreSkeleton,
+                                                model_form=ChoreSkeletonForm)
+chore_skeleton_edit = edit_function_creator(model=ChoreSkeleton,
+                                            model_form=ChoreSkeletonForm)
 
 @login_required()
 def chore_create(request):
@@ -101,3 +184,4 @@ def chore_create(request):
     else:
         print('form is not valid')
     return make_form_response(form)
+

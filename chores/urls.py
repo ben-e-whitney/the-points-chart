@@ -12,6 +12,8 @@ urlpatterns = patterns('',
         name='user_stats_list'),
     url(r'^actions/create/chore_skeleton/$', AJAX.chore_skeleton_create,
         name='chore_skeleton_create'),
+    url(r'^actions/edit/chore_skeleton/$', AJAX.chore_skeleton_edit,
+        name='chore_skeleton_edit'),
     url(r'^actions/create/chore/$', AJAX.chore_create,
         name='chore_create'),
     # This needs to come after all other named actions (or better yet, we

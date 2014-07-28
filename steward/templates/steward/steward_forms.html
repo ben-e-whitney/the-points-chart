@@ -11,13 +11,17 @@ Points Steward.
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
 
-<script src={% static "profiles/function_creators.js" %}></script>
-<script src={% static "profiles/steward_edit.js" %}></script>
+<script src={% static "function_creators.js" %}></script>
+<script src={% static "steward/steward_edit.js" %}></script>
 {% endblock head %}
 
 {% block body %}
 <div id="form_accordion">
-{% for form in forms %}
+{% comment %}
+Use the inclusion tag here. See <https://docs.djangoproject.com/en/dev/howto/
+custom-template-tags/#inclusion-tags>.
+{% endcomment %}
+{% for form in create_forms %}
 <!--<div class="form_unit">-->
 <h3>{{ form.title }}</h3>
 	<div class="form_container">
@@ -27,7 +31,7 @@ Points Steward.
 							{% comment %}
 							{% csrf_token %}
 							{% endcomment %}
-							{{ form.form_content.as_table }}
+							{{ form.main_form.as_table }}
 				<!--</div>-->
 				<!--<div>-->
 					<tr>
@@ -43,6 +47,27 @@ Points Steward.
 	</div>
 	<!--<br>-->
 <!--</div>-->
+{% endfor %}
+{% for form in edit_forms %}
+<h3>{{ form.title }}</h3>
+	<div class="form_container">
+		{% comment %}
+		TODO: think of a good way to name these.
+		{% endcomment %}
+		<form id="{{ form.html_id }}_selector" method="get">
+			<table>
+							{% comment %}
+							{% csrf_token %}
+							{% endcomment %}
+							{% comment %}
+							TODO: rename this junk as well.
+							{% endcomment %}
+							{{ form.selector_form.as_table }}
+		</table>
+		</form>
+		<form id="{{ form.html_id }}" method="post">
+		</form>
+	</div>
 {% endfor %}
 </div>
 {% endblock %}

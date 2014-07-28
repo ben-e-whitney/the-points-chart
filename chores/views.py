@@ -450,7 +450,7 @@ def calculate_balance(user, coop=None):
             break
     approx_balance = balance.to_integral_value()
     return {
-        'value': '{sgn}{val}'.format(sgn='+'if approx_balance >= 0 else '-',
+        'value': '{sgn}{val}'.format(sgn='+'if approx_balance >= 0 else '−',
             # TODO: how to decide how to zfill?
             val=str(abs(approx_balance)).zfill(2)),
         'CSS_class': CSS_class
@@ -469,6 +469,8 @@ def chores_list(request):
         else:
             return ''
 
+    # TODO: make this so that it's cycles other than the current one that are
+    # dimmed. Thinking the current thing is too tight.
     def find_day_classes(date):
         '''
         Sets flags relating to `date` that are read by the template. The actual

@@ -9,11 +9,33 @@ class BasicForm(forms.ModelForm):
         pass
     error_css_class = 'form_error'
 
+    @classmethod
+    def edit_object(cls, request=None, object_id=None):
+        print('IN BASICFORM EDIT_OBJECT!')
+        if object_id is None:
+            object_id = int(getattr(request, request.method)['choice_id'])
+        form = cls(request.POST,
+                   instance=cls.Meta.model.objects.get(pk=object_id))
+        if form.is_valid():
+            form.save()
+        return form
+
+    def create_object(self, request=None):
+        print('IN BASICFORM CREATE_OBJECT!')
+        self.save()
+        return self
+
 class ChoreSkeletonForm(BasicForm):
     class Meta:
         model = ChoreSkeleton
         fields = ['short_name', 'short_description', 'point_value',
                   'start_time', 'end_time']
+
+    def create_object(self, request=None):
+        skeleton = self.save(commit=False)
+        skeleton.coop = request.user.profile.coop
+        skeleton.save()
+        return self
 
 class ChoreForm(BasicForm):
     repeat_interval = forms.IntegerField(validators=[MinValueValidator(1)])

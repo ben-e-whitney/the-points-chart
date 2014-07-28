@@ -47,8 +47,9 @@ INSTALLED_APPS = (
     'localflavor',
     'timezone_field',
     'chores',
-    'profiles',
     'stewardships',
+    'profiles',
+    'steward',
 )
 
 MIDDLEWARE_CLASSES = (

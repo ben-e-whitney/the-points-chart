@@ -4,20 +4,11 @@ from django.shortcuts import render
 
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User, Group
-from django.core.exceptions import ValidationError
 from django.template import loader, Context
 
+from profiles.forms import UserProfileForm
+
 import datetime
-import json
-
-from profiles.forms import UserProfileForm, UserFormCreator
-from chores.forms import ChoreSkeletonForm, ChoreForm
-from stewardships.forms import (ClassicalStewardshipSkeletonForm,
-    ClassicalStewardshipFormCreator, SpecialPointsFormCreator, LoanFormCreator,
-    AbsenceFormCreator, ShareChangeFormCreator)
-
-from profiles.models import UserProfile, GroupProfile
 
 @login_required()
 def contacts_list(request):
@@ -35,8 +26,8 @@ def contacts_list(request):
 def contacts_export(request):
     coop = request.user.get_profile().coop
     coopers = coop.user_set.all()
-    contacts = sorted(map(lambda x: x.get_profile(), coopers), key=lambda y:
-                      y.first_name)
+    contacts = sorted((cooper.get_profile() for cooper in coopers),
+                      key=lambda cooper: cooper.first_name)
     contacts.remove(request.user.get_profile())
     # Here we are assuming that the site is using the UTC timezone.
     # TODO: check if this works as you are expecting.
@@ -65,27 +56,3 @@ class HTMLForm():
         self.title = title
         self.form_content = form_content
 
-# TODO: put steward test here.
-@login_required()
-def steward_forms(request):
-    HTML_form = lambda html_id, title, form_content: {'html_id': html_id,
-        'title': title, 'form_content': form_content}
-    coop = request.user.profile.coop
-    forms = [HTML_form(*args) for args in (
-        ('chore_skeleton_form', 'Create a New Chore Skeleton',
-                 ChoreSkeletonForm()),
-        ('chore_form', 'Create a New Chore', ChoreForm()),
-        ('classical_stewardship_skeleton_form', 'Create a New '
-                 'Stewardship Skeleton', ClassicalStewardshipSkeletonForm()),
-        ('classical_stewardship_form', 'Create a New Stewardship',
-                 ClassicalStewardshipFormCreator(coop)),
-        # TODO: rename this to 'Special Points Grant'?
-        ('special_points_form', 'Create a New Special Points',
-                 SpecialPointsFormCreator(coop)),
-        ('absence_form', 'Create a New Absence', AbsenceFormCreator(coop)),
-        ('loan_form', 'Create a New Loan', LoanFormCreator(coop)),
-        ('share_change_form', 'Create a New Share Change',
-                 ShareChangeFormCreator(coop)),
-        ('user_form', 'Create a New User', UserFormCreator(coop))
-    )]
-    return render(request, 'profiles/steward_forms.html', {'forms': forms})

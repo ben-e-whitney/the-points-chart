@@ -29,10 +29,14 @@ var report_success_creator = function(form) {
 var report_errors_creator = function(form) {
   var report_errors = function(returnedData, textStatus, jqXHR) {
     responseText = JSON.parse(returnedData.responseText);
-    errors           = responseText.errors;
+    errors = responseText.errors;
     non_field_errors = responseText.non_field_errors;
+    alert(errors.toSource());
     $.each(errors, function(key, value) {
-      $('#id_'+key).closest('tr').append("<td class='form_error'>"+
+      //TODO: maybe need to like specify that we're looking for the
+      //id thing within the given form.
+      //alert(key+value);
+      form.find('#id_'+key).closest('tr').append("<td class='form_error'>"+
         value+"</td>");
       return null;
     });
@@ -44,16 +48,26 @@ var report_errors_creator = function(form) {
   return report_errors;
 };
 
-var submit_function_creator = function(post_URL) {
+var submit_function_creator = function(post_URL, choice_id) {
   var submit_function = function(e) {
     //Override the form's normal POST action.
     e.preventDefault();
     var data = {};
     var form = $(this);
     form.find('.submit_button').prop('disabled', true);
+    //TODO: again, this is probably inefficient. Just getting it working for now.
+    form.find('.form_status').empty();
+    form.find('.form_error').remove()
     $.each(form.serializeArray(), function(key, form_element) {
       data[form_element.name] = form_element.value;
     });
+    //Not just testing `choice_id` because sometimes it is '' (although then
+    //we don't expect to have a submit function.
+    //TODO: maybe could just do this without checking. It's never used in situations
+    //where it isn't defined.
+    if (choice_id !== undefined) {
+      data['choice_id'] = choice_id;
+    }
     $.ajax({
       type: 'POST',
       url: post_URL,

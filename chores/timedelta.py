@@ -29,7 +29,7 @@ def pretty_print(timedelta):
     elif abs_td < datetime.timedelta(days=1):
         pretty_print += '{num} hours'.format(num=abs_td.seconds//60**2)
     else:
-        pretty_print += '{num} days'.format(num=abs.td.days)
+        pretty_print += '{num} days'.format(num=abs_td.days)
     # TODO: based on this, in the description of this function we should note
     # whether it expects 'now-then' or 'then-now'.
     if timedelta >= datetime.timedelta(0):
