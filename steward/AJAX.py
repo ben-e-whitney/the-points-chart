@@ -49,3 +49,7 @@ user_create = create_function_creator(
     model=User,
     model_form_callable=UserFormCreator
 )
+user_edit = edit_function_creator(
+    model=User,
+    model_form_callable=UserFormCreator
+)

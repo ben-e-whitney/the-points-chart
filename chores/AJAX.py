@@ -67,20 +67,20 @@ def create_function_creator(model=None, model_callable=None, model_form=None,
     def create_function(request, model=model, model_callable=model_callable,
                         model_form=model_form,
                         model_form_callable=model_form_callable):
-        print('in create_function')
+        print('in the edit_function')
         if model is None:
             model = model_callable(request)
         if model_form is None:
             model_form = model_form_callable(request)
-        print(model.__name__)
-        print(model_form.__name__)
+        print('model is: {nam}'.format(nam=model.__name__))
+        print('model form is: {nam}'.format(nam=model_form.__name__))
         form = model_form(request.POST)
         if form.is_valid():
-            print('about to call form.create_object')
+            print('about to call form.save')
             try:
-                form.create_object(request=request)
+                form.save(request=request)
             except Exception as e:
-                print('error in calling form.create_object')
+                print('error in calling form.save')
                 print(e)
                 raise e
         return make_form_response(form)
@@ -88,23 +88,21 @@ def create_function_creator(model=None, model_callable=None, model_form=None,
 
 def edit_function_creator(model=None, model_callable=None, model_form=None,
                           model_form_callable=None):
+    #TODO: IMPORTANT: check that the person making the object and the object
+    #they're editing are in the same co-op.
     #TODO: another permissions test here.
     @login_required()
     def edit_function(request, model=model, model_callable=model_callable,
                       model_form=model_form,
                       model_form_callable=model_form_callable):
         print('in the edit_function')
-        print('model is:')
-        print(model)
-        print('model form is:')
-        print(model_form)
         try:
-            #model = model or model_callable(request)
-            #model_form = model_form or model_form_callable(request)
             if model is None:
                 model = model_callable(request)
             if model_form is None:
                 model_form = model_form_callable(request)
+            print('model is: {nam}'.format(nam=model.__name__))
+            print('model form is: {nam}'.format(nam=model_form.__name__))
         except Exception as e:
             print('error in assigning model and model_form')
             print(e)
@@ -125,13 +123,23 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
             #TODO: make not explaining why the order of operations is slightly
             #different here when compared with `create_function`. We can't
             #create the form without giving it instance (I think).
-            form = model_form(instance=model.objects.get(pk=object_id))
+            try:
+                form = model_form(instance=model.objects.get(pk=object_id))
+            except Exception as e:
+                print('error in making the form')
+                print(e)
+                raise e
             return render(request, 'form.html', {'form': form})
         elif request.method == 'POST':
             try:
                 print('request method is POST')
-                form = model_form.edit_object(request=request,
-                                              object_id=object_id)
+                form = model_form(request.POST)
+                if form.is_valid():
+                    old_instance = model.objects.get(pk=object_id)
+                    old_instance.delete()
+                    new_instance = form.save(commit=True, request=request)
+                    new_instance.id = object_id
+                    new_instance.save()
                 return make_form_response(form)
 
             except Exception as e:
@@ -148,6 +156,8 @@ chore_skeleton_create = create_function_creator(model=ChoreSkeleton,
 chore_skeleton_edit = edit_function_creator(model=ChoreSkeleton,
                                             model_form=ChoreSkeletonForm)
 
+#TODO: split chore editing into one function for individual chores and one for
+#bulk creating and deleting.
 @login_required()
 def chore_create(request):
     #TODO: clean this up.
@@ -185,3 +195,5 @@ def chore_create(request):
         print('form is not valid')
     return make_form_response(form)
 
+def chore_edit(request):
+    raise NotImplementedError

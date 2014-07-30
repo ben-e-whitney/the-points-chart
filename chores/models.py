@@ -117,6 +117,7 @@ class ChoreQuerySet(models.query.QuerySet):
         '''
         return self.signature_check(cooper, bool_, 'voided')
 
+    #TODO: is this used yet?
     def create_blank(self, skeleton=None, start_date=None, stop_date=None):
         signatures = {}
         for signature_name in ('signed_up', 'signed_off', 'voided'):
@@ -142,22 +143,24 @@ class Signature(models.Model):
         else:
             return 'Signature of {use} at {dat}'.format(use=self.who,
                                                         dat=self.when)
-    def sign(self, user):
+    def sign(self, user, commit=True):
         print('{user} signing!! (this is in models/Signature)'.format(
             user=user))
         self.who = user
         self.when = timezone.now()
-        self.save()
+        if commit:
+            self.save()
 
     # TODO: maybe we should save here and not in `clear`?
     def revert(self, user):
         # Placeholder for any future logic.
         self.clear()
 
-    def clear(self):
+    def clear(self, commit=True):
         self.who = None
         self.when = None
-        self.save()
+        if commit:
+            self.save()
 
 class Timecard(models.Model):
     # TODO: make an __init__ method creating empy Signatures?
@@ -187,6 +190,16 @@ class Timecard(models.Model):
 
     def __radd__(self, other):
         raise NotImplementedError
+
+    def make_signatures(self, commit=True, **kwargs):
+        for key, value in kwargs.items():
+            signature = Signature()
+            if value:
+                signature.sign(value, commit=False)
+            signature.save()
+            setattr(self, key, signature)
+        if commit:
+            self.save()
 
     # Methods for use in the following. If you end up doing stuff like this,
     # could prepend the function names with however many underscores.

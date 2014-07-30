@@ -4,7 +4,9 @@ from django import forms
 
 # Create your views here.
 
-from chores.models import ChoreSkeleton
+from chores.models import ChoreSkeleton, Chore
+from stewardships.models import (StewardshipSkeleton, Stewardship, ShareChange,
+    Absence)
 
 from profiles.forms import GroupProfileForm
 from chores.forms import ChoreSkeletonForm, ChoreForm
@@ -17,39 +19,57 @@ from steward.forms import UserFormCreator, ChoiceFormCreator
 @login_required()
 def steward_forms(request):
     coop = request.user.profile.coop
-    HTML_create_form = lambda html_id, title, main_form: {
+    #TODO: could pull out common action for these two. Seems like overkill.
+    HTML_create_form = lambda html_id, name, main_form, choice_objects: {
         'html_id': '{html_id}_create_form'.format(html_id=html_id),
-        'title': title, 'main_form': main_form
+        'title': 'Create a New {nam}'.format(nam=name), 'main_form': main_form
     }
-    HTML_edit_form = lambda html_id, title, main_form, choice_objects: {
+    HTML_edit_form = lambda html_id, name, main_form, choice_objects: {
         'html_id': '{html_id}_edit_form'.format(html_id=html_id),
-        'title': title, 'main_form': main_form,
+        'title': 'Edit or Delete a {nam}'.format(nam=name),
+        'main_form': main_form,
         'selector_form': ChoiceFormCreator(choice_objects)
     }
-    create_forms = [HTML_create_form(*args) for args in (
-        ('chore_skeleton', 'Create a New Chore Skeleton', ChoreSkeletonForm()),
-        ('chore', 'Create a New Chore', ChoreForm()),
-        ('classical_stewardship_skeleton', 'Create a New '
-                 'Stewardship Skeleton', ClassicalStewardshipSkeletonForm()),
-        ('classical_stewardship', 'Create a New Stewardship',
-                 ClassicalStewardshipFormCreator(request)),
+    credit_and_edit_args = (
+        ('chore_skeleton', 'Chore Skeleton', ChoreSkeletonForm(),
+             ChoreSkeleton.objects.for_coop(coop)),
+        ('chore', 'Chore', ChoreForm(), Chore.objects.for_coop(coop)),
+        #TODO: don't think the `classical` call is working.
+        ('classical_stewardship_skeleton', 'Stewardship Skeleton',
+             ClassicalStewardshipSkeletonForm(),
+             StewardshipSkeleton.objects.classical().for_coop(coop)),
+        ('classical_stewardship', 'Stewardship',
+             ClassicalStewardshipFormCreator(request),
+             Stewardship.objects.classical().for_coop(coop)),
         # TODO: rename this to 'Special Points Grant'?
-        ('special_points', 'Create a New Special Points',
-                 SpecialPointsFormCreator(request)),
-        ('absence', 'Create a New Absence', AbsenceFormCreator(request)),
-        ('loan', 'Create a New Loan', LoanFormCreator(request)),
-        ('share_change', 'Create a New Share Change',
-                 ShareChangeFormCreator(request)),
-        ('user', 'Create a New User', UserFormCreator(request)),
-    )]
-    edit_forms = [HTML_edit_form(*args) for args in (
+        ('special_points', 'Special Points',
+             SpecialPointsFormCreator(request),
+             Stewardship.objects.special_points().for_coop(coop)),
+        ('loan', 'Loan', LoanFormCreator(request),
+             Stewardship.objects.loan().for_coop(coop)),
+        ('absence', 'Absence', AbsenceFormCreator(request),
+             Absence.objects.for_coop(coop)),
+        ('share_change', 'Share Change', ShareChangeFormCreator(request),
+             ShareChange.objects.for_coop(coop)),
+        ('user', 'User', UserFormCreator(request), coop.user_set.all()),
+    )
+    create_only_args = (
+
+    )
+    edit_only_args = (
         ('chore_skeleton', 'Edit or Delete a Chore Skeleton',
              ChoreSkeletonForm(), ChoreSkeleton.objects.for_coop(coop)),
-    )]
-    no_choice_edit_forms = [
-        HTML_create_form('group_profile_edit_form', 'Edit the Co-op Profile',
-                         GroupProfileForm(instance=coop.profile)),
-    ]
+    )
+    #TODO: Can't use the exact same thing as above. Make HTML_edit_only_form or
+    #whatever.
+    no_choice_edit_forms = []
+    #no_choice_edit_forms = [
+        #HTML_create_form('group_profile_edit_form', 'Edit the Co-op Profile',
+                         #GroupProfileForm(instance=coop.profile)),
+    #]
+
+    create_forms = [HTML_create_form(*args) for args in credit_and_edit_args]
+    edit_forms = [HTML_edit_form(*args) for args in credit_and_edit_args]
     return render(request, 'steward/steward_forms.html',
                   {'create_forms': create_forms, 'edit_forms': edit_forms,
                    'no_choice_edit_forms': no_choice_edit_forms})

@@ -1,10 +1,24 @@
-from django.db import models
+from django.db import models, connection
 
 # Create your models here.
-from chores.models import Skeleton, Timecard, ChoreQuerySet
+from chores.models import (Skeleton, Timecard, ChoreSkeletonQuerySet,
+    ChoreQuerySet)
 from model_utils.managers import PassThroughManager
 
 # TODO: not sure whether these being so skimpy is a good or bad sign.
+
+class StewardshipSkeletonQuerySet(ChoreSkeletonQuerySet):
+
+    def make_category_filter(category):
+        def category_filter(self):
+            return self.filter(**{
+                'category': getattr(StewardshipSkeleton, category)
+            })
+        return category_filter
+
+    classical = make_category_filter('STEWARDSHIP')
+    special_points = make_category_filter('SPECIAL_POINTS')
+    loan = make_category_filter('LOAN')
 
 class StewardshipQuerySet(ChoreQuerySet):
 
@@ -33,6 +47,17 @@ class StewardshipQuerySet(ChoreQuerySet):
             stop_date__gte=window_start_date
         ).order_by('start_date')
 
+    def make_category_filter(category):
+        def category_filter(self):
+            return self.filter(**{
+                'skeleton__category': getattr(StewardshipSkeleton, category)
+            })
+        return category_filter
+
+    classical = make_category_filter('STEWARDSHIP')
+    special_points = make_category_filter('SPECIAL_POINTS')
+    loan = make_category_filter('LOAN')
+
 class StewardshipSkeleton(Skeleton):
     STEWARDSHIP = 'STEW'
     SPECIAL_POINTS = 'SPEC'
@@ -46,6 +71,8 @@ class StewardshipSkeleton(Skeleton):
                                 default=STEWARDSHIP)
     # Per cycle.
     point_value = models.PositiveSmallIntegerField()
+    objects = PassThroughManager.for_queryset_class(
+        StewardshipSkeletonQuerySet)()
 
 class Stewardship(Timecard):
     skeleton = models.ForeignKey(StewardshipSkeleton,
@@ -66,16 +93,16 @@ class Stewardship(Timecard):
 class BenefitChangeSkeleton(Skeleton):
     pass
 
-# TODO: figure out how `in_window` should behave here. Think it should only
-# check `start_date`, to allow for `start_date` and `stop_date` to actually
-# behave as the start and stop date. Get that going, because then you can get
-# rid of `days_gone`.
 class Absence(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton, related_name='absence')
     objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
 
     def __radd__(self, other):
         return (self.stop_date-self.start_date).days+other
+
+    def __str__(self):
+        return 'Absence of {use} from {sta} to {sto}'.format(
+            use=self.signed_up.who, sta=self.start_date, sto=self.stop_date)
 
 class ShareChange(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton,
@@ -85,3 +112,10 @@ class ShareChange(Timecard):
 
     def __radd__(self, other):
         return self.share_change+other
+
+    def __str__(self):
+        return ('Share Change of {sgn}{num}% for {use} from {sta} to {sto}'
+                .format(sgn='+' if self.share_change >= 0 else '',
+                        num=100*self.share_change, sta=self.start_date,
+                        sto=self.stop_date, use=self.signed_up.who))
+

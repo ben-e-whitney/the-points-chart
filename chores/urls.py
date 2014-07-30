@@ -14,8 +14,8 @@ urlpatterns = patterns('',
         name='chore_skeleton_create'),
     url(r'^actions/edit/chore_skeleton/$', AJAX.chore_skeleton_edit,
         name='chore_skeleton_edit'),
-    url(r'^actions/create/chore/$', AJAX.chore_create,
-        name='chore_create'),
+    url(r'^actions/create/chore/$', AJAX.chore_create, name='chore_create'),
+    url(r'^actions/edit/chore/$', AJAX.chore_edit, name='chore_edit'),
     # This needs to come after all other named actions (or better yet, we
     # should fix this system).
     url(r'^actions/(?P<method_name>[a-z_]+?)/(?P<chore_id>[0-9]+)/$', AJAX.act,

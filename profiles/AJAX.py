@@ -39,6 +39,8 @@ def make_form_response(form):
         'non_field_errors': list(form.non_field_errors())
     }), status=200 if form.is_valid() else 400)
 
+#TODO: figure out what needs to be changed so that these are done in the same
+#way as the other forms.
 @login_required()
 def profile_edit(request):
     # TODO: remove.

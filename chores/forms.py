@@ -20,22 +20,18 @@ class BasicForm(forms.ModelForm):
             form.save()
         return form
 
-    def create_object(self, request=None):
-        print('IN BASICFORM CREATE_OBJECT!')
-        self.save()
-        return self
-
 class ChoreSkeletonForm(BasicForm):
     class Meta:
         model = ChoreSkeleton
         fields = ['short_name', 'short_description', 'point_value',
                   'start_time', 'end_time']
 
-    def create_object(self, request=None):
-        skeleton = self.save(commit=False)
+    def save(self, commit=True, request=None, **kwargs):
+        skeleton = super().save(commit=False)
         skeleton.coop = request.user.profile.coop
-        skeleton.save()
-        return self
+        if commit:
+            skeleton.save()
+        return skeleton
 
 class ChoreForm(BasicForm):
     repeat_interval = forms.IntegerField(validators=[MinValueValidator(1)])
