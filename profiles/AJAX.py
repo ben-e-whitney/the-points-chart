@@ -3,41 +3,8 @@ from django.contrib.auth.decorators import login_required
 
 import json
 
+from utilities.AJAX import make_form_response
 from profiles.forms import UserProfileForm, GroupProfileForm
-
-# TODO: this should be stored in some site-wide directory.
-def make_form_response(form):
-    # TODO: remove all this.
-    print('***in make_form_response***')
-    print(form.errors)
-    print(form.non_field_errors())
-    print({
-        'errors': {
-            field: ' '.join(form.errors[field]) for field in form.errors if
-            field != '__all__'
-        },
-    })
-
-    try:
-        x = HttpResponse(json.dumps({
-            'errors': {
-                field: ' '.join(form.errors[field]) for field in form.errors if
-                field != '__all__'
-            },
-            'non_field_errors': list(form.non_field_errors())
-        }), status=200 if form.is_valid() else 400)
-    except Exception as e:
-        print('error trying to make the HttpResponse')
-        print(e)
-        raise e
-    return HttpResponse(json.dumps({
-        #TODO: there should be a better way of doing this.
-        'errors': {
-            field: ' '.join(form.errors[field]) for field in form.errors if
-            field != '__all__'
-        },
-        'non_field_errors': list(form.non_field_errors())
-    }), status=200 if form.is_valid() else 400)
 
 #TODO: figure out what needs to be changed so that these are done in the same
 #way as the other forms.

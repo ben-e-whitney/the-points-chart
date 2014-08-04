@@ -5,8 +5,6 @@ from chores.models import (Skeleton, Timecard, ChoreSkeletonQuerySet,
     ChoreQuerySet)
 from model_utils.managers import PassThroughManager
 
-# TODO: not sure whether these being so skimpy is a good or bad sign.
-
 class StewardshipSkeletonQuerySet(ChoreSkeletonQuerySet):
 
     def make_category_filter(category):

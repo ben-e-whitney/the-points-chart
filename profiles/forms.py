@@ -1,4 +1,4 @@
-from chores.forms import BasicForm
+from utilities.forms import BasicForm
 from profiles.models import UserProfile, GroupProfile
 
 # TODO: add password editing here.

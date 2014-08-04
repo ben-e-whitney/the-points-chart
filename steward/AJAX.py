@@ -1,10 +1,11 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
-from profiles.AJAX import make_form_response
 from steward.forms import UserFormCreator
-from chores.AJAX import create_function_creator, edit_function_creator
+from chores.AJAX import (make_form_response, create_function_creator,
+    edit_function_creator)
 
+#TODO: remove this?
 @login_required()
 def user_create(request):
     print('***in user_create***')

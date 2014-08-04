@@ -5,15 +5,11 @@ from django.core.exceptions import ObjectDoesNotExist
 
 import datetime
 import json
-from profiles.AJAX import make_form_response
 from chores.models import Chore, ChoreSkeleton, ChoreError
-from chores.forms import ChoreSkeletonForm, ChoreForm
+from chores.forms import ChoreSkeletonForm, ChoreFormCreator
 from chores.views import get_chore_sentences, calculate_balance
-
-#TODO: remove.
-from chores.models import Signature
-from stewardships.forms import ClassicalStewardshipFormCreator
-from django.contrib.auth.models import User
+from utilities.AJAX import (make_form_response, create_function_creator,
+    edit_function_creator)
 
 # TODO: still not used here!
 def add_current_balance(f):
@@ -60,106 +56,21 @@ def act(response, method_name, chore_id):
                             status=e.args[0]['status'])
     return action_response(response.user, chore)
 
-def create_function_creator(model=None, model_callable=None, model_form=None,
-                            model_form_callable=None):
-    #TODO: another permissions test here.
-    @login_required
-    def create_function(request, model=model, model_callable=model_callable,
-                        model_form=model_form,
-                        model_form_callable=model_form_callable):
-        print('in the edit_function')
-        if model is None:
-            model = model_callable(request)
-        if model_form is None:
-            model_form = model_form_callable(request)
-        print('model is: {nam}'.format(nam=model.__name__))
-        print('model form is: {nam}'.format(nam=model_form.__name__))
-        form = model_form(request.POST)
-        if form.is_valid():
-            print('about to call form.save')
-            try:
-                form.save(request=request)
-            except Exception as e:
-                print('error in calling form.save')
-                print(e)
-                raise e
-        return make_form_response(form)
-    return create_function
-
-def edit_function_creator(model=None, model_callable=None, model_form=None,
-                          model_form_callable=None):
-    #TODO: IMPORTANT: check that the person making the object and the object
-    #they're editing are in the same co-op.
-    #TODO: another permissions test here.
-    @login_required()
-    def edit_function(request, model=model, model_callable=model_callable,
-                      model_form=model_form,
-                      model_form_callable=model_form_callable):
-        print('in the edit_function')
-        try:
-            if model is None:
-                model = model_callable(request)
-            if model_form is None:
-                model_form = model_form_callable(request)
-            print('model is: {nam}'.format(nam=model.__name__))
-            print('model form is: {nam}'.format(nam=model_form.__name__))
-        except Exception as e:
-            print('error in assigning model and model_form')
-            print(e)
-            raise e
-        print('made it past the first try/except block')
-        try:
-            object_id = int(getattr(request, request.method)['choice_id'])
-        except Exception as e:
-            print('error in assigning object_id')
-            print(e)
-            raise e
-        print('about to test request.method')
-        if request.method == 'GET':
-            print('request method is GET')
-            # TODO: error checking here.
-            #TODO: no need to assign the actual variable -- just put in render
-            #arguments.
-            #TODO: make not explaining why the order of operations is slightly
-            #different here when compared with `create_function`. We can't
-            #create the form without giving it instance (I think).
-            try:
-                form = model_form(instance=model.objects.get(pk=object_id))
-            except Exception as e:
-                print('error in making the form')
-                print(e)
-                raise e
-            return render(request, 'form.html', {'form': form})
-        elif request.method == 'POST':
-            try:
-                print('request method is POST')
-                form = model_form(request.POST)
-                if form.is_valid():
-                    old_instance = model.objects.get(pk=object_id)
-                    old_instance.delete()
-                    new_instance = form.save(commit=True, request=request)
-                    new_instance.id = object_id
-                    new_instance.save()
-                return make_form_response(form)
-
-            except Exception as e:
-                print('error in doing the post bit')
-                print(e)
-                raise e
-
-        return None
-
-    return edit_function
-
 chore_skeleton_create = create_function_creator(model=ChoreSkeleton,
                                                 model_form=ChoreSkeletonForm)
 chore_skeleton_edit = edit_function_creator(model=ChoreSkeleton,
                                             model_form=ChoreSkeletonForm)
+chore_create = create_function_creator(model=Chore,
+                                       model_form_callable=ChoreFormCreator)
+chore_edit = edit_function_creator(model=Chore,
+                                   model_form_callable=ChoreFormCreator)
 
 #TODO: split chore editing into one function for individual chores and one for
 #bulk creating and deleting.
+#TODO: move this into the bulk creation.
 @login_required()
-def chore_create(request):
+def chore_create_TO_CHANGE(request):
+    raise NotImplementedError
     #TODO: clean this up.
     print('got to here')
     form = ChoreForm(request.POST)
@@ -195,5 +106,5 @@ def chore_create(request):
         print('form is not valid')
     return make_form_response(form)
 
-def chore_edit(request):
+def chore_edit_TO_CHANGE(request):
     raise NotImplementedError

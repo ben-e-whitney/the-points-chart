@@ -4,7 +4,7 @@ from stewardships.forms import (ClassicalStewardshipSkeletonForm,
     ClassicalStewardshipFormCreator, SpecialPointsFormCreator, LoanFormCreator,
     AbsenceFormCreator, ShareChangeFormCreator)
 
-from chores.AJAX import create_function_creator, edit_function_creator
+from utilities.AJAX import create_function_creator, edit_function_creator
 
 classical_stewardship_skeleton_create = create_function_creator(
     model=StewardshipSkeleton,

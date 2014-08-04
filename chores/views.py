@@ -1,4 +1,9 @@
 from django.shortcuts import render
+from django.http import HttpResponse
+from django.contrib.auth.decorators import (login_required, user_passes_test,
+permission_required)
+from django.contrib.auth.models import User
+from django.template import loader, Context
 
 # Create your views here.
 
@@ -6,14 +11,8 @@ import datetime
 import pytz
 import itertools
 import decimal
-from chores import timedelta
 
-from django.http import HttpResponse
-from django.contrib.auth.decorators import (login_required, user_passes_test,
-permission_required)
-from django.contrib.auth.models import User
-from django.template import loader, Context
-
+from utilities import timedelta
 from chores.models import Chore
 from profiles.models import UserProfile
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,

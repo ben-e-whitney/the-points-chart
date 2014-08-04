@@ -31,11 +31,15 @@ var report_errors_creator = function(form) {
     responseText = JSON.parse(returnedData.responseText);
     errors = responseText.errors;
     non_field_errors = responseText.non_field_errors;
-    alert(errors.toSource());
+    if (errors) {
+      alert('errors: '+String(errors.toSource()));
+    }
+    if (non_field_errors) {
+      alert('non_field_errors: '+String(errors.toSource()));
+    }
     $.each(errors, function(key, value) {
       //TODO: maybe need to like specify that we're looking for the
       //id thing within the given form.
-      //alert(key+value);
       form.find('#id_'+key).closest('tr').append("<td class='form_error'>"+
         value+"</td>");
       return null;

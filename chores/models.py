@@ -11,7 +11,7 @@ from model_utils.managers import PassThroughManager
 import datetime
 import pytz
 import functools
-from chores import timedelta
+from utilities import timedelta
 
 # TODO: how do we tie the `signed_up` property, the `sign_up_permission` etc.
 # methods, 'sign up' as a verb, the JavaScript function names, etc.?
@@ -143,7 +143,9 @@ class Signature(models.Model):
         else:
             return 'Signature of {use} at {dat}'.format(use=self.who,
                                                         dat=self.when)
-    def sign(self, user, commit=True):
+    def sign(self, user, *args, **kwargs):
+        print('made it to sign method')
+        commit = kwargs.get('commit', True)
         print('{user} signing!! (this is in models/Signature)'.format(
             user=user))
         self.who = user
@@ -152,11 +154,13 @@ class Signature(models.Model):
             self.save()
 
     # TODO: maybe we should save here and not in `clear`?
-    def revert(self, user):
+    def revert(self, user, *args, **kwargs):
+        commit = kwargs.get('commit', True)
         # Placeholder for any future logic.
-        self.clear()
+        self.clear(*args, **kwargs)
 
-    def clear(self, commit=True):
+    def clear(self, *args, **kwargs):
+        commit = kwargs.get('commit', True)
         self.who = None
         self.when = None
         if commit:
@@ -334,13 +338,21 @@ class Timecard(models.Model):
         ["You didn't void that chore."])
 
     def actor_creator(permission_method_name, signature_name, action_name):
-        def actor(self, user):
+        def actor(self, user, *args, **kwargs):
+            print('in actor!')
             permission = getattr(self, permission_method_name)(user)
+            print('just called method {pmn}'.format(
+                pmn=permission_method_name))
             if permission['boolean']:
-                getattr(getattr(self, signature_name), action_name)(user)
+                print('about to try to call {an}'.format(an=action_name))
+                getattr(getattr(self, signature_name), action_name)(
+                    user, *args, **kwargs)
+                print('just called {an}'.format(an=action_name))
             else:
                 permission.update({'status': 403})
-                raise ChoreError(permission)
+                print('about to raise an error ("{per}") in actor!'.format(
+                    per=permission))
+                raise ChoreError(permission['message'])
         return actor
 
     # TODO: should we be using functools for all of this, then? Or maybe for
@@ -398,9 +410,9 @@ class Skeleton(models.Model):
 
 class ChoreSkeleton(Skeleton):
     point_value = models.PositiveSmallIntegerField()
-    start_time = models.TimeField()
     # TODO: consider changing the name of this to `stop_time` to match with
     # `start_date` and `stop_date`.
+    start_time = models.TimeField()
     end_time   = models.TimeField()
     objects = PassThroughManager.for_queryset_class(ChoreSkeletonQuerySet)()
 

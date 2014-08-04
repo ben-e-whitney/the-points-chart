@@ -94,3 +94,10 @@ class GroupProfile(models.Model):
         cycle_stop_date = cycle_start_date+datetime.timedelta(
             days=self.cycle_length)
         return (cycle_start_date, cycle_stop_date)
+
+    def get_cycle(self, cycle_start_date, cycle_stop_date):
+        for cycle_num, start_date, stop_date in self.cycles():
+            if cycle_start_date == start_date and cycle_stop_date == stop_date:
+                return int(cycle_num)
+        else:
+            raise ValueError('No cycle matched.')

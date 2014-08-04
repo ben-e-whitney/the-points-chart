@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.db.models.fields import BLANK_CHOICE_DASH
 
-from chores.forms import BasicForm
+from utilities.forms import BasicForm
 from profiles.models import UserProfile
 
 def ChoiceFormCreator(choices):

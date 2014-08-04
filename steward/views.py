@@ -9,7 +9,7 @@ from stewardships.models import (StewardshipSkeleton, Stewardship, ShareChange,
     Absence)
 
 from profiles.forms import GroupProfileForm
-from chores.forms import ChoreSkeletonForm, ChoreForm
+from chores.forms import ChoreSkeletonForm, ChoreFormCreator
 from stewardships.forms import (ClassicalStewardshipSkeletonForm,
     ClassicalStewardshipFormCreator, SpecialPointsFormCreator,
     AbsenceFormCreator, LoanFormCreator, ShareChangeFormCreator)
@@ -30,28 +30,32 @@ def steward_forms(request):
         'main_form': main_form,
         'selector_form': ChoiceFormCreator(choice_objects)
     }
+    #TODO: making it so that all the classes get called. Making a note in case
+    #you run into problems.
     credit_and_edit_args = (
         ('chore_skeleton', 'Chore Skeleton', ChoreSkeletonForm(),
              ChoreSkeleton.objects.for_coop(coop)),
-        ('chore', 'Chore', ChoreForm(), Chore.objects.for_coop(coop)),
-        #TODO: don't think the `classical` call is working.
+        ('chore', 'Chore', ChoreFormCreator(request)(),
+             Chore.objects.for_coop(coop)),
+        #TODO: don't think the `classical` call is working. Update: changed
+        #something (adding `all` call).
         ('classical_stewardship_skeleton', 'Stewardship Skeleton',
              ClassicalStewardshipSkeletonForm(),
-             StewardshipSkeleton.objects.classical().for_coop(coop)),
+             StewardshipSkeleton.objects.all().classical().for_coop(coop)),
         ('classical_stewardship', 'Stewardship',
-             ClassicalStewardshipFormCreator(request),
-             Stewardship.objects.classical().for_coop(coop)),
+             ClassicalStewardshipFormCreator(request)(),
+             Stewardship.objects.all().classical().for_coop(coop)),
         # TODO: rename this to 'Special Points Grant'?
         ('special_points', 'Special Points',
-             SpecialPointsFormCreator(request),
-             Stewardship.objects.special_points().for_coop(coop)),
-        ('loan', 'Loan', LoanFormCreator(request),
-             Stewardship.objects.loan().for_coop(coop)),
-        ('absence', 'Absence', AbsenceFormCreator(request),
+             SpecialPointsFormCreator(request)(),
+             Stewardship.objects.all().special_points().for_coop(coop)),
+        ('loan', 'Loan', LoanFormCreator(request)(),
+             Stewardship.objects.all().loan().for_coop(coop)),
+        ('absence', 'Absence', AbsenceFormCreator(request)(),
              Absence.objects.for_coop(coop)),
-        ('share_change', 'Share Change', ShareChangeFormCreator(request),
+        ('share_change', 'Share Change', ShareChangeFormCreator(request)(),
              ShareChange.objects.for_coop(coop)),
-        ('user', 'User', UserFormCreator(request), coop.user_set.all()),
+        ('user', 'User', UserFormCreator(request)(), coop.user_set.all()),
     )
     create_only_args = (
 
@@ -70,6 +74,7 @@ def steward_forms(request):
 
     create_forms = [HTML_create_form(*args) for args in credit_and_edit_args]
     edit_forms = [HTML_edit_form(*args) for args in credit_and_edit_args]
+    edit_forms = []
     return render(request, 'steward/steward_forms.html',
                   {'create_forms': create_forms, 'edit_forms': edit_forms,
                    'no_choice_edit_forms': no_choice_edit_forms})

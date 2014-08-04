@@ -1,28 +1,13 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db.models.fields import BLANK_CHOICE_DASH
 
 from chores.models import Signature
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
     ShareChange, BenefitChangeSkeleton)
-from chores.forms import BasicForm
-
-def cycle_field_creator(coop):
-    CYCLE_CHOICES = tuple(
-        (int(cycle_num), 'Cycle {num} ({stadat} to {stodat})'
-             .format(num=cycle_num, stadat=cycle_start.isoformat(),
-                     stodat=cycle_stop.isoformat()))
-        for cycle_num, cycle_start, cycle_stop in coop.profile.cycles()
-    )
-    # TODO: figure out if default is allowed here, or how to do it.
-    cycle = forms.CharField(widget=forms.Select(choices=CYCLE_CHOICES))
-    return cycle
-
-def cooper_field_creator(coop):
-    COOPER_CHOICES = tuple((cooper.id, cooper.profile.nickname) for cooper in
-                           coop.user_set.all())
-    cooper = forms.CharField(widget=forms.Select(choices=COOPER_CHOICES))
-    return cooper
+from utilities.forms import (BasicForm, cycle_field_creator,
+    cooper_field_creator)
 
 class ClassicalStewardshipSkeletonForm(BasicForm):
 
@@ -30,6 +15,8 @@ class ClassicalStewardshipSkeletonForm(BasicForm):
         model = StewardshipSkeleton
         fields = ['short_name', 'short_description', 'point_value']
 
+    #TODO: change these kwargs to work the same as in `__init__`. Is it OK to
+    #use 'commit' as an argument keyword?
     def save(self, commit=True, request=None, **kwargs):
         skeleton = super().save(commit=False)
         skeleton.coop = request.user.profile.coop
@@ -51,6 +38,16 @@ def ClassicalStewardshipFormCreator(request):
                 field: forms.DateInput(attrs={'class': 'date_picker'})
                 for field in ('start_date', 'stop_date')
             }
+
+        #TODO: consider factoring out all the common stuff in these __init__
+        #functions.
+        def __init__(self, *args, **kwargs):
+            instance = kwargs.get('instance', None)
+            if instance is not None:
+                initial = kwargs.get('initial', {})
+                initial.update({'cooper': instance.signed_up.who.id})
+                kwargs.update({'initial': initial})
+            super().__init__(*args, **kwargs)
 
         def clean(self):
             cleaned_data = super().clean()
@@ -98,6 +95,20 @@ def LoanFormCreator(request):
             model = Stewardship
             fields = ['cooper', 'cycle', 'point_value', 'short_description']
 
+        def __init__(self, *args, **kwargs):
+            instance = kwargs.get('instance', None)
+            if instance is not None:
+                initial = kwargs.get('initial', {})
+                initial.update({
+                    'cooper': instance.signed_up.who.id,
+                    'cycle': coop.profile.get_cycle(instance.start_date,
+                                                    instance.stop_date),
+                    'point_value': instance.skeleton.point_value,
+                    'short_description': instance.skeleton.short_description,
+                })
+                kwargs.update({'initial': initial})
+            super().__init__(*args, **kwargs)
+
         def save(self, commit=True, request=None, **kwargs):
             loan = super().save(commit=False)
             skeleton = StewardshipSkeleton(
@@ -138,6 +149,18 @@ def SpecialPointsFormCreator(request):
                 'start_date': forms.DateInput(attrs={'class': 'date_picker'})
             }
 
+        def __init__(self, *args, **kwargs):
+            instance = kwargs.get('instance', None)
+            if instance is not None:
+                initial = kwargs.get('initial', {})
+                initial.update({
+                    'cooper': instance.signed_up.who.id,
+                    'point_value': instance.skeleton.point_value,
+                    'short_description': instance.skeleton.short_description,
+                })
+                kwargs.update({'initial': initial})
+            super().__init__(*args, **kwargs)
+
         def save(self, commit=True, request=None, **kwargs):
             print('in SpecialPointsForm.create_object; form is valid')
             special_points = super().save(commit=False)
@@ -177,6 +200,17 @@ def AbsenceFormCreator(request):
                 for field in ('start_date', 'stop_date')
             }
 
+        def __init__(self, *args, **kwargs):
+            instance = kwargs.get('instance', None)
+            if instance is not None:
+                initial = kwargs.get('initial', {})
+                initial.update({
+                    'cooper': instance.signed_up.who.id,
+                    'short_description': instance.skeleton.short_description,
+                })
+                kwargs.update({'initial': initial})
+            super().__init__(*args, **kwargs)
+
         def clean(self):
             cleaned_data = super().clean()
             if cleaned_data.get('stop_date') < cleaned_data.get('start_date'):
@@ -212,6 +246,19 @@ def ShareChangeFormCreator(request):
         class Meta:
             model = ShareChange
             fields = ['cooper', 'cycle', 'share_change', 'short_description']
+
+        def __init__(self, *args, **kwargs):
+            instance = kwargs.get('instance', None)
+            if instance is not None:
+                initial = kwargs.get('initial', {})
+                initial.update({
+                    'cooper': instance.signed_up.who.id,
+                    'cycle': coop.profile.get_cycle(instance.start_date,
+                                                    instance.stop_date),
+                    'short_description': instance.skeleton.short_description,
+                })
+                kwargs.update({'initial': initial})
+            super().__init__(*args, **kwargs)
 
         def save(self, commit=True, request=None, **kwargs):
             share_change = super().save(commit=False)
