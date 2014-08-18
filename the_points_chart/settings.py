@@ -50,6 +50,7 @@ INSTALLED_APPS = (
     'stewardships',
     'profiles',
     'steward',
+    'utilities',
 )
 
 MIDDLEWARE_CLASSES = (

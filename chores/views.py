@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import (login_required, user_passes_test,
-permission_required)
+    permission_required)
 from django.contrib.auth.models import User
 from django.template import loader, Context
 

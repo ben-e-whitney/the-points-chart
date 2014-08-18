@@ -1,4 +1,5 @@
 import datetime
+#TODO: look into the arrow package. <https://github.com/crsmithdev/arrow>.
 
 def in_interval(left, timedelta, right, unit='days'):
     '''
