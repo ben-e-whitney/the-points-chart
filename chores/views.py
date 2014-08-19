@@ -535,7 +535,12 @@ def chores_list(request):
 # TODO: this should now require permissions.
 @login_required()
 def user_stats_list(request, username):
-    user = User.objects.get(username=username)
+    #For the scenario that an anonymous user clicks the 'stats' link, logs in,
+    #and is then sent to chores/AnonymousUser/'.
+    if username == 'AnonymousUser':
+        user = request.user
+    else:
+        user = User.objects.get(username=username)
     coop = user.profile.coop
     render_dictionary = {
         'coop': coop,
