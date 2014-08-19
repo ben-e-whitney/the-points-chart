@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 
 from steward.forms import UserFormCreator
-from chores.AJAX import (make_form_response, create_function_creator,
+from utilities.AJAX import (make_form_response, create_function_creator,
     edit_function_creator)
 
 #TODO: remove this?
