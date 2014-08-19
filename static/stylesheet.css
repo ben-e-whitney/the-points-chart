@@ -18,6 +18,14 @@ a {
 	color: inherit;
 }
 
+a:hover {
+	color: #F1C232;
+}
+
+#main_content a {
+	font-weight: bold;
+}
+
 #wrapper {
 	min-height: 100%;
 	position: relative;
@@ -29,10 +37,10 @@ a {
 
 #header, #footer {
 	width: 100%;
+	overflow: auto;
 }
 
 #header {
-	overflow: auto;
 	/*top: 0em;*/
 	/*height: 3.0em;*/
 	/*height: 8em;*/
@@ -42,13 +50,12 @@ a {
 
 #footer {
 	clear: both;
-	/*height: 3em;*/
-	/*height: 4em;*/
-	/*height: 20em;*/
-	position: absolute;
+	/*Current this is intentially commented out (default is 'static').*/
+	/*position: absolute;*/
 	width: 100%;
 	bottom: 0;
 	left: 0;
+	z-index: 1;
 }
 
 #middle_section {
@@ -56,8 +63,7 @@ a {
 	height: 100%;
 	width: 100%;
 	clear: both;
-	/*This should be the height of the footer.*/
-	/*padding-bottom: 3em;*/
+	overflow: auto;
 }
 
 #sidebar, #main_content {
@@ -77,6 +83,9 @@ a {
 	z-index: 1;
 }
 
+/*TODO: the footer height is now unknown, so maybe this should be set dynamically.*/
+/*We're doing the work anyway, and this could also be set up with that thing where*/
+/*you chase the div around with your mouse.*/
 #current_balance { 
 	position: fixed;
 	/*All other em measurements are in multiples of this font size.*/
@@ -104,7 +113,6 @@ a {
 
 #current_balance.OK_balance {
 	background-color: #7E7E7E;
-	/*color: #000000;*/
 	/*TODO: figure out how to do this in a way that doesn't make the thing bigger, or whatever.*/
 	/*border: 0.25em solid #000000;*/
 }
@@ -118,15 +126,13 @@ a {
 }
 
 #main_content {
-	/*position: absolute;*/
-	/*float: right;*/
 	border-radius: 1em;
 	background-color: white;
 	color: black;
 	padding-left: 1em;
 	padding-right: 1em;
 	padding-top: 0.125em;
-	/*padding-bottom: 0.25em;*/
+	padding-bottom: 0.125em;
 	margin-left: 5em;
 }
 
@@ -141,7 +147,6 @@ a {
 #logo {
 	float: left;
 	font-size: 3em;
-	/*font-size: 0.5em;*/
 }
 
 .nav_bar {
@@ -162,11 +167,10 @@ a {
 	display: block;
 }
 
-#header .nav_button a:hover, #footer .nav_button a:hover {
-	color: #F1C232;
-	/*margin-top: 0.25em;*/
-	/*font-weight: bold;*/
-}
+/*#header .nav_button a:hover, #footer .nav_button a:hover {*/
+	/*color: #F1C232;*/
+	/*[>margin-top: 0.25em;<]*/
+/*}*/
 
 .nav_icon {
 	vertical-align: middle;
@@ -248,4 +252,8 @@ form.submit_button {
 
 .form_report {
 	color: red;
+}
+
+.larger_text {
+	font-size: 1.25em;
 }
