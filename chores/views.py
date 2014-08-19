@@ -459,17 +459,10 @@ def calculate_balance(user, coop=None):
 @login_required()
 def chores_list(request):
 
-    # TODO: Would be nice to able for selecting by 'today' as well as by a
-    # date like '2014-01-01'.
+    # TODO: Would be nice to able for selecting by 'today' as well as by date.
     def find_day_id(date):
-        now = datetime.date.today()
-        if date == now:
-            return 'today'
-        else:
-            return ''
+        return date.isoformat()
 
-    # TODO: make this so that it's cycles other than the current one that are
-    # dimmed. Thinking the current thing is too tight.
     def find_day_classes(date):
         '''
         Sets flags relating to `date` that are read by the template. The actual
@@ -478,9 +471,22 @@ def chores_list(request):
         now = datetime.date.today()
         difference = date-now
         css_classes = {
-            'past'    : timedelta.in_interval(None, difference, 0),
-            'near_future'   : timedelta.in_interval(0, difference, 3),
-            'distant_future': timedelta.in_interval(3, difference, None)
+            'day_near_past'  : timedelta.in_interval(None, difference, -3),
+            'day_current'    : timedelta.in_interval(  -3, difference,  0),
+            'day_near_future': timedelta.in_interval(   0, difference,  3),
+        }
+        return ' '.join([key for key,value in css_classes.items() if value])
+
+    def find_cycle_classes(cycle_num, start_date, stop_date):
+        '''
+        Sets flags relating to `cycle` that are read by the template. The
+        actual formatting information is kept in a CSS file.
+        '''
+        today = datetime.date.today()
+        css_classes = {
+            'cycle_past'   : today < start_date,
+            'cycle_current': start_date <= today <= stop_date,
+            'cycle_future' : stop_date < today,
         }
         return ' '.join([key for key,value in css_classes.items() if value])
 
@@ -495,33 +501,35 @@ def chores_list(request):
     # co-op.
     coop = request.user.profile.coop
     chores = Chore.objects.for_coop(coop)
-    chores_by_date = []
-    for date in chores.dates('start_date', 'day', 'ASC'):
-        chores_today = (chores.filter(start_date=date)
-                          .order_by('skeleton__start_time',
-                                    'skeleton__short_name'))
-        chore_dicts = []
-        for chore in chores_today:
-            # TODO: could make some sort of `sentence_args` and
-            # `sentence_kwargs` variables to feed into these.
-            chore_dicts.append({
-                'chore': chore,
-                'class': chore.find_CSS_classes(request.user),
-                'sentences': get_chore_sentences(request.user, chore)
-            })
-
-        chores_by_date.append({
-            'date'    : date,
-            'class'   : find_day_classes(date),
-            'id'      : find_day_id(date),
-            'schedule': chore_dicts,
-            'weekday' : weekdays[date.weekday()],
-         })
-    return render(request, 'chores/chores_list.html',
-                  dictionary={'coop': coop, 'cooper': request.user,
-                              'days': chores_by_date,
-                              'current_balance':
-                                  calculate_balance(request.user, coop)})
+    cycles = []
+    for cycle_num, start_date, stop_date in coop.profile.cycles():
+        chores_by_date = []
+        for date in timedelta.daterange(start_date, stop_date, inclusive=True):
+            chores_today = (chores.filter(start_date=date)
+                              .order_by('skeleton__start_time',
+                                        'skeleton__short_name'))
+            if chores_today:
+                chore_dicts = [{
+                        'chore': chore,
+                        'class': chore.find_CSS_classes(request.user),
+                        'sentences': get_chore_sentences(request.user, chore)
+                } for chore in chores_today]
+                chores_by_date.append({
+                    'date'    : date,
+                    'class'   : find_day_classes(date),
+                    'id'      : find_day_id(date),
+                    'schedule': chore_dicts,
+                    'weekday' : weekdays[date.weekday()],
+                 })
+        cycles.append({
+            'days': chores_by_date,
+            'class': find_cycle_classes(cycle_num, start_date, stop_date),
+            'id': cycle_num,
+        })
+    return render(request,'chores/chores_list.html', dictionary={
+        'coop': coop, 'cycles': cycles,
+        'current_balance': calculate_balance(request.user, coop)
+    })
 
 # TODO: write a function/URL thing for when they go to 'chores/me/'.
 # TODO: this should now require permissions.

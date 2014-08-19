@@ -185,20 +185,19 @@ ul.chores_list {
 }
 
 
-.past {
-	/*background-color: #D3D3D3;*/
-	opacity: 0.5;
+.cycle_past {
+	opacity: 0.75;
 }
 
-.near_future {
-	background-color:#B6D7A8;
+.cycle_current {
+	/*opacity: 1;*/
 }
 
-.distant_future {
-	opacity: 0.75
+.cycle_future {
+	opacity: 0.75;
 }
 
-.past:hover, .distant_future:hover {
+.cycle_past:hover, .cycle_future:hover {
 	opacity: 1;
 }
 

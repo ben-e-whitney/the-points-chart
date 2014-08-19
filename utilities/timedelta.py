@@ -38,3 +38,12 @@ def pretty_print(timedelta):
     else:
         pretty_print += ' from now'
     return pretty_print
+
+def daterange(start_date, stop_date, inclusive=False):
+    delta = datetime.timedelta(days=1)
+    if inclusive:
+        stop_date += delta
+    date = start_date
+    while date < stop_date:
+        yield date
+        date += delta

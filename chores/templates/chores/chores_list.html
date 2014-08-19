@@ -16,26 +16,30 @@ chores
 {% endcomment %}
 
 {% block body %}
-{% for day in days %}
-<div class="{{ day.class }}">
-	<h1 id="{{ day.id }}"> {{ day.weekday }}, {{ day.date }} </h1>
-	<ul class="chores_list">
-		{% for schedule_item in day.schedule %}
-		<li class="{{ schedule_item.class }}" id="chore_{{ schedule_item.chore.id }}"> <strong>{{ schedule_item.chore.skeleton.short_name }} ({{ schedule_item.chore.skeleton.point_value }}):</strong>
-			{% for sentence in schedule_item.sentences %}
-				<span id="{{ sentence.identifier }}_sentence_{{ schedule_item.chore.id }}">
-					{% if sentence.report %}
-						{{ sentence.report_text }}
-					{% endif %}
-					{% if sentence.button %}
-					<button class="{{ sentence.identifier }}_button" id="{{ sentence.identifier }}_button_{{ schedule_item.chore.id }}" onclick="{{ sentence.JavaScript_function }}({{ schedule_item.chore.id }})">
-							{{ sentence.button_text }}
-					</button>
-					{% endif %}
-				</span>
-			{% endfor %}
-		{% endfor %}
-	</ul>
+{% for point_cycle in cycles %}
+	<div id="{{ point_cycle.id }}" class="{{ point_cycle.class }}">
+	{% for day in point_cycle.days %}
+		<div class="{{ day.class }}">
+			<h1 id="{{ day.id }}"> {{ day.weekday }} {{ day.date|date:"Y-m-d" }} </h1>
+			<ul class="chores_list">
+				{% for schedule_item in day.schedule %}
+				<li class="{{ schedule_item.class }}" id="chore_{{ schedule_item.chore.id }}"> <strong>{{ schedule_item.chore.skeleton.short_name }} ({{ schedule_item.chore.skeleton.point_value }}):</strong>
+					{% for sentence in schedule_item.sentences %}
+						<span id="{{ sentence.identifier }}_sentence_{{ schedule_item.chore.id }}">
+							{% if sentence.report %}
+								{{ sentence.report_text }}
+							{% endif %}
+							{% if sentence.button %}
+							<button class="{{ sentence.identifier }}_button" id="{{ sentence.identifier }}_button_{{ schedule_item.chore.id }}" onclick="{{ sentence.JavaScript_function }}({{ schedule_item.chore.id }})">
+									{{ sentence.button_text }}
+							</button>
+							{% endif %}
+						</span>
+					{% endfor %}
+				{% endfor %}
+			</ul>
+		</div>
+	{% endfor %}
 	</div>
 {% endfor %}
 
