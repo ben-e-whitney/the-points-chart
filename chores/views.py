@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import (login_required, user_passes_test,
     permission_required)
@@ -538,9 +538,8 @@ def user_stats_list(request, username):
     #For the scenario that an anonymous user clicks the 'stats' link, logs in,
     #and is then sent to chores/AnonymousUser/'.
     if username == 'AnonymousUser':
-        user = request.user
-    else:
-        user = User.objects.get(username=username)
+        return redirect('/chores/{usn}/'.format(usn=request.user))
+    user = User.objects.get(username=username)
     coop = user.profile.coop
     render_dictionary = {
         'coop': coop,
