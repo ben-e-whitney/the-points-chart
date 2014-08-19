@@ -46,13 +46,13 @@ def contacts_export(request):
     return response
 
 @login_required()
-def profile_form(request):
-    return render(request, 'profiles/profile_form.html',
+def user_profile_form(request):
+    return render(request, 'profiles/user_profile_form.html',
                   {'form': UserProfileForm(instance=request.user.profile)})
+
 # TODO: what is the idiomatic way to do this? Better as a lambda expression?
 class HTMLForm():
     def __init__(self, html_id, title, form_content):
         self.html_id = html_id
         self.title = title
         self.form_content = form_content
-

@@ -64,14 +64,17 @@ def create_function_creator(model=None, model_callable=None, model_form=None,
     return create_function
 
 def edit_function_creator(model=None, model_callable=None, model_form=None,
-                          model_form_callable=None):
+                          model_form_callable=None, get_id=None):
+    if get_id is None:
+        get_id = lambda request: int(getattr(request, request.method)[
+            'choice_id'])
     #TODO: IMPORTANT: check that the person making the object and the object
     #they're editing are in the same co-op.
     #TODO: another permissions test here.
     @login_required()
     def edit_function(request, model=model, model_callable=model_callable,
                       model_form=model_form,
-                      model_form_callable=model_form_callable):
+                      model_form_callable=model_form_callable, get_id=get_id):
         print('in the edit_function')
         try:
             if model is None:
@@ -86,7 +89,7 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
             raise e
         print('made it past the first try/except block')
         try:
-            object_id = int(getattr(request, request.method)['choice_id'])
+            object_id = get_id(request)
         except Exception as e:
             print('error in assigning object_id')
             print(e)
@@ -100,7 +103,7 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
                 print('error in making the form')
                 print(e)
                 raise e
-            # TODO: error checking here.
+            #TODO: error checking here.
             #TODO: no need to assign the actual variable -- just put in render
             #arguments.
             #TODO: make not explaining why the order of operations is slightly
@@ -116,20 +119,22 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
                 print('error in making the form')
                 print(e)
                 raise e
+
             try:
                 thing = form.is_valid()
             except Exception as e:
                 print('error in calling form.is_valid')
                 print(e)
                 raise e
+
             if form.is_valid():
                 print('form is valid')
                 try:
                     #old_instance = model.objects.get(pk=object_id)
                     #old_instance.delete()
-                    new_instance = form.save(commit=True, request=request)
-                    #new_instance.id = object_id
-                    #new_instance.save()
+                    new_instance = form.save(commit=False, request=request)
+                    new_instance.id = object_id
+                    new_instance.save()
                     #old_instance.delete()
                 except Exception as e:
                     print('error in trying to replace')

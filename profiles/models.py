@@ -19,7 +19,7 @@ import datetime
 # thing for both group and user profiles.
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, primary_key=True, related_name='profile')
+    user = models.OneToOneField(User, related_name='profile')
     coop = models.ForeignKey(Group)
     # Want to allow for a middle name, so I'm going to leave the first_name and
     # last_name fields in User blank and just keep everything here. Can't just
@@ -48,8 +48,7 @@ class UserProfile(models.Model):
     # TODO: add methods here to calculate presence and share?
 
 class GroupProfile(models.Model):
-    group = models.OneToOneField(Group, primary_key=True,
-                                 related_name='profile')
+    group = models.OneToOneField(Group, related_name='profile')
     short_name = models.CharField(max_length=2**6)
     short_description = models.TextField()
     full_name  = models.CharField(max_length=2**6)

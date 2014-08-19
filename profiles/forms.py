@@ -1,13 +1,12 @@
 from utilities.forms import BasicForm
 from profiles.models import UserProfile, GroupProfile
 
-# TODO: add password editing here.
 class UserProfileForm(BasicForm):
     # TODO: add in a password field.
     class Meta:
         model = UserProfile
         fields = ['nickname', 'first_name', 'middle_name', 'last_name',
-                  'email_address', 'phone_number', 'phone_carrier']
+                  'email_address', 'phone_number', 'public_calendar']
 
     def clean(self):
         super().clean()
@@ -17,6 +16,16 @@ class UserProfileForm(BasicForm):
                                             # self.phone_carrier is None):
             # raise ValidationError('...')
         return self.cleaned_data
+
+    def save(self, commit=True, request=None, **kwargs):
+        profile = super().save(commit=False)
+        profile.user = request.user
+        profile.coop = request.user.profile.coop
+        profile.share = request.user.profile.share
+        profile.presence = request.user.profile.presence
+        if commit:
+            profile.save()
+        return profile
 
 class GroupProfileForm(BasicForm):
     class Meta:
