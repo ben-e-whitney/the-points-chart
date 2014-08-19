@@ -14,6 +14,7 @@ urlpatterns = patterns('',
     url(r'^settings/', include('profiles.settings_urls')),
     url(r'^contacts/', include('profiles.contacts_urls')),
     url(r'^login/', 'django.contrib.auth.views.login', name='login'),
-    url(r'^logout/', 'django.contrib.auth.views.logout', name='logout'),
+    url(r'^logout/', 'django.contrib.auth.views.logout', 
+        {'next_page': '/login/'}, name='logout'),
     url(r'^about/', 'utilities.views.about', name='about'),
 )

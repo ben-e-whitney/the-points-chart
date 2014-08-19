@@ -32,6 +32,7 @@ TEMPLATE_DIRS = (
 ALLOWED_HOSTS = []
 
 LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/chores/'
 # Maybe get rid of this so that there's the same setup with Coop and Cooper?
 AUTH_PROFILE_MODULE = 'profiles.UserProfile'
 
