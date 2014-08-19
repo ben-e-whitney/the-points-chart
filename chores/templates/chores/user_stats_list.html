@@ -10,6 +10,13 @@ stats
 {% endcomment %}
 <!--Logged in as {{ user }}.-->
 
+{% block head %}
+{% load staticfiles %}
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+<script src={% static "chores/user_stats_list.js" %}></script>
+{% endblock head %}
+
 {% block body %}
 <!--
     Thinking this should be part of a larger table, put off to the left.
@@ -21,21 +28,32 @@ stats
 Will this always have data to display? Might even need to cut this out.
 -->
 <h1 style="text-align: center">Information for {{ cooper.profile.nickname }} </h1>
-<!--<h2>Selected Information</h2>-->
-{% for section in list_information %}
-	<h3>{{ section.title }}</h3>
-	{% for subsection in section.sections %}
-		<h4>{{ subsection.title }}</h4>
-		<!--TODO: consider changing this to just a paragraph. Will save vertical space/use up horizontal space.-->
-		<ul>
-			{% for dictionary in subsection.dictionaries %}
-			<li> {{ dictionary.items }}
+<div id="form_accordion">
+<h2>Particulars</h2>
+<table id="selected_information_table">
+	<thead>
+	</thead>
+	<tbody>
+		<tr>
+			{% for section in list_information %}
+				<td class="selected_information_section">
+					<h3>{{ section.title }}</h3>
+					{% for subsection in section.sections %}
+						<h4>{{ subsection.title }}</h4>
+						<!--TODO: consider changing this to just a paragraph. Will save vertical space/use up horizontal space.-->
+						<ul>
+							{% for dictionary in subsection.dictionaries %}
+							<li> {{ dictionary.items }}
+							{% endfor %}
+						</ul>
+					{% endfor %}
+				</td>
 			{% endfor %}
-		</ul>
-	{% endfor %}
-{% endfor %}
+		</tr>
+	</tbody>
+</table>
 
-<h2>Summary Information</h2>
+<h2>Summary</h2>
 <table>
 	<!--<caption>Summary for {{ cooper.profile.nickname }}</caption>-->
 	<thead>
@@ -62,4 +80,5 @@ Will this always have data to display? Might even need to cut this out.
 	{% endfor %}
 	</tbody>
 </table>
+</div>
 {% endblock %}
