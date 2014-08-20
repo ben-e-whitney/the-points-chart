@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import (login_required, user_passes_test,
     permission_required)
 from django.contrib.auth.models import User
 from django.template import loader, Context
+from django.utils import timezone
 
 # Create your views here.
 
@@ -463,6 +464,12 @@ def chores_list(request):
     def find_day_id(date):
         return date.isoformat()
 
+    def find_day_name(date):
+        #TODO: use timezones for this.
+        difference = (date-timezone.now().date()).days
+        translations = {-1: 'yesterday', 0: 'today', 1: 'tomorrow'}
+        return translations.get(difference, '')
+
     def find_day_classes(date):
         '''
         Sets flags relating to `date` that are read by the template. The actual
@@ -518,6 +525,7 @@ def chores_list(request):
                     'date'    : date,
                     'class'   : find_day_classes(date),
                     'id'      : find_day_id(date),
+                    'name'    : find_day_name(date),
                     'schedule': chore_dicts,
                     'weekday' : weekdays[date.weekday()],
                  })

@@ -20,6 +20,9 @@ chores
 	<div id="{{ point_cycle.id }}" class="{{ point_cycle.class }}">
 	{% for day in point_cycle.days %}
 		<div class="{{ day.class }}">
+			{% if day.name %}
+				<a name="{{ day.name }}"></a>
+			{% endif %}
 			<h1 id="{{ day.id }}"> {{ day.weekday }} {{ day.date|date:"Y-m-d" }} </h1>
 			<ul class="chores_list">
 				{% for schedule_item in day.schedule %}
