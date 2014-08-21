@@ -1,4 +1,7 @@
 var get_distance = function($that, $window, location, dimension_method, css_attributes) {
+  var one_quadratic_root = function(a, b, c, root) {
+    return (-b+Math.sign(a)*(root == 'larger' ? 1 : -1)*Math.pow(Math.pow(b, 2)-4*a*c, 1/2))/(2*a);
+  };
   //`S` is the width (resp. height) of `$that` ('self') and `W` is the width (resp. height)
   //of the window. We'll generate the next location according to a probability distribution
   //that (unweighted) is 1 at 0, 0 at `S`, and 1 at `W-S`. This should serve to propel the 
@@ -8,18 +11,13 @@ var get_distance = function($that, $window, location, dimension_method, css_attr
   $.each(css_attributes, function(index, attribute) {
     S += parseFloat($that.css(attribute));
   });
-  //Some probability stuff to get an appealing distribution.
-  var one_quadratic_root = function(a, b, c, root) {
-    return (-b+Math.sign(a)*(root == 'larger' ? 1 : -1)*Math.pow(Math.pow(b, 2)-4*a*c, 1/2))/(2*a);
-  };
   var inverse = function(p) {
     if (p < S/(W-S)) {
       return one_quadratic_root(1/(S*(S-W)), 2/(W-S), -p, 'smaller');
     } else {
-      return one_quadratic_root(1, -2*S, Math.pow(S, 2)-(W-S)*(W-2*S)*(p-S/(W-S)), 'larger')
+      return one_quadratic_root(1, -2*S, Math.pow(S, 2)-(W-S)*(W-2*S)*(p-S/(W-S)), 'larger');
     }
   };
-  //alert([W, S, W-S, inverse(0), inverse(S/(W-S)), inverse(1)]);
   return String(inverse(Math.random())-location)+'px';
 };
 var counter = 0;
@@ -48,5 +46,7 @@ var jump_around = function(event) {
 };
 
 $(document).ready(function() {
+  //TODO: there is some bug here that occasionally (on the order of 1/50 movements) causes
+  //the element to leave the window. It's funny when it happens so this has low priority.
   $('#current_balance').mouseenter(jump_around);
 });
