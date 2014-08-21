@@ -6,17 +6,10 @@ class BasicForm(forms.ModelForm):
         pass
     error_css_class = 'form_error'
 
-    #TODO: remove.
-    @classmethod
-    def edit_object(cls, request=None, object_id=None):
-        print('IN BASICFORM EDIT_OBJECT!')
-        if object_id is None:
-            object_id = int(getattr(request, request.method)['choice_id'])
-        form = cls(request.POST,
-                   instance=cls.Meta.model.objects.get(pk=object_id))
-        if form.is_valid():
-            form.save()
-        return form
+    #TODO: think this is because you're passing everything requests. Check.
+    def save(self, *args, **kwargs):
+        kwargs.pop('request')
+        return super().save(*args, **kwargs)
 
 def cycle_field_creator(coop):
     CYCLE_CHOICES = tuple(

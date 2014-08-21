@@ -98,6 +98,7 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
         if request.method == 'GET':
             print('request method is GET')
             try:
+                print('working with object {oid}'.format(oid=object_id))
                 form = model_form(instance=model.objects.get(pk=object_id))
             except Exception as e:
                 print('error in making the form')

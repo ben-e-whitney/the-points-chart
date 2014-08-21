@@ -9,5 +9,5 @@ urlpatterns = patterns('',
     url(r'actions/create/user/$', AJAX.user_create, name='user_create'),
     url(r'actions/edit/user/$', AJAX.user_edit, name='user_edit'),
     url(r'actions/edit/group_profile/$', profiles.AJAX.group_profile_edit,
-        name='group_profile_create'),
+        name='group_profile_edit'),
 )

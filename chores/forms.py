@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
+from django.db.models.fields import BLANK_CHOICE_DASH
 
 from chores.models import ChoreSkeleton, Chore, Timecard, Signature, ChoreError
 from utilities.forms import BasicForm, cooper_field_creator
@@ -56,6 +57,27 @@ def ChoreFormCreator(request):
         clean_signed_up  = clean_signature_creator('signed_up')
         clean_signed_off = clean_signature_creator('signed_off')
         clean_voided     = clean_signature_creator('voided')
+
+        def __init__(self, *args, **kwargs):
+            print('args: {arg}'.format(arg=args))
+            print('kwargs: {kwa}'.format(kwa=kwargs))
+            print('IN CHOREFORM INIT!')
+            instance = kwargs.get('instance', None)
+            if instance is not None:
+                initial = kwargs.get('initial', {})
+                for sig_name in ('signed_up', 'signed_off', 'voided'):
+                    print('{nam}: {coo}'.format(
+                        nam=sig_name,
+                        coo=getattr(instance, sig_name).who
+                    ))
+                    try:
+                        cooper_id = getattr(instance, sig_name).who.id
+                    except AttributeError:
+                        cooper_id = BLANK_CHOICE_DASH[0][0]
+                    print('{nam}: {cid}'.format(nam=sig_name, cid=cooper_id))
+                    initial.update({sig_name: cooper_id})
+                kwargs.update({'initial': initial})
+            super().__init__(*args, **kwargs)
 
         def clean(self):
             print('got into form-wide clean method')

@@ -4,6 +4,7 @@ from django import forms
 
 # Create your views here.
 import decimal
+import itertools
 
 from chores.models import ChoreSkeleton, Chore
 from stewardships.models import (StewardshipSkeleton, Stewardship, ShareChange,
@@ -59,7 +60,8 @@ def steward_forms(request):
     #TODO: could pull out common action for these two. Seems like overkill.
     HTML_create_form = lambda html_id, name, main_form, choice_objects: {
         'html_id': '{html_id}_create_form'.format(html_id=html_id),
-        'title': 'Create a New {nam}'.format(nam=name), 'main_form': main_form
+        'title': 'Create a New {nam}'.format(nam=name),
+        'main_form': main_form
     }
     HTML_edit_form = lambda html_id, name, main_form, choice_objects: {
         'html_id': '{html_id}_edit_form'.format(html_id=html_id),
@@ -82,8 +84,7 @@ def steward_forms(request):
         ('classical_stewardship', 'Stewardship',
              ClassicalStewardshipFormCreator(request)(),
              Stewardship.objects.all().classical().for_coop(coop)),
-        # TODO: rename this to 'Special Points Grant'?
-        ('special_points', 'Special Points',
+        ('special_points', 'Special Points Grant',
              SpecialPointsFormCreator(request)(),
              Stewardship.objects.all().special_points().for_coop(coop)),
         ('loan', 'Loan', LoanFormCreator(request)(),
@@ -94,25 +95,15 @@ def steward_forms(request):
              ShareChange.objects.for_coop(coop)),
         ('user', 'User', UserFormCreator(request)(), coop.user_set.all()),
     )
-    create_only_args = (
-
-    )
+    create_only_args = ()
     edit_only_args = (
-        ('chore_skeleton', 'Edit or Delete a Chore Skeleton',
-             ChoreSkeletonForm(), ChoreSkeleton.objects.for_coop(coop)),
+        ('group_profile', 'Group Profile', GroupProfileForm(),
+         (coop.profile,)),
     )
-    #TODO: Can't use the exact same thing as above. Make HTML_edit_only_form or
-    #whatever.
-    no_choice_edit_forms = []
-    #no_choice_edit_forms = [
-        #HTML_create_form('group_profile_edit_form', 'Edit the Co-op Profile',
-                         #GroupProfileForm(instance=coop.profile)),
-    #]
-
-    create_forms = [HTML_create_form(*args) for args in credit_and_edit_args]
-    edit_forms = [HTML_edit_form(*args) for args in credit_and_edit_args]
-    edit_forms = []
+    create_forms = [HTML_create_form(*args) for args in itertools.chain(
+        credit_and_edit_args, create_only_args)]
+    edit_forms = [HTML_edit_form(*args) for args in itertools.chain(
+        credit_and_edit_args, edit_only_args)]
     return render(request, 'steward/steward_forms.html',
-                  {'create_forms': create_forms, 'edit_forms': edit_forms,
-                   'no_choice_edit_forms': no_choice_edit_forms})
+                  {'create_forms': create_forms, 'edit_forms': edit_forms})
 

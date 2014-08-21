@@ -2,7 +2,7 @@ $(document).ready(function() {
   $('.date_picker').datepicker();
   $('#form_accordion').accordion({active: false, collapsible: true,
     heightStyle: "content", animate: false});
-  var create_and_edit_ids_and_URLs = [
+  var create_and_edit_args = [
     ['chore_skeleton', 'chores', 'chore_skeleton'],
     ['chore', 'chores', 'chore'],
     ['classical_stewardship_skeleton', 'stewardships',
@@ -14,20 +14,20 @@ $(document).ready(function() {
     ['share_change', 'stewardships', 'share_change'],
     ['user', 'steward', 'user'],
   ];
-  $.each(create_and_edit_ids_and_URLs, function(key, args) {
+  var create_args = [];
+  var edit_args = [
+    ['group_profile', 'steward', 'group_profile'],
+  ];
+  $.each(create_and_edit_args.concat(create_args), function(key, args) {
     var create_URL = '/'+args[1]+'/actions/create/'+args[2]+'/';
     $('#'+args[0]+'_create_form').submit(submit_function_creator(create_URL));
   });
-  //edit only:
-    //['group_profile_form', 'steward', 'group_profile/'],
-  //TODO: could combine this with the previous each loop.
-  //TODO: get rid of this redefinition after things are working again.
-  $.each(create_and_edit_ids_and_URLs, function(key, args) {
+  $.each(create_and_edit_args.concat(edit_args), function(key, args) {
     var edit_URL = '/'+args[1]+'/actions/edit/'+args[2]+'/';
     $('#'+args[0]+'_edit_form_selector').find('select').change(function() {
       var main_form = $('#'+args[0]+'_edit_form');
       //Get rid of the submit function. It's going to be added again later, so this
-      //prevents it from being called multiple times them. Could probably be made smoother.
+      //prevents it from being called multiple times then. Could probably be made smoother.
       main_form.unbind();
       main_form.empty();
       var choice_id = $(this).val();
@@ -43,8 +43,5 @@ $(document).ready(function() {
         });
       }
     });
-      //option:selected
-      //$(something)
   });
 });
-
