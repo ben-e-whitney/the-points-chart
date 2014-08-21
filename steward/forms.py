@@ -51,12 +51,15 @@ def UserFormCreator(request):
                 nickname=self.cleaned_data['nickname'],
                 email_address=self.cleaned_data['email_address'],
                 presence=self.cleaned_data['presence'],
-                share=self.cleaned_data['share']
+                share=self.cleaned_data['share'],
+                public_calendar=True,
+                points_steward=False,
             )
-            profile.save()
+            #TODO: Unsure this is consistent with how other forms use `commit`.
             if commit:
                 new_user.save()
-                new_user.profile = profile
+                profile.user = new_user
+                profile.save()
                 coop.user_set.add(new_user)
             # TODO: email new user here with instructions. CC steward (maybe
             # just CC the person who made the request, to allow for other

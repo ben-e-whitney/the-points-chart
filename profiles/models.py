@@ -38,6 +38,7 @@ class UserProfile(models.Model):
     # between a dropdown list of options.
     phone_carrier = models.CharField(max_length=2**6, blank=True, null=True)
     public_calendar = models.BooleanField()
+    points_steward  = models.BooleanField()
 
     # A standard load of 100% will be stored as 1 here.
     share = models.DecimalField(max_digits=3, decimal_places=2)

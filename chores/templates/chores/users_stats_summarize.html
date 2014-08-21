@@ -11,10 +11,10 @@ users summary
 
 {% block body %}
 
-<h1 style="text-align: center">Information for {{ cooper.profile.nickname }} </h1>
-
-<h2>Summary Information</h2>
+<h2>Particulars</h2>
+<h2>Summary</h2>
 <table>
+	<caption>Balances</caption>
 	<thead>
 	</thead>
 	<tbody>
@@ -31,12 +31,12 @@ users summary
 		{% for subsection in section.sections %}
 			<tr>
 				<td style="text-align: right">
-					<a href="/chores/{{ subsection.title.username }}">
+					<a href="/chores/{{ subsection.title.username }}/">
 						{{ subsection.title.profile.nickname }}
 					</a>
 				</td>
 				{% for dictionary in subsection.dictionaries %}
-					<td style="text-align: right" title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
+				<td class="{{ dictionary.CSS_class }}"  title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
 				{% endfor %}
 			</tr>
 		{% endfor %}

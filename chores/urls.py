@@ -5,8 +5,6 @@ from chores import AJAX
 
 urlpatterns = patterns('',
     url(r'^$', views.chores_list, name='chores_list'),
-    url(r'^summary/$', views.users_stats_summarize,
-        name='users_stats_summarize'),
     # This needs to come after all other patterns with only one slash.
     url(r'^(?P<username>[a-zA-Z0-9_@+.-]+?)/$', views.user_stats_list,
         name='user_stats_list'),

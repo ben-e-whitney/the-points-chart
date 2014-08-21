@@ -14,82 +14,13 @@ import itertools
 import decimal
 
 from utilities import timedelta
+from utilities.views import DisplayInformation, format_balance
 from chores.models import Chore
 from profiles.models import UserProfile
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
     ShareChange)
 
 # TODO: put extra functions and lengthy variable definitions in another file.
-# TODO: name needs improving here.
-class DisplayInformation():
-    def __init__(self, name, structure, keys, processor, format_key):
-        self.name = name
-        self.structure = structure
-        self.keys = keys
-        self.processor = processor
-        self.format_key = format_key
-        # TODO: put further checks here? That or document what structure you're
-        # expecting to get.
-        try:
-            assert sum(len(section_subsections) for section_subsections in
-                       self.structure['subsections']) == len(self.keys)
-        except AssertionError as e:
-            raise AssertionError(
-                self.structure['subsections'], self.keys
-            )
-
-    def load_data(self, data):
-        self.data = {
-            key: (data[key][self.format_key] if self.format_key is not None
-                  else data[key]) for key in self.keys
-        }
-
-    # TODO: document this or whatever. Figure out the right way.
-    def process_data(self):
-        # TODO: at the beginning have it just take these in.
-        self.data = {
-            key: self.processor(item) for key, item in
-            self.data.items()
-        }
-
-    def populate_structure(self):
-        self.structured_data = []
-        key_index = 0
-        for i, section in enumerate(self.structure['sections']):
-            self.structured_data.append({'title': section, 'sections': []})
-            # Assuming this is only called once, so that the dictionary we just
-            # appended is located at index `i`.
-            for subsection in self.structure['subsections'][i]:
-                self.structured_data[i]['sections'].append(
-                    {
-                        'title': subsection,
-                        'dictionaries': [
-                            dict_ for dict_ in self.data[self.keys[key_index]]
-                        ]
-                    }
-                )
-                key_index += 1
-
-    def purge_empty(self):
-        # list/dict ('sections')/list/dict ('dictionaries')
-        # test if *that* is [] or whatever
-        # Filter subsections.
-        for big_dict in self.structured_data:
-            # Using mutability/fact that `self.structured_data` stores
-            # references to objects.
-            big_dict['sections'] = [item for item in big_dict['sections'] if
-                                    item['dictionaries']]
-        # Filter sections.
-        self.structured_data = [big_dict for big_dict in self.structured_data
-                                if big_dict['sections']]
-        return None
-
-    def create_template_data(self, data):
-        self.load_data(data)
-        self.process_data()
-        self.populate_structure()
-        self.purge_empty()
-        return self.structured_data
 
 # TODO: another option (attractive) would be to put all of this as methods of
 # the Signature model. I think we would want to subclass that class, but all
@@ -357,7 +288,7 @@ def calculate_load_info(user=None, coop=None):
             raise TypeError('Must specify user or co-op.')
         else:
             coop = user.profile.coop
-    today = datetime.date.today()
+    today = timezone.now().date()
     # Storing as a tuple so we can iterate over it multiple times without extra
     # cost. TODO: is this how this works?
     all_coopers = tuple(coop.user_set.all())
@@ -365,22 +296,20 @@ def calculate_load_info(user=None, coop=None):
         user_set = all_coopers
     else:
         user_set = (user,)
-    accounts = [{'user': user, 'load': [], 'credits': [], 'balance': []}
-                for user in user_set]
     # Note that we're not checking whether stewardships are voided or not
     # (since currently that doesn't happen/has no meaning/effect). Maybe
     # should be changed (TODO).
     data = {
-        'chores': Chore.objects.for_coop(coop).voided(None, False),
-        'stewardships': Stewardship.objects.for_coop(coop),
-        'absences': Absence.objects.for_coop(coop),
+        'chores'       : Chore.objects.for_coop(coop).voided(None, False),
+        'stewardships' : Stewardship.objects.for_coop(coop),
+        'absences'     : Absence.objects.for_coop(coop),
         'share changes': ShareChange.objects.for_coop(coop)
     }
+    accounts = [{'user': cooper, 'load': [], 'credits': [], 'balance': []} for
+                cooper in user_set]
     for cycle_num, start_date, stop_date in coop.profile.cycles():
         cycle_data = {key: value.in_window(start_date, stop_date)
                       for key, value in data.items()}
-        # TODO: not sure exactly how this should be done. Just getting it
-        # working for now.
         adds_to_points = tuple(itertools.chain(cycle_data['chores'],
                                                cycle_data['stewardships']))
         adds_to_presence = cycle_data['absences']
@@ -399,30 +328,37 @@ def calculate_load_info(user=None, coop=None):
                             # cooper in all_coopers)
 
         total_presence_share = 0
+        presence_shares = {}
         for cooper in all_coopers:
             presence = cooper.profile.presence-sum(cycle_data['absences']
                                                    .signed_up(cooper, True))
             share = cooper.profile.share+sum(cycle_data['share changes']
                                              .signed_up(cooper, True))
-            total_presence_share += presence*share
+            presence_share = presence*share
+            total_presence_share += presence_share
+            #TODO: don't like how this is done.
+            if cooper in user_set:
+                presence_shares.update({cooper: presence_share})
         ppds = total_points/total_presence_share
 
         for dict_ in accounts:
             user = dict_['user']
-            # load = 0
-            # signed_up = 0
-            # completed = 0
-            # TODO: factor in Absences and ShareChanges. Do this in the above
-            # loop.
-            load = ppds*user.profile.presence*user.profile.share
+            #TODO: for now I like it as it is, but you could consider having
+            #loans directly affect the load.
+            load = ppds*presence_shares[user]
+            #Handling chores and stewardships separately to avoid any confusion
+            #about how stewardships are handled.
             user_signed_up_chores = cycle_data['chores'].signed_up(user, True)
             total_signed_up = sum(user_signed_up_chores)
             total_completed = sum(user_signed_up_chores.signed_off(None, True))
             credits = (total_signed_up if today <= stop_date else
                 total_completed)
-            if dict_['balance']:
+            credits += sum(cycle_data['stewardships'].signed_up(user, True))
+            print('credits for {use} in cycle {num}: {cre}'.format(
+                use=user, num=cycle_num, cre=credits))
+            try:
                 old_balance = dict_['balance'][-1]
-            else:
+            except IndexError:
                 old_balance = 0
             balance = credits-load+old_balance
             dict_['load'].append(load)
@@ -431,30 +367,9 @@ def calculate_load_info(user=None, coop=None):
     return accounts
 
 def calculate_balance(user, coop=None):
-    endpoints = (-float('inf'), -0.3, -0.15, 0.15, 0.3, float('inf'))
-    CSS_classes = ('very_low_balance', 'low_balance', 'OK_balance',
-                   'high_balance', 'very_high_balance')
-    assert len(endpoints) == len(CSS_classes)+1
-
     load_info = calculate_load_info(user=user, coop=coop)[0]
-    balance = load_info['balance'][-1]
-    load    = load_info['load'][-1]
-    try:
-        ratio = balance/load
-    except decimal.DivisionByZero as e:
-        ratio = endpoints[-1]+1 if balance >= 0 else endpoints[0]-1
-    for i, CSS_class in enumerate(CSS_classes):
-        if endpoints[i] <= ratio < endpoints[i+1]:
-            # We will use the value of `CSS_class`. If we never make it to this
-            # block, `CSS_class` will end up `CSS_classes[-1]`.
-            break
-    approx_balance = balance.to_integral_value()
-    return {
-        'value': '{sgn}{val}'.format(sgn='+'if approx_balance >= 0 else '−',
-            # TODO: how to decide how to zfill?
-            val=str(abs(approx_balance)).zfill(2)),
-        'CSS_class': CSS_class
-    }
+    return format_balance(load=load_info['load'][-1],
+                                    balance=load_info['balance'][-1])
 
 # TODO: use an id (or something else?) to make it open to the current day.
 @login_required()
@@ -556,47 +471,6 @@ def user_stats_list(request, username):
     render_dictionary.update(get_obligations(user, coop=coop))
     return render(request, 'chores/user_stats_list.html',
                   dictionary=render_dictionary)
-
-# TODO: should be some test here.
-# TODO: with not too much effort this could be changed to use the
-# DisplayInformation class, as is done in `user_stats_list`.
-# TODO: include also lists of all stewardships, absences, etc.
-def users_stats_summarize(request):
-
-    # TODO: seems like we're just undoing the work that will be done in the
-    # `DisplayInformation` methods.
-    def balance_processor(items):
-        # TODO: this is repeated code.
-        def convert_to_integer(x):
-            return decimal.Decimal(x).to_integral_value()
-        return [{
-            'value': convert_to_integer(item),
-            'html_title': 'Exact value: {val}'.format(val=item)}
-            for item in items
-        ]
-
-    coop = request.user.profile.coop
-    cycles = []
-    for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
-        cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
-                       'cycle_stop': cycle_stop})
-    accounts = calculate_load_info(coop=coop)
-    accounts.sort(key=lambda x: x['user'].profile.nickname)
-    # TODO: could move around to iterate through only once.
-    # TODO: `users` is used in a pretty hacky way in the template.
-    users = [row['user'] for row in accounts]
-    user_ids = [row['user'].id for row in accounts]
-    accounts = {row['user'].id: balance_processor(row['balance']) for row in
-                accounts}
-    display_info = DisplayInformation('rows', {'sections': [None],
-        'subsections': [users]}, user_ids, lambda x: x, None)
-    render_dictionary = {
-        'point_cycles': cycles,
-        'rows': display_info.create_template_data(accounts)
-    }
-    print(render_dictionary['rows'])
-    return render(request, 'chores/users_stats_summarize.html',
-                  render_dictionary)
 
 # TODO: allow for people to download it either way if they're logged in?
 def calendar_create(request, username):

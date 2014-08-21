@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django import forms
 
 # Create your views here.
+import decimal
 
 from chores.models import ChoreSkeleton, Chore
 from stewardships.models import (StewardshipSkeleton, Stewardship, ShareChange,
@@ -14,6 +15,42 @@ from stewardships.forms import (ClassicalStewardshipSkeletonForm,
     ClassicalStewardshipFormCreator, SpecialPointsFormCreator,
     AbsenceFormCreator, LoanFormCreator, ShareChangeFormCreator)
 from steward.forms import UserFormCreator, ChoiceFormCreator
+
+from utilities.views import DisplayInformation, format_balance
+from chores.views import calculate_load_info
+# TODO: should be some test here.
+# TODO: include also lists of all stewardships, absences, etc.
+def users_stats_summarize(request):
+    coop = request.user.profile.coop
+    cycles = [{
+        'cycle_num'  : cycle_num,
+        'cycle_start': cycle_start,
+        'cycle_stop' : cycle_stop
+    } for cycle_num, cycle_start, cycle_stop in coop.profile.cycles()]
+    accounts = calculate_load_info(coop=coop)
+    accounts.sort(key=lambda x: x['user'].profile.nickname)
+    print('ACCOUNTS AT START: {acc}'.format(acc=accounts))
+    # TODO: could move around to iterate through only once.
+    # TODO: `users` is used in a pretty hacky way in the template.
+    users = [row['user'] for row in accounts]
+    user_ids = [row['user'].id for row in accounts]
+    accounts = {
+        row['user'].id: [
+            format_balance(load=cycle_load, balance=cycle_balance)
+            for cycle_load, cycle_balance in zip(row['load'], row['balance'])
+        ]
+        for row in accounts
+    }
+
+    display_info = DisplayInformation('rows', {'sections': [None],
+        'subsections': [users]}, user_ids, lambda x: x, None)
+    render_dictionary = {
+        'point_cycles': cycles,
+        'rows': display_info.create_template_data(accounts)
+    }
+    print('ACCOUNTS AT END: {acc}'.format(acc=accounts))
+    return render(request, 'chores/users_stats_summarize.html',
+                  render_dictionary)
 
 # TODO: put steward test here.
 @login_required()
@@ -78,3 +115,4 @@ def steward_forms(request):
     return render(request, 'steward/steward_forms.html',
                   {'create_forms': create_forms, 'edit_forms': edit_forms,
                    'no_choice_edit_forms': no_choice_edit_forms})
+
