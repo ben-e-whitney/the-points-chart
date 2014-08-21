@@ -6,6 +6,7 @@ static/400 Hand-Drawn
 rhc
 initializer.py
 test.py
+manage.py
 
 # Copied from <https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore>.
 
