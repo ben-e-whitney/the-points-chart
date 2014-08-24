@@ -1,0 +1,4 @@
+django-localflavor==1.0
+django-model-utils==2.0.3
+django-phonenumber-field==0.5
+django-timezone-field==1.0

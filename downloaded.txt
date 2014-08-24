@@ -1,9 +1,0 @@
-Django <https://www.djangoproject.com/>
-django-timezone-field <https://pypi.python.org/pypi/django-timezone-field/>
-/*django-phonenumber-field <https://github.com/stefanfoulis/django-phonenumber-field.git>*/
-django-localflavor <https://django-localflavor.readthedocs.org/en/latest/>
-django-model-utils <https://github.com/carljm/django-model-utils>
-jQuery <http://jquery.com/>
-Python-gitignore <https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore>
-Vim-gitignore <https://github.com/github/gitignore/blob/master/Global/vim.gitignore>
-Freepik Icon Pack <http://www.blogohblog.com/free-hand-drawn-set-400-icons-projects/> (to be credited -- see license on Freepik website)
