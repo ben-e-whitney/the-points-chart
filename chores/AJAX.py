@@ -25,17 +25,26 @@ def add_current_balance(f):
 
     return inner
 
-def action_response(user, chore):
-    sentences = get_chore_sentences(user, chore)
-    # TODO: get rid of this? Skimming now seems to do nothing.
-    for sentence in sentences:
-        json.dumps({'sentence': sentence.dict_for_json()})
-    json.dumps({'CSS_classes': chore.find_CSS_classes(user)})
-    return HttpResponse(json.dumps({
+@login_required()
+def updates_fetch(response, timestamp=None):
+    import pytz
+    if timestamp is None:
+        timestamp = datetime.datetime.now(pytz.utc).timestamp()/10**6
+    print('made it into updates_fetch')
+    now = datetime.datetime.utcfromtimestamp(timestamp)
+    changed_chores = Chore.objects.for_coop(response.user.profile.coop).filter(
+        updated__gte=now)
+    return updates_report(response, chores=changed_chores)
+
+def updates_report(response, chores=None):
+    chores = {chore.id: {
         'sentences': [sentence.dict_for_json() for sentence in
-                      get_chore_sentences(user, chore)],
-        'CSS_classes': chore.find_CSS_classes(user),
-        'current_balance': calculate_balance(user)
+                      get_chore_sentences(response.user, chore)],
+        'CSS_classes': chore.find_CSS_classes(response.user),
+    } for chore in chores}
+    return HttpResponse(json.dumps({
+        'chores': chores,
+        'current_balance': calculate_balance(response.user)
     }), status=200)
 
 @login_required()
@@ -52,9 +61,9 @@ def act(response, method_name, chore_id):
     try:
         getattr(chore, method_name)(response.user)
     except ChoreError as e:
-        return HttpResponse('', reason=e.args[0]['message'],
-                            status=e.args[0]['status'])
-    return action_response(response.user, chore)
+        #TODO: here `status` should be pulled from `e`.
+        return HttpResponse('', reason=e, status=403)
+    return updates_report(response, chores=(chore,))
 
 chore_skeleton_create = create_function_creator(model=ChoreSkeleton,
                                                 model_form=ChoreSkeletonForm)
@@ -65,8 +74,6 @@ chore_create = create_function_creator(model=Chore,
 chore_edit = edit_function_creator(model=Chore,
                                    model_form_callable=ChoreFormCreator)
 
-#TODO: split chore editing into one function for individual chores and one for
-#bulk creating and deleting.
 #TODO: move this into the bulk creation.
 @login_required()
 def chore_create_TO_CHANGE(request):

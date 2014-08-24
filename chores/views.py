@@ -354,8 +354,6 @@ def calculate_load_info(user=None, coop=None):
             credits = (total_signed_up if today <= stop_date else
                 total_completed)
             credits += sum(cycle_data['stewardships'].signed_up(user, True))
-            print('credits for {use} in cycle {num}: {cre}'.format(
-                use=user, num=cycle_num, cre=credits))
             try:
                 old_balance = dict_['balance'][-1]
             except IndexError:

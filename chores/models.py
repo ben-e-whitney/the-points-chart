@@ -167,7 +167,7 @@ class Signature(models.Model):
             self.save()
 
 class Timecard(models.Model):
-    # TODO: make an __init__ method creating empy Signatures?
+    updated = models.DateTimeField(auto_now=True)
     # TODO: making this into an abstract class causes validation to fail
     # (complaints about ForeignKeys again). Would be nice to figure it out.
     start_date = models.DateField()
@@ -349,6 +349,8 @@ class Timecard(models.Model):
                     user, *args, **kwargs)
                 print('just called {an}'.format(an=action_name))
             else:
+                #TODO: figure out how to send down both permission and status.
+                #Half the problem might be in the JavaScript
                 permission.update({'status': 403})
                 print('about to raise an error ("{per}") in actor!'.format(
                     per=permission))

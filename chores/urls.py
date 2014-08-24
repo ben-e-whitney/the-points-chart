@@ -8,6 +8,8 @@ urlpatterns = patterns('',
     # This needs to come after all other patterns with only one slash.
     url(r'^(?P<username>[a-zA-Z0-9_@+.-]+?)/$', views.user_stats_list,
         name='user_stats_list'),
+    url(r'^actions/fetch/updates/$', AJAX.updates_fetch,
+        name='chore_updates_fetch'),
     url(r'^actions/create/chore_skeleton/$', AJAX.chore_skeleton_create,
         name='chore_skeleton_create'),
     url(r'^actions/edit/chore_skeleton/$', AJAX.chore_skeleton_edit,

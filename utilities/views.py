@@ -75,7 +75,6 @@ class DisplayInformation():
         return self.structured_data
 
 def format_balance(load=None, balance=None):
-    print(load, balance)
     endpoints = (-float('inf'), -0.3, -0.15, 0.15, 0.3, float('inf'))
     CSS_classes = ('very_low_balance', 'low_balance', 'OK_balance',
                    'high_balance', 'very_high_balance')
@@ -94,8 +93,6 @@ def format_balance(load=None, balance=None):
             # We will use the value of `CSS_class`. If we never make it to this
             # block, `CSS_class` will end up `CSS_classes[-1]`.
             break
-    print('balance and approximation in format_balance: {bal}, {app}'.format(
-        bal=balance, app=balance.to_integral_value()))
     approx_balance = balance.to_integral_value()
     return {
         'value': '{sgn}{val}'.format(sgn='+'if approx_balance >= 0 else '−',
