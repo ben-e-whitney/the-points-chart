@@ -190,21 +190,21 @@ ul.chores_list {
 }
 
 
-.cycle_past {
-	opacity: 0.75;
-}
+/*.cycle_past {*/
+	/*opacity: 0.75;*/
+/*}*/
 
-.cycle_current {
+/*.cycle_current {*/
 	/*opacity: 1;*/
-}
+/*}*/
 
-.cycle_future {
-	opacity: 0.75;
-}
+/*.cycle_future {*/
+	/*opacity: 0.75;*/
+/*}*/
 
-.cycle_past:hover, .cycle_future:hover {
-	opacity: 1;
-}
+/*.cycle_past:hover, .cycle_future:hover {*/
+	/*opacity: 1;*/
+/*}*/
 
 /*TODO: define opacities here?*/
 .needs_sign_up {
