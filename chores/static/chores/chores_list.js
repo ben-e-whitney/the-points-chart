@@ -80,6 +80,7 @@ var fetch_updates = function() {
   last_fetch_milliseconds = new_milliseconds;
 };
 
-$(document).ready(function() {
+$(window).load(function() {
+  $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 0)
   setInterval(fetch_updates, 1000*fetch_interval);
 });
