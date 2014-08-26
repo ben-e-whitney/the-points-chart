@@ -1,4 +1,4 @@
-$(document).ready(function() {
+$(window).load(function() {
   $main_content = $('#main_content');
   var paddings = 0;
   $.each(['top', 'bottom'], function(index, element) {
