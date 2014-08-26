@@ -21,9 +21,7 @@ profile
 	<form id="profile_form" method="post">
 		<table>
 			<!--<div class="form_fields">-->
-						{% comment %}
 						{% csrf_token %}
-						{% endcomment %}
 						{{ form.as_table }}
 			<!--</div>-->
 			<!--<div>-->

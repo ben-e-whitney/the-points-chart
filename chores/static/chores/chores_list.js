@@ -1,3 +1,11 @@
+//TODO: here and elsewhere, follow JavaScript convention for variable names.
+var csrf_token = $.cookie('csrftoken');
+var CSRF_before_send = function(jqXHR, settings) {
+  if (!this.crossDomain) {
+    jqXHR.setRequestHeader('X-CSRFToken', csrf_token);
+  }
+};
+
 var fetch_interval = 10;
 var last_fetch_timestamp = (new Date()).getTime();
 //TODO: to use if you get setTimeout working.
@@ -48,7 +56,8 @@ var AJAXCreator = function(URL_function, signature_name) {
       error: function(jqXHR, textStatus, errorThrown) {
 	alert('Error: '+jqXHR.statusText+jqXHR.responseText);
       },
-      complete: function() {}
+      complete: function() {},
+      beforeSend: CSRF_before_send,
     });
   };
   return inner;

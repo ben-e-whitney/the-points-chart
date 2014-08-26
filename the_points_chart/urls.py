@@ -6,7 +6,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     # Examples:
-    url(r'^$', RedirectView.as_view(url='/chores/#today')),
+    url(r'^$', RedirectView.as_view(url='/chores/')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^chores/', include('chores.urls')),
     url(r'^steward/', include('steward.urls')),

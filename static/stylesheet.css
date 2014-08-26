@@ -80,9 +80,10 @@ table caption {
 	z-index: 1;
 }
 
-/*TODO: the footer height is now unknown, so maybe this should be set dynamically.*/
-/*We're doing the work anyway, and this could also be set up with that thing where*/
-/*you chase the div around with your mouse.*/
+#sidebar object {
+	pointer-events: none;
+}
+
 #current_balance { 
 	position: fixed;
 	/*All other em measurements are in multiples of this font size.*/

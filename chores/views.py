@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import (login_required, user_passes_test,
     permission_required)
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib.auth.models import User
 from django.template import loader, Context
 from django.utils import timezone
@@ -369,7 +370,7 @@ def calculate_balance(user, coop=None):
     return format_balance(load=load_info['load'][-1],
                                     balance=load_info['balance'][-1])
 
-# TODO: use an id (or something else?) to make it open to the current day.
+@ensure_csrf_cookie
 @login_required()
 def chores_list(request):
 

@@ -25,9 +25,7 @@ custom-template-tags/#inclusion-tags>.
 		<form id="{{ form.html_id }}" method="post">
 			<table>
 				<!--<div class="form_fields">-->
-							{% comment %}
 							{% csrf_token %}
-							{% endcomment %}
 							{{ form.main_form.as_table }}
 				<!--</div>-->
 				<!--<div>-->
@@ -53,9 +51,7 @@ custom-template-tags/#inclusion-tags>.
 		{% endcomment %}
 		<form id="{{ form.html_id }}_selector" method="get">
 			<table>
-							{% comment %}
 							{% csrf_token %}
-							{% endcomment %}
 							{% comment %}
 							TODO: rename this junk as well.
 							{% endcomment %}

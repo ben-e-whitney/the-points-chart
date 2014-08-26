@@ -32,7 +32,7 @@ TEMPLATE_DIRS = (
 ALLOWED_HOSTS = []
 
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/chores/#today'
+LOGIN_REDIRECT_URL = '/chores/'
 # Maybe get rid of this so that there's the same setup with Coop and Cooper?
 AUTH_PROFILE_MODULE = 'profiles.UserProfile'
 
@@ -57,8 +57,7 @@ INSTALLED_APPS = (
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # IMPORTANT TODO: re-enable this, maybe rewriting AJAX scripts with jQuery.
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
