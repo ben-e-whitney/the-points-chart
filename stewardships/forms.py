@@ -1,4 +1,5 @@
 from django import forms
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models.fields import BLANK_CHOICE_DASH
@@ -56,27 +57,18 @@ def ClassicalStewardshipFormCreator(request):
             #just directly hit '/stewardships/actions/create/
             #classical_stewardship' then you get an error.
             if cleaned_data.get('stop_date') < cleaned_data.get('start_date'):
-                print('bad stop date: {sd}'.format(
-                    sd=cleaned_data.get('stop_date')))
-                print('bad start date: {sd}'.format(
-                    sd=cleaned_data.get('start_date')))
                 raise ValidationError('Stop date cannot be before start date.')
             return cleaned_data
 
         def save(self, commit=True, request=None, **kwargs):
             try:
-                print('got to the inside of CSFC save')
                 stewardship = super().save(commit=False)
-                print('got to right before making signatures')
                 stewardship.make_signatures(commit=False,
                     signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
                     signed_off=None, voided=None)
-                print('got to right after making signatures')
                 if commit:
                     stewardship.save()
             except Exception as e:
-                print('caught exception in CSF.save')
-                print(e)
                 raise e
             return stewardship
 
@@ -162,7 +154,6 @@ def SpecialPointsFormCreator(request):
             super().__init__(*args, **kwargs)
 
         def save(self, commit=True, request=None, **kwargs):
-            print('in SpecialPointsForm.create_object; form is valid')
             special_points = super().save(commit=False)
             skeleton = StewardshipSkeleton(
                 coop=request.user.profile.coop,

@@ -8,11 +8,9 @@ from utilities.AJAX import (make_form_response, create_function_creator,
 #TODO: remove this?
 @login_required()
 def user_create(request):
-    print('***in user_create***')
     coop = request.user.profile.coop
     form = UserFormCreator(coop)(request.POST)
     if form.is_valid():
-        print('form is valid')
         try:
             # The field clean method (or something) checks that the username
             # isn't already taken.
@@ -23,8 +21,6 @@ def user_create(request):
             )
             coop.user_set.add(new_user)
         except Exception as e:
-            print('error in making the user')
-            print(e)
             raise e
         try:
             profile = UserProfile(user=new_user, coop=coop,
@@ -35,15 +31,10 @@ def user_create(request):
             )
             profile.save()
         except Exception as e:
-            print('error in making the profile')
-            print(e)
             raise e
         # TODO: email new user here with instructions. CC steward (maybe just
         # CC the person who made the request, to allow for other people to
         # create users in the future).
-    else:
-        print('form is not valid')
-        print(form.errors)
     return make_form_response(form)
 
 user_create = create_function_creator(

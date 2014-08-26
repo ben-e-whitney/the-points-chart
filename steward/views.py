@@ -30,7 +30,6 @@ def users_stats_summarize(request):
     } for cycle_num, cycle_start, cycle_stop in coop.profile.cycles()]
     accounts = calculate_load_info(coop=coop)
     accounts.sort(key=lambda x: x['user'].profile.nickname)
-    print('ACCOUNTS AT START: {acc}'.format(acc=accounts))
     # TODO: could move around to iterate through only once.
     # TODO: `users` is used in a pretty hacky way in the template.
     users = [row['user'] for row in accounts]
@@ -49,7 +48,6 @@ def users_stats_summarize(request):
         'point_cycles': cycles,
         'rows': display_info.create_template_data(accounts)
     }
-    print('ACCOUNTS AT END: {acc}'.format(acc=accounts))
     return render(request, 'chores/users_stats_summarize.html',
                   render_dictionary)
 

@@ -44,7 +44,6 @@ def ChoreFormCreator(request):
         def clean_signature_creator(field_name):
 
             def clean_field(self):
-                print('cleaning {fn}'.format(fn=field_name))
                 field_value = self.cleaned_data.get(field_name)
                 clean_value = Signature()
                 if field_value != '':
@@ -59,28 +58,19 @@ def ChoreFormCreator(request):
         clean_voided     = clean_signature_creator('voided')
 
         def __init__(self, *args, **kwargs):
-            print('args: {arg}'.format(arg=args))
-            print('kwargs: {kwa}'.format(kwa=kwargs))
-            print('IN CHOREFORM INIT!')
             instance = kwargs.get('instance', None)
             if instance is not None:
                 initial = kwargs.get('initial', {})
                 for sig_name in ('signed_up', 'signed_off', 'voided'):
-                    print('{nam}: {coo}'.format(
-                        nam=sig_name,
-                        coo=getattr(instance, sig_name).who
-                    ))
                     try:
                         cooper_id = getattr(instance, sig_name).who.id
                     except AttributeError:
                         cooper_id = BLANK_CHOICE_DASH[0][0]
-                    print('{nam}: {cid}'.format(nam=sig_name, cid=cooper_id))
                     initial.update({sig_name: cooper_id})
                 kwargs.update({'initial': initial})
             super().__init__(*args, **kwargs)
 
         def clean(self):
-            print('got into form-wide clean method')
             cleaned_data = super().clean()
             #TODO: add code to allow for possibility of failed comparison.
             if cleaned_data.get('stop_date') < cleaned_data.get('start_date'):
@@ -95,7 +85,6 @@ def ChoreFormCreator(request):
                 signed_off=cleaned_data.get('signed_off'),
                 voided=cleaned_data.get('voided'),
             )
-            print(cleaned_data)
             coopers = {}
             #TODO: this is all necessary because the form seems to validate the
             #remaining fields even if a ValidationError is thrown here. Ideally
@@ -117,17 +106,11 @@ def ChoreFormCreator(request):
                 signature = cleaned_data.get(field_name)
                 user = coopers.get(field_name)
                 if user is not None:
-                    print('just before trying to call method {mn} with {us}'
-                          .format(mn=method_name, us=user))
                     try:
                         getattr(timecard, method_name)(user)
                     except ChoreError as e:
-                        print('caught Chore Error ("{e}"); about to raise'
-                              .format(e=e))
                         raise ValidationError(e)
 
-                print('about to try to assign {sig} to {fn}'.format(
-                    fn=field_name, sig=getattr(timecard, field_name)))
                 cleaned_data.update({
                     field_name: getattr(timecard, field_name)
                 })
@@ -136,17 +119,13 @@ def ChoreFormCreator(request):
             #<https://docs.djangoproject.com/en/dev/ref/models/fields/>.
             #TODO: back to testing against ''.
 
-            print('about to return out of clean method (cleaned_data is {cd})'
-                 .format(cd=cleaned_data))
             return cleaned_data
 
         def save(self, *args, **kwargs):
-            print('made it to custom save')
             request = kwargs.pop('request', None)
             commit = kwargs.get('commit', True)
             kwargs.update({'commit': False})
             chore = super().save(*args, **kwargs)
-            print('made it to right after super().save call')
             for field_name in ('signed_up', 'signed_off', 'voided'):
                 setattr(chore, field_name, self.cleaned_data[field_name])
                 if commit:

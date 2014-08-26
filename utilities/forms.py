@@ -8,9 +8,6 @@ class BasicForm(forms.ModelForm):
 
     #TODO: think this is because you're passing everything requests. Check.
     def save(self, *args, **kwargs):
-        print('in BasicForm.save')
-        print('args: {arg}'.format(arg=args))
-        print('kwargs: {kwa}'.format(kwa=kwargs))
         return super().save(*args,
                             **{key: value for key, value in kwargs.items()
                                if key != 'request'})

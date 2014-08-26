@@ -144,10 +144,7 @@ class Signature(models.Model):
             return 'Signature of {use} at {dat}'.format(use=self.who,
                                                         dat=self.when)
     def sign(self, user, *args, **kwargs):
-        print('made it to sign method')
         commit = kwargs.get('commit', True)
-        print('{user} signing!! (this is in models/Signature)'.format(
-            user=user))
         self.who = user
         self.when = timezone.now()
         if commit:
@@ -339,21 +336,14 @@ class Timecard(models.Model):
 
     def actor_creator(permission_method_name, signature_name, action_name):
         def actor(self, user, *args, **kwargs):
-            print('in actor!')
             permission = getattr(self, permission_method_name)(user)
-            print('just called method {pmn}'.format(
-                pmn=permission_method_name))
             if permission['boolean']:
-                print('about to try to call {an}'.format(an=action_name))
                 getattr(getattr(self, signature_name), action_name)(
                     user, *args, **kwargs)
-                print('just called {an}'.format(an=action_name))
             else:
                 #TODO: figure out how to send down both permission and status.
                 #Half the problem might be in the JavaScript
                 permission.update({'status': 403})
-                print('about to raise an error ("{per}") in actor!'.format(
-                    per=permission))
                 raise ChoreError(permission['message'])
         return actor
 

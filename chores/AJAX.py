@@ -30,7 +30,6 @@ def updates_fetch(response, timestamp=None):
     import pytz
     if timestamp is None:
         timestamp = datetime.datetime.now(pytz.utc).timestamp()/10**6
-    print('made it into updates_fetch')
     now = datetime.datetime.utcfromtimestamp(timestamp)
     changed_chores = Chore.objects.for_coop(response.user.profile.coop).filter(
         updated__gte=now)
@@ -78,18 +77,8 @@ chore_edit = edit_function_creator(model=Chore,
 @login_required()
 def chore_create_TO_CHANGE(request):
     raise NotImplementedError
-    #TODO: clean this up.
-    print('got to here')
     form = ChoreForm(request.POST)
-    print('about to check whether form is valid')
-    try:
-        form.is_valid()
-    except Exception as e:
-        print('error in checking whether form was valid')
-        print(e)
-        raise e
     if form.is_valid():
-        print('form is valid')
         #Django (as of version 1.6.5) doesn't permit bulk creation of
         #inherited models, and Chore inherits from Timecard. So we have to do
         #it one-by-one. Haven't managed to get it working with Signatures,
@@ -106,11 +95,7 @@ def chore_create_TO_CHANGE(request):
                     stop_date=form.cleaned_data['stop_date']+shift,
                 )
         except Exception as e:
-            print('error in doing chores')
-            print(e)
             raise e
-    else:
-        print('form is not valid')
     return make_form_response(form)
 
 def chore_edit_TO_CHANGE(request):
