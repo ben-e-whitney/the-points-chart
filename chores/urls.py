@@ -18,8 +18,7 @@ urlpatterns = patterns('',
     url(r'^actions/edit/chore/$', AJAX.chore_edit, name='chore_edit'),
     # This needs to come after all other named actions (or better yet, we
     # should fix this system).
-    url(r'^actions/(?P<method_name>[a-z_]+?)/(?P<chore_id>[0-9]+)/$', AJAX.act,
-        name='action'),
+    url(r'^actions/(?P<method_name>[a-z_]+?)/$', AJAX.act, name='action'),
     url(r'^calendars/(?P<username>.+?)/$', views.calendar_create,
         name='calendar_create'),
 )

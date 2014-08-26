@@ -7,6 +7,7 @@ rhc
 initializer.py
 test.py
 manage.py
+downloaded.txt
 
 # Copied from <https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore>.
 

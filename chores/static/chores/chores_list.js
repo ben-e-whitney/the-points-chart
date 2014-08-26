@@ -6,8 +6,8 @@ var CSRF_before_send = function(jqXHR, settings) {
   }
 };
 
-var fetch_interval = 10;
-var last_fetch_timestamp = (new Date()).getTime();
+var fetch_interval = 30;
+var last_fetch_milliseconds = (new Date()).getTime();
 //TODO: to use if you get setTimeout working.
 //var changes_made = false;
 
@@ -49,7 +49,8 @@ var AJAXCreator = function(URL_function, signature_name) {
     });
     $.ajax({
       //TODO: send in `chore_id` as data, not as part of the URL.
-      url: '/chores/actions/'+URL_function+'/'+chore_id+'/',
+      url: '/chores/actions/'+URL_function+'/',
+      data: {'chore_id': chore_id},
       type: 'POST',
       async: true,
       success: replaceSentences,
@@ -71,12 +72,12 @@ var revertSignOffChore = AJAXCreator('revert_sign_off', 'signed_off');
 var revertVoidChore    = AJAXCreator('revert_void', 'voided');
 
 var fetch_updates = function() {
-  var new_timestamp = (new Date()).getTime();
+  var new_milliseconds = (new Date()).getTime();
   $.get('/chores/actions/fetch/updates/',
-        {'timestamp': last_fetch_timestamp},
+        {'milliseconds': last_fetch_milliseconds},
         replaceSentences
   );
-  last_fetch_timestamp = new_timestamp;
+  last_fetch_milliseconds = new_milliseconds;
 };
 
 $(document).ready(function() {

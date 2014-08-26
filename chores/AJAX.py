@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 
 import datetime
 import json
@@ -11,29 +12,17 @@ from chores.views import get_chore_sentences, calculate_balance
 from utilities.AJAX import (make_form_response, create_function_creator,
     edit_function_creator)
 
-# TODO: still not used here!
-def add_current_balance(f):
-
-    def inner(*args, **kwargs):
-        request = args[0]
-        response = f(*args, **kwargs)
-        # response['current_balance'] = calculate_balance(request.user)
-        # TODO: only do this when the status is 200 (success) or similar? Might
-        # have to make a check in the JavaScript function, which would be fine.
-        response['current_balance'] = calculate_balance(request.user)
-        return response
-
-    return inner
-
 @login_required()
-def updates_fetch(response, timestamp=None):
-    import pytz
-    if timestamp is None:
-        timestamp = datetime.datetime.now(pytz.utc).timestamp()/10**6
-    now = datetime.datetime.utcfromtimestamp(timestamp)
-    changed_chores = Chore.objects.for_coop(response.user.profile.coop).filter(
-        updated__gte=now)
-    return updates_report(response, chores=changed_chores)
+def updates_fetch(request):
+    milliseconds = int(request.GET.get('milliseconds', ''))
+    if not milliseconds:
+        return HttpResponse('', reason='No milliseconds value provided.',
+                            status=400)
+    cutoff = datetime.datetime.utcfromtimestamp(milliseconds/1000).replace(
+        tzinfo=timezone.get_default_timezone())
+    changed_chores = Chore.objects.for_coop(request.user.profile.coop).filter(
+        updated__gte=cutoff)
+    return updates_report(request, chores=changed_chores)
 
 def updates_report(response, chores=None):
     chores = {chore.id: {
@@ -46,8 +35,14 @@ def updates_report(response, chores=None):
         'current_balance': calculate_balance(response.user)
     }), status=200)
 
+#TODO: also take `method_name` from `request.POST`? Would be a little involved,
+#since there's creating/editing/fetching as well, and they use diffrent request
+#methods.
 @login_required()
-def act(response, method_name, chore_id):
+def act(request, method_name):
+    chore_id = int(request.POST.get('chore_id', ''))
+    if not chore_id:
+        return HttpResponse('', reason='No chore ID provided.', status=400)
     whitelist = ('sign_up', 'sign_off', 'void', 'revert_sign_up',
                  'revert_sign_off', 'revert_void')
     if method_name not in whitelist:
@@ -58,11 +53,11 @@ def act(response, method_name, chore_id):
     except ObjectDoesNotExist as e:
         return HttpResponse('', reason=e.args[0], status=404)
     try:
-        getattr(chore, method_name)(response.user)
+        getattr(chore, method_name)(request.user)
     except ChoreError as e:
         #TODO: here `status` should be pulled from `e`.
         return HttpResponse('', reason=e, status=403)
-    return updates_report(response, chores=(chore,))
+    return updates_report(request, chores=(chore,))
 
 chore_skeleton_create = create_function_creator(model=ChoreSkeleton,
                                                 model_form=ChoreSkeletonForm)

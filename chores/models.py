@@ -164,7 +164,7 @@ class Signature(models.Model):
             self.save()
 
 class Timecard(models.Model):
-    updated = models.DateTimeField(auto_now=True)
+    updated = models.DateTimeField()
     # TODO: making this into an abstract class causes validation to fail
     # (complaints about ForeignKeys again). Would be nice to figure it out.
     start_date = models.DateField()
@@ -175,6 +175,10 @@ class Timecard(models.Model):
     signed_off = models.ForeignKey(Signature,
                                    related_name='timecard_signed_off')
     voided = models.ForeignKey(Signature, related_name='timecard_voided')
+
+    def save(self, *args, **kwargs):
+        self.updated = timezone.now()
+        super().save(*args, **kwargs)
 
     # TODO: figure out what exactly this is being used for. Decide whether you
     # really want to use `__str__`, or maybe something else.
@@ -340,9 +344,11 @@ class Timecard(models.Model):
             if permission['boolean']:
                 getattr(getattr(self, signature_name), action_name)(
                     user, *args, **kwargs)
+                #Save the Timecard itself to update the 'updated' field.
+                self.save()
             else:
                 #TODO: figure out how to send down both permission and status.
-                #Half the problem might be in the JavaScript
+                #Half the problem might be in the JavaScript.
                 permission.update({'status': 403})
                 raise ChoreError(permission['message'])
         return actor
