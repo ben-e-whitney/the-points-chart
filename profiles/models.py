@@ -62,7 +62,6 @@ class GroupProfile(models.Model):
     # havoc (writing this just after making cycle-picker for new Loans and
     # ShareChanges). Maybe this should not be editable by anyone but an admin.
     cycle_length = models.PositiveSmallIntegerField()
-    # TODO: better name?
     release_buffer = models.PositiveSmallIntegerField()
     def __str__(self):
         return 'GroupProfile for {gro}'.format(gro=self.group.name)
@@ -76,8 +75,8 @@ class GroupProfile(models.Model):
             start_date = self.start_date
         window_width = datetime.timedelta(days=self.cycle_length)
         if stop_date is None:
-            stop_date = datetime.date.today()+datetime.timedelta(
-                days=self.release_buffer)
+            stop_date = (datetime.datetime.now(self.time_zone).date()+
+                datetime.timedelta(days=self.release_buffer))
         assert window_width > datetime.timedelta(days=0)
         assert stop_date >= start_date
         num_cycles = ceil_integer_division((stop_date-start_date).days,

@@ -378,11 +378,10 @@ def chores_list(request):
     def find_day_id(date):
         return date.isoformat()
 
-    def find_day_name(date):
-        #TODO: use timezones for this.
-        difference = (date-timezone.now().date()).days
+    def find_day_name(date, coop):
+        today = datetime.datetime.now(coop.profile.time_zone).date()
         translations = {-1: 'yesterday', 0: 'today', 1: 'tomorrow'}
-        return translations.get(difference, '')
+        return translations.get((date-today).days, '')
 
     def find_day_classes(date):
         '''
@@ -439,7 +438,7 @@ def chores_list(request):
                     'date'    : date,
                     'class'   : find_day_classes(date),
                     'id'      : find_day_id(date),
-                    'name'    : find_day_name(date),
+                    'name'    : find_day_name(date, coop),
                     'schedule': chore_dicts,
                     'weekday' : weekdays[date.weekday()],
                  })
