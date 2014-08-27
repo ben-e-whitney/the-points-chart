@@ -32,7 +32,6 @@ $(document).ready(function() {
       main_form.empty();
       var choice_id = $(this).val();
       if (choice_id) {
-        alert('you just chose object id '+String(choice_id));
         //TODO: add a class for the loading message. Failure message could go there, too.
         $(this).closest('tr').append("<td id='selector_loading_message'>Loading ...</td>");
         $.get(edit_URL, {choice_id: choice_id}, function (returnedData, textStatus, jqXHR) {
