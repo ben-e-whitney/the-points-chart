@@ -1,6 +1,10 @@
 var get_distance = function($that, $window, location, dimension_method, css_attributes) {
   var one_quadratic_root = function(a, b, c, root) {
-    return (-b+Math.sign(a)*(root == 'larger' ? 1 : -1)*Math.pow(Math.pow(b, 2)-4*a*c, 1/2))/(2*a);
+    a = a/a;
+    b = b/a;
+    c = b/a;
+    //Because `a` is `1`, adding the sqrt root of the discriminant will make for a larger root.
+    return (-b+(root == 'larger' ? 1 : -1)*Math.pow(Math.pow(b, 2)-4*a*c, 1/2))/(2*a);
   };
   //`S` is the width (resp. height) of `$that` ('self') and `W` is the width (resp. height)
   //of the window. We'll generate the next location according to a probability distribution
