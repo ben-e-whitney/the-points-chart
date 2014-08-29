@@ -33,7 +33,6 @@ def UserFormCreator(request):
             #TODO: this we need. What about the rest?
             self.fields['username'].help_text = None
             if 'instance' in kwargs.keys():
-                #TODO: password is going to need doing. Ugh.
                 kwargs['instance'].password = None
                 for field_name in ('email_address', 'share', 'presence'):
                     self.fields[field_name].initial = getattr(
@@ -43,7 +42,7 @@ def UserFormCreator(request):
             # The field clean method (or something) checks that the username
             # isn't already taken.
             new_user = super().save(commit=False)
-            new_user.password = self.cleaned_data['username']
+            new_user.set_password(self.cleaned_data['username'])
             new_user.email=self.cleaned_data['email_address']
             coop = request.user.profile.coop
             profile = UserProfile(
@@ -65,19 +64,5 @@ def UserFormCreator(request):
             # just CC the person who made the request, to allow for other
             # people to create users in the future).
             return new_user
-
-        @classmethod
-        def edit_object(cls, request=None, object_id=None):
-            print('in user_form.edit_object')
-            form = cls(request.POST,
-                       instance=cls.Meta.model.objects.get(pk=object_id))
-            if form.is_valid():
-                user = form.save()
-                for field_name in ('nickname', 'email_address', 'presence',
-                                   'share'):
-                    setattr(user.profile, field_name,
-                            form.cleaned_data[field_name])
-                user.profile.save()
-            return form
 
     return UserForm
