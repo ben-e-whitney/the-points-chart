@@ -37,9 +37,9 @@ var jump_around = function(event) {
                                    'height', ['padding-top',  'padding-bottom']);
   if (counter < 50) {
     $this.animate({
-      'left'  : '+='+left_distance,
+      //Haven't quite figured it out, but these seem to work because the initial position of
+      //the element is determined in CSS with the 'right' and 'bottom' properties.
       'right' : '-='+left_distance,
-      'top'   : '+='+top_distance,
       'bottom': '-='+top_distance,
     });
     counter += 1;
