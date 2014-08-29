@@ -20,6 +20,9 @@ var replaceSentences = function(data, textStatus, jqXHR) {
       $sentenceElement.empty();
       if (sentence.report) {
         $sentenceElement.append(sentence.report_text);
+        if (sentence.button) {
+          $sentenceElement.append(' ');
+        }
       }
       if (sentence.button) {
         $sentenceElement.append('<button class="'+sentence.identifier+'_button"'+
@@ -81,7 +84,6 @@ var fetch_updates = function() {
 };
 
 $(window).load(function() {
-  //TODO: it's kind of nice when using a nonzero animation time.
-  $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 0)
+  $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
   setInterval(fetch_updates, 1000*fetch_interval);
 });

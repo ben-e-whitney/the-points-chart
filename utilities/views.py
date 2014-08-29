@@ -75,7 +75,7 @@ class DisplayInformation():
         return self.structured_data
 
 def format_balance(load=None, balance=None):
-    endpoints = (-float('inf'), -0.3, -0.15, 0.15, 0.3, float('inf'))
+    endpoints = (-float('inf'), -0.35, -0.15, 0.15, 0.35, float('inf'))
     CSS_classes = ('very_low_balance', 'low_balance', 'OK_balance',
                    'high_balance', 'very_high_balance')
     assert len(endpoints) == len(CSS_classes)+1

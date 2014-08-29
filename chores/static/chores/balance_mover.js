@@ -27,8 +27,10 @@ var jump_around = function(event) {
   //Disable the function until this action completes.
   $this.off('mouseenter', jump_around);
   var offset = $this.offset();
-  var left_distance = get_distance($this, $window, offset.left, 'width', ['padding-left', 'padding-right']);
-  var top_distance  = get_distance($this, $window, offset.top, 'height', ['padding-top', 'padding-bottom']);
+  var left_distance = get_distance($this, $window, offset.left,
+                                   'width',  ['padding-left', 'padding-right']);
+  var top_distance  = get_distance($this, $window, offset.top-$window.scrollTop(),
+                                   'height', ['padding-top',  'padding-bottom']);
   if (counter < 50) {
     $this.animate({
       'left'  : '+='+left_distance,
