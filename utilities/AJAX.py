@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 import json
 
@@ -16,7 +16,8 @@ def make_form_response(form):
 
 def create_function_creator(model=None, model_callable=None, model_form=None,
                             model_form_callable=None):
-    #TODO: another permissions test here.
+    #TODO: make this a permission, or make a function for this, or something.
+    @user_passes_test(lambda user: user.profile.points_steward)
     @login_required
     def create_function(request, model=model, model_callable=model_callable,
                         model_form=model_form,
@@ -48,7 +49,7 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
             'choice_id'])
     #TODO: IMPORTANT: check that the person making the object and the object
     #they're editing are in the same co-op.
-    #TODO: another permissions test here.
+    @user_passes_test(lambda user: user.profile.points_steward)
     @login_required()
     def edit_function(request, model=model, model_callable=model_callable,
                       model_form=model_form,
@@ -103,4 +104,3 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
         return None
 
     return edit_function
-

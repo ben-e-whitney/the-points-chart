@@ -345,7 +345,7 @@ def calculate_load_info(user=None, coop=None):
         for dict_ in accounts:
             user = dict_['user']
             #TODO: for now I like it as it is, but you could consider having
-            #loans directly affect the load.
+            #loans directly affect the load (not the balance).
             load = ppds*presence_shares[user]
             #Handling chores and stewardships separately to avoid any confusion
             #about how stewardships are handled.
@@ -452,15 +452,29 @@ def chores_list(request):
         'current_balance': calculate_balance(request.user, coop)
     })
 
-# TODO: write a function/URL thing for when they go to 'chores/me/'.
-# TODO: this should now require permissions.
 @login_required()
 def user_stats_list(request, username):
     #For the scenario that an anonymous user clicks the 'stats' link, logs in,
     #and is then sent to chores/AnonymousUser/'.
+    #TODO: use `User.is_authenticated` or something instead?
     if username == 'AnonymousUser':
         return redirect('/chores/{usn}/'.format(usn=request.user))
-    user = User.objects.get(username=username)
+    #TODO: before doing this, we should make 'me' a prohibited username.
+    #elif username == 'me':
+        #user = request.user
+    else:
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return HttpResponse('No such user.', status=404)
+    #TODO: check that `request.user` is the points steward for the co-op `user`
+    #is a member of.
+    if (request.user != user and not request.user.profile.points_steward):
+        return HttpResponse(
+            'You are neither {nic} nor the Points Steward.'.format(
+                nic=user.profile.nickname),
+            status=403
+        )
     coop = user.profile.coop
     render_dictionary = {
         'coop': coop,

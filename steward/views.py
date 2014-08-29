@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django import forms
 
 # Create your views here.
@@ -19,10 +19,11 @@ from steward.forms import UserFormCreator, ChoiceFormCreator
 
 from utilities.views import DisplayInformation, format_balance
 from chores.views import calculate_load_info
-# TODO: should be some test here.
+
 # TODO: include also lists of all stewardships, absences, etc.
-def users_stats_summarize(request):
-    coop = request.user.profile.coop
+def users_stats_summarize(request, coop=None):
+    if coop is None:
+        coop = request.user.profile.coop
     cycles = [{
         'cycle_num'  : cycle_num,
         'cycle_start': cycle_start,
@@ -44,14 +45,13 @@ def users_stats_summarize(request):
 
     display_info = DisplayInformation('rows', {'sections': [None],
         'subsections': [users]}, user_ids, lambda x: x, None)
-    render_dictionary = {
+    return {
         'point_cycles': cycles,
         'rows': display_info.create_template_data(accounts)
     }
-    return render(request, 'chores/users_stats_summarize.html',
-                  render_dictionary)
 
 # TODO: put steward test here.
+@user_passes_test(lambda user: user.profile.points_steward)
 @login_required()
 def steward_forms(request):
     coop = request.user.profile.coop
@@ -61,9 +61,10 @@ def steward_forms(request):
         'title': 'Create a New {nam}'.format(nam=name),
         'main_form': main_form
     }
+    #TODO: change to 'Edit or Delete a {nam}' once you get deleting working.
     HTML_edit_form = lambda html_id, name, main_form, choice_objects: {
         'html_id': '{html_id}_edit_form'.format(html_id=html_id),
-        'title': 'Edit or Delete a {nam}'.format(nam=name),
+        'title': 'Edit a {nam}'.format(nam=name),
         'main_form': main_form,
         'selector_form': ChoiceFormCreator(choice_objects)
     }
@@ -102,6 +103,8 @@ def steward_forms(request):
         credit_and_edit_args, create_only_args)]
     edit_forms = [HTML_edit_form(*args) for args in itertools.chain(
         credit_and_edit_args, edit_only_args)]
-    return render(request, 'steward/steward_forms.html',
-                  {'create_forms': create_forms, 'edit_forms': edit_forms})
+    render_dictionary = {'create_forms': create_forms,
+                         'edit_forms': edit_forms}
+    render_dictionary.update(users_stats_summarize(request, coop=coop))
+    return render(request, 'steward/steward_forms.html', render_dictionary)
 

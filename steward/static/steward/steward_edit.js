@@ -1,6 +1,13 @@
 $(document).ready(function() {
   $('.date_picker').datepicker();
-  $('#form_accordion').accordion({active: false, collapsible: true,
+  //TODO: activate once you have 'particulars' section up.
+  //$('#coop_overview').accordion({active: 0, collapsible: true,
+                                //heightStyle: 'content', animate: false});
+  $.each(['creating', 'editing'], function(index, type) {
+    $('#'+type+'_forms').accordion({active: false, collapsible: true,
+                                    heightStyle: "content", animate: false});
+  });
+  $('#outer_accordion').accordion({active: 0, collapsible: true,
     heightStyle: "content", animate: false});
   var create_and_edit_args = [
     ['chore_skeleton', 'chores', 'chore_skeleton'],

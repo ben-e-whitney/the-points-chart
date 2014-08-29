@@ -15,9 +15,6 @@ import datetime
 # Stewardships, since we want to allow them to switch hands partway through a
 # semester in case someone leaves or can't do it.
 
-# TODO: how should profiles be handled again? Not subclasses. Just do the same
-# thing for both group and user profiles.
-
 class UserProfile(models.Model):
     user = models.OneToOneField(User, related_name='profile')
     coop = models.ForeignKey(Group)

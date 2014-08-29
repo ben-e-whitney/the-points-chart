@@ -5,7 +5,6 @@ import profiles.AJAX
 
 urlpatterns = patterns('',
     url(r'^$', views.steward_forms, name='steward_forms'),
-    url(r'whatever/$', views.users_stats_summarize, name='steward_forms'),
     url(r'actions/create/user/$', AJAX.user_create, name='user_create'),
     url(r'actions/edit/user/$', AJAX.user_edit, name='user_edit'),
     url(r'actions/edit/group_profile/$', profiles.AJAX.group_profile_edit,
