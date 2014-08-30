@@ -19,9 +19,9 @@ class UserProfileForm(BasicForm):
 
     def save(self, commit=True, request=None, **kwargs):
         profile = super().save(commit=False)
-        profile.user = request.user
-        profile.coop = request.user.profile.coop
-        profile.share = request.user.profile.share
+        profile.user     = request.user
+        profile.coop     = request.user.profile.coop
+        profile.share    = request.user.profile.share
         profile.presence = request.user.profile.presence
         if commit:
             profile.save()

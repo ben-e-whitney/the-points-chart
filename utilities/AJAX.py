@@ -49,7 +49,9 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
             'choice_id'])
     #TODO: IMPORTANT: check that the person making the object and the object
     #they're editing are in the same co-op.
-    @user_passes_test(lambda user: user.profile.points_steward)
+    #TODO: add some parameter letting us specify whether we want to only allow
+    #the steward to make edits. Editing your own profile is the big exception.
+    #@user_passes_test(lambda user: user.profile.points_steward)
     @login_required()
     def edit_function(request, model=model, model_callable=model_callable,
                       model_form=model_form,
