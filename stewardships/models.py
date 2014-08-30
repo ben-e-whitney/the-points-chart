@@ -1,6 +1,5 @@
 from django.db import models, connection
 
-# Create your models here.
 from chores.models import (Skeleton, Timecard, ChoreSkeletonQuerySet,
     ChoreQuerySet)
 from model_utils.managers import PassThroughManager

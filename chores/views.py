@@ -7,8 +7,6 @@ from django.contrib.auth.models import User
 from django.template import loader, Context
 from django.utils import timezone
 
-# Create your views here.
-
 import datetime
 import pytz
 import itertools

@@ -1,7 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
-
 import chores.models
 
 admin.site.register(chores.models.Signature)

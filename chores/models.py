@@ -1,7 +1,5 @@
 from django.db import models, connection
 
-# Create your models here.
-
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
 # See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.

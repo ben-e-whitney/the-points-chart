@@ -1,7 +1,6 @@
 from django.shortcuts import render
 
 import decimal
-# Create your views here.
 
 # TODO: name could use improving here.
 class DisplayInformation():

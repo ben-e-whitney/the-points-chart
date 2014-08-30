@@ -2,8 +2,6 @@ from django.test import TestCase
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
 
-# Create your tests here.
-
 import string
 import random
 import datetime

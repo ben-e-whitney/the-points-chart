@@ -1,7 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
-
 import stewardships.models
 
 admin.site.register(stewardships.models.StewardshipSkeleton)

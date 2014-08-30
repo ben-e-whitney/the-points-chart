@@ -2,7 +2,6 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django import forms
 
-# Create your views here.
 import decimal
 import itertools
 
