@@ -26,19 +26,10 @@ def create_function_creator(model=None, model_callable=None, model_form=None,
             model = model_callable(request)
         if model_form is None:
             model_form = model_form_callable(request)
-        try:
-            form = model_form(request.POST)
-        except Exception as e:
-            raise e
-        try:
-            form.is_valid()
-        except Exception as e:
-            raise e
+        form = model_form(request.POST)
+        form.is_valid()
         if form.is_valid():
-            try:
-                form.save(request=request)
-            except Exception as e:
-                raise e
+            form.save(request=request)
         return make_form_response(form)
     return create_function
 
@@ -56,22 +47,13 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
     def edit_function(request, model=model, model_callable=model_callable,
                       model_form=model_form,
                       model_form_callable=model_form_callable, get_id=get_id):
-        try:
-            if model is None:
-                model = model_callable(request)
-            if model_form is None:
-                model_form = model_form_callable(request)
-        except Exception as e:
-            raise e
-        try:
-            object_id = get_id(request)
-        except Exception as e:
-            raise e
+        if model is None:
+            model = model_callable(request)
+        if model_form is None:
+            model_form = model_form_callable(request)
+        object_id = get_id(request)
         if request.method == 'GET':
-            try:
-                form = model_form(instance=model.objects.get(pk=object_id))
-            except Exception as e:
-                raise e
+            form = model_form(instance=model.objects.get(pk=object_id))
             #TODO: error checking here.
             #TODO: no need to assign the actual variable -- just put in render
             #arguments.
@@ -80,24 +62,12 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
             #create the form without giving it instance (I think).
             return render(request, 'form.html', {'form': form})
         elif request.method == 'POST':
-            try:
-                form = model_form(request.POST,
-                                  instance=model.objects.get(pk=object_id))
-            except Exception as e:
-                raise e
-
-            try:
-                thing = form.is_valid()
-            except Exception as e:
-                raise e
-
+            form = model_form(request.POST,
+                              instance=model.objects.get(pk=object_id))
             if form.is_valid():
-                try:
-                    new_instance = form.save(commit=False, request=request)
-                    new_instance.id = object_id
-                    new_instance.save()
-                except Exception as e:
-                    raise e
+                new_instance = form.save(commit=False, request=request)
+                new_instance.id = object_id
+                new_instance.save()
             return make_form_response(form)
 
         return None

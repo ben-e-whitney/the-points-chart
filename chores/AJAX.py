@@ -48,6 +48,8 @@ def act(request, method_name):
     if method_name not in whitelist:
         return HttpResponse('', reason='Method name not permitted.',
                             status=403)
+    #TODO: either use `Chore.DoesNotExist` here or use `ObjectDoesNotExist`
+    #everywhere.
     try:
         chore = Chore.objects.get(pk=chore_id)
     except ObjectDoesNotExist as e:
@@ -81,16 +83,13 @@ def chore_create_TO_CHANGE(request):
         #.com/en/dev/ref/models/querysets/#bulk-create>.
         repeat_interval = datetime.timedelta(days=form.cleaned_data[
             'repeat_interval'])
-        try:
-            for repeat in range(form.cleaned_data['number_of_repeats']):
-                shift = repeat*repeat_interval
-                chore = Chore.objects.create_blank(
-                    skeleton=form.cleaned_data['skeleton'],
-                    start_date=form.cleaned_data['start_date']+shift,
-                    stop_date=form.cleaned_data['stop_date']+shift,
-                )
-        except Exception as e:
-            raise e
+        for repeat in range(form.cleaned_data['number_of_repeats']):
+            shift = repeat*repeat_interval
+            chore = Chore.objects.create_blank(
+                skeleton=form.cleaned_data['skeleton'],
+                start_date=form.cleaned_data['start_date']+shift,
+                stop_date=form.cleaned_data['stop_date']+shift,
+            )
     return make_form_response(form)
 
 def chore_edit_TO_CHANGE(request):
