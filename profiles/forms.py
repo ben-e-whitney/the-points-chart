@@ -6,7 +6,8 @@ class UserProfileForm(BasicForm):
     class Meta:
         model = UserProfile
         fields = ['nickname', 'first_name', 'middle_name', 'last_name',
-                  'email_address', 'phone_number', 'public_calendar']
+                  'email_address', 'phone_number', 'birthday',
+                  'public_calendar']
 
     def clean(self):
         super().clean()

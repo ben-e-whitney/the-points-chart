@@ -23,12 +23,15 @@ class UserProfile(models.Model):
     # do nickname and full name because we'll need a split for exporting
     # contacts.
     nickname    = models.CharField(max_length=2**6)
+    #TODO: see <https://docs.djangoproject.com/en/dev/ref/models/fields/#null>.
+    #Convention is to not use `null` here.
     first_name  = models.CharField(max_length=2**6, null=True, blank=True)
     middle_name = models.CharField(max_length=2**6, null=True, blank=True)
     last_name   = models.CharField(max_length=2**6, null=True, blank=True)
     email_address = models.EmailField()
+    birthday = models.DateField(null=True, blank=True)
 
-    # TODO: At least for now, this complains if we give it 'blank=True'.
+    # TODO: This complains if we give it 'blank=True'.
     phone_number = localflavor.us.models.PhoneNumberField()
     # TODO: somewhere this needs to be checked against a table of carriers and
     # gateways. Where to do this? Actually, this should probably be a choice
@@ -43,7 +46,7 @@ class UserProfile(models.Model):
     presence = models.PositiveSmallIntegerField()
     def __str__(self):
         return 'UserProfile for {use}'.format(use=self.user.username)
-    # TODO: add methods here to calculate presence and share?
+    # TODO: add methods here to calculate presence and share for a given cycle?
 
 class GroupProfile(models.Model):
     group = models.OneToOneField(Group, related_name='profile')
@@ -51,7 +54,6 @@ class GroupProfile(models.Model):
     short_description = models.TextField()
     full_name  = models.CharField(max_length=2**6)
     time_zone = timezone_field.TimeZoneField()
-    # Preferences.
     email_prefix = models.CharField(max_length=2**6, default='[Points]',
                                     null=True, blank=True)
     start_date = models.DateField()
@@ -62,6 +64,12 @@ class GroupProfile(models.Model):
     release_buffer = models.PositiveSmallIntegerField()
     def __str__(self):
         return 'GroupProfile for {gro}'.format(gro=self.group.name)
+
+    def now(self):
+        return datetime.datetime.now(self.time_zone)
+
+    def today(self):
+        return self.now().date()
 
     def cycles(self, start_date=None, stop_date=None):
 

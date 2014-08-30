@@ -21,7 +21,6 @@ def UserFormCreator(request):
         # TODO: should this allow floats (and same with the model)?
         presence = forms.IntegerField(initial=coop.profile.cycle_length,
                                       min_value=1)
-        # TODO: email them once their account has been created.
         email_address = forms.EmailField()
 
         class Meta:
@@ -53,6 +52,7 @@ def UserFormCreator(request):
                 share=self.cleaned_data['share'],
                 public_calendar=True,
                 points_steward=False,
+                birthday=None,
             )
             #TODO: Unsure this is consistent with how other forms use `commit`.
             if commit:

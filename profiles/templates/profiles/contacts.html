@@ -16,7 +16,7 @@ contacts
 <table id="contacts_table">
 	<caption>Contact List for {{ coop.profile.full_name }}</caption>
 	<thead>
-	<tr><th>Name</th><th>Phone Number</th><th>Email Address</th></tr>
+		<tr><th>Name</th><th>Phone Number</th><th>Email Address</th><th>Birthday</th></tr>
 	</thead>
 	<tbody>
 	{% for cooper in coopers %}
@@ -34,26 +34,18 @@ contacts
 					{{ cooper.profile.email_address }}
 				</a>
 			</td>
-			<td></td>
+			<td>
+				{{ cooper.profile.birthday|date:"Y-m-d" }}
+			</td>
 		</tr>
 	{% endfor %}
 	<tr>
 		<td></td>
 		<td></td>
-		<td>
-			<form action="/contacts/export/">
-				<input type="submit" class="submit_button" value="Export as vCard">
-				{% comment %}
-				<object class="nav_icon" data={% static "icons/download.svg" %}>
-					export button
-				</object>
-				{% endcomment %}
-			</form>
-		</td>
+		<td></td>
 	</tbody>
 </table>
-<!--TODO: style this.-->
-{% comment %}
-<a href="/contacts/export">Export</a> as a vCard.
-{% endcomment %}
+<form action="/contacts/export/">
+	<input type="submit" class="submit_button" value="Export as vCard">
+</form>
 {% endblock %}
