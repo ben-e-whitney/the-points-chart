@@ -50,7 +50,6 @@ def users_stats_summarize(request, coop=None):
         'rows': display_info.create_template_data(accounts)
     }
 
-# TODO: put steward test here.
 @user_passes_test(lambda user: user.profile.points_steward)
 @login_required()
 def steward_forms(request):
@@ -68,15 +67,11 @@ def steward_forms(request):
         'main_form': main_form,
         'selector_form': ChoiceFormCreator(choice_objects)
     }
-    #TODO: making it so that all the classes get called. Making a note in case
-    #you run into problems.
     credit_and_edit_args = (
         ('chore_skeleton', 'Chore Skeleton', ChoreSkeletonForm(),
              ChoreSkeleton.objects.for_coop(coop)),
         ('chore', 'Chore', ChoreFormCreator(request)(),
              Chore.objects.for_coop(coop)),
-        #TODO: don't think the `classical` call is working. Update: changed
-        #something (adding `all` call).
         ('classical_stewardship_skeleton', 'Stewardship Skeleton',
              ClassicalStewardshipSkeletonForm(),
              StewardshipSkeleton.objects.all().classical().for_coop(coop)),

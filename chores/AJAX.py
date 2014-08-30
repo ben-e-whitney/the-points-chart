@@ -36,8 +36,8 @@ def updates_report(response, chores=None):
     }), status=200)
 
 #TODO: also take `method_name` from `request.POST`? Would be a little involved,
-#since there's creating/editing/fetching as well, and they use diffrent request
-#methods.
+#since there's creating/editing/fetching as well, and they use different
+#request methods.
 @login_required()
 def act(request, method_name):
     chore_id = int(request.POST.get('chore_id', ''))

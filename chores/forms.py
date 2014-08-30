@@ -26,13 +26,11 @@ def ChoreFormCreator(request):
     class ChoreForm(BasicForm):
         #repeat_interval = forms.IntegerField(validators=[MinValueValidator(1)])
         #number_of_repeats = forms.IntegerField(validators=[MinValueValidator(1)])
-        #Blank/null (TODO: which is it?) values will be converted.
+        #Null values will be converted.
         signed_up  = cooper_field_creator(coop, blank=True, required=False)
         signed_off = cooper_field_creator(coop, blank=True, required=False)
         voided     = cooper_field_creator(coop, blank=True, required=False)
         class Meta:
-            #TODO: maybe this shouldn't be a ModelForm if we're creating
-            #multiple objects at once?
             model = Chore
             fields = ['skeleton', 'start_date', 'stop_date', 'signed_up',
                       'signed_off', 'voided']
@@ -117,7 +115,6 @@ def ChoreFormCreator(request):
 
             #TODO: seems like '' is getting translated to `None`? Why? See
             #<https://docs.djangoproject.com/en/dev/ref/models/fields/>.
-            #TODO: back to testing against ''.
 
             return cleaned_data
 

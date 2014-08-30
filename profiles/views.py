@@ -5,6 +5,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.template import loader, Context
+from django.utils import timezone
 
 from profiles.forms import UserProfileForm
 
@@ -24,19 +25,21 @@ def contacts_list(request):
 # TODO: try getting it exported as a PDF.
 @login_required()
 def contacts_export(request):
-    coop = request.user.get_profile().coop
+    coop = request.user.profile.coop
     coopers = coop.user_set.all()
-    contacts = sorted((cooper.get_profile() for cooper in coopers),
-                      key=lambda cooper: cooper.first_name)
-    contacts.remove(request.user.get_profile())
+    contacts = sorted(
+        (cooper.profile for cooper in coopers if cooper != request.user),
+        key=lambda cooper: cooper.first_name
+    )
     # Here we are assuming that the site is using the UTC timezone.
     # TODO: check if this works as you are expecting.
-    current_time = datetime.datetime.now().isoformat()\
-        .replace('-', '').replace(':', '')+'Z'
+    current_time = timezone.now().isoformat().replace('-', '').replace(
+        ':', '')+'Z'
     response = HttpResponse(content_type='text/vcard')
-    response['Content-Disposition'] = ('attachment; '
-        'filename="{sho}_contacts.vcf"'.format(
-            sho=coop.profile.short_name.replace(' ', '_')))
+    response['Content-Disposition'] = (
+        'attachment; filename="{sho}_contacts.vcf"'.format(
+            sho=coop.profile.short_name.replace(' ', '_'))
+    )
     template = loader.get_template('profiles/contacts.vcf')
     # TODO: this seems to be working fine. Return to it when you better
     # understand when to use RequestContext.
@@ -49,10 +52,3 @@ def contacts_export(request):
 def user_profile_form(request):
     return render(request, 'profiles/user_profile_form.html',
                   {'form': UserProfileForm(instance=request.user.profile)})
-
-# TODO: what is the idiomatic way to do this? Better as a lambda expression?
-class HTMLForm():
-    def __init__(self, html_id, title, form_content):
-        self.html_id = html_id
-        self.title = title
-        self.form_content = form_content

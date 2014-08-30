@@ -3,7 +3,7 @@ from django.shortcuts import render
 import decimal
 # Create your views here.
 
-# TODO: name needs improving here.
+# TODO: name could use improving here.
 class DisplayInformation():
     def __init__(self, name, structure, keys, processor, format_key):
         self.name = name
@@ -54,8 +54,6 @@ class DisplayInformation():
                 key_index += 1
 
     def purge_empty(self):
-        # list/dict ('sections')/list/dict ('dictionaries')
-        # test if *that* is [] or whatever
         # Filter subsections.
         for big_dict in self.structured_data:
             # Using mutability/fact that `self.structured_data` stores

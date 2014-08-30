@@ -93,12 +93,9 @@ def edit_function_creator(model=None, model_callable=None, model_form=None,
 
             if form.is_valid():
                 try:
-                    #old_instance = model.objects.get(pk=object_id)
-                    #old_instance.delete()
                     new_instance = form.save(commit=False, request=request)
                     new_instance.id = object_id
                     new_instance.save()
-                    #old_instance.delete()
                 except Exception as e:
                     raise e
             return make_form_response(form)

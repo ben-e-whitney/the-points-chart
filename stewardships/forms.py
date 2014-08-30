@@ -61,15 +61,12 @@ def ClassicalStewardshipFormCreator(request):
             return cleaned_data
 
         def save(self, commit=True, request=None, **kwargs):
-            try:
-                stewardship = super().save(commit=False)
-                stewardship.make_signatures(commit=False,
-                    signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
-                    signed_off=None, voided=None)
-                if commit:
-                    stewardship.save()
-            except Exception as e:
-                raise e
+            stewardship = super().save(commit=False)
+            stewardship.make_signatures(commit=False,
+                signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
+                signed_off=None, voided=None)
+            if commit:
+                stewardship.save()
             return stewardship
 
     return ClassicalStewardshipForm
@@ -185,7 +182,7 @@ def AbsenceFormCreator(request):
             model = Absence
             fields = ['cooper', 'start_date', 'stop_date', 'short_description']
             # TODO: can we define this when not using these as fields? Would be
-            # good to use as a TimeCardForm class or ssomething.
+            # good to use as a TimecardForm class or something.
             widgets = {
                 field: forms.DateInput(attrs={'class': 'date_picker'})
                 for field in ('start_date', 'stop_date')
