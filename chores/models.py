@@ -3,7 +3,6 @@ from django.db import models, connection
 # Create your models here.
 
 from django.contrib.auth.models import User, Group
-#TODO: use this instead of datetime. Need to check all files.
 from django.utils import timezone
 # See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
 from model_utils.managers import PassThroughManager
@@ -150,7 +149,6 @@ class Signature(models.Model):
         if commit:
             self.save()
 
-    # TODO: maybe we should save here and not in `clear`?
     def revert(self, user, *args, **kwargs):
         commit = kwargs.get('commit', True)
         # Placeholder for any future logic.
@@ -216,16 +214,15 @@ class Timecard(models.Model):
 
     # TODO: use timedelta.in_interval for these two? Should we pay attention to
     # anything other than days?
-    # TODO: should use co-op's timezone for these two.
-    def in_the_future(self):
-        return self.start_date > timezone.now().date()
+    def in_the_future(self, coop):
+        return self.start_date > coop.profile.today()
 
-    def in_the_past(self):
-        return self.start_date < timezone.now().date()
+    def in_the_past(self, coop):
+        return self.start_date < coop.profile.today()
 
     def in_grace_period(self):
         return timedelta.in_interval(0, timezone.now()-self.signed_up.when,
-        REVERT_SIGN_UP_GRACE_PERIOD_HOURS, unit='hours')
+            REVERT_SIGN_UP_GRACE_PERIOD_HOURS, unit='hours')
 
     def too_close_to_revert_sign_up(self):
         return timedelta.in_interval(0, self.start_date-timezone.now().date(),
@@ -269,7 +266,6 @@ class Timecard(models.Model):
             return {'boolean': True, 'message': ''}
         return permission
 
-    # TODO: change 'sign_up' and 'sign_off' to 'sign-up' and 'sign-off'?
     sign_up_permission = permission_creator(
         [
             lambda self, user: self.voided,
@@ -285,7 +281,7 @@ class Timecard(models.Model):
         [
             lambda self, user: not self.signed_up,
             lambda self, user: self.signed_up.who == user,
-            lambda self, user: self.in_the_future(),
+            lambda self, user: self.in_the_future(user.profile.coop),
             lambda self, user: self.signed_off,
             lambda self, user: self.voided
         ], [
@@ -300,7 +296,7 @@ class Timecard(models.Model):
     )
     void_permission = permission_creator(
         [
-            lambda self, user: self.in_the_future(),
+            lambda self, user: self.in_the_future(user.profile.coop),
             lambda self, user: self.voided,
             lambda self, user: self.signed_off
         ], [
@@ -318,7 +314,7 @@ class Timecard(models.Model):
             lambda self, user: self.signed_off,
             lambda self, user: (self.too_close_to_revert_sign_up() and
                                 not self.in_grace_period()),
-            lambda self, user: (self.in_the_past() and
+            lambda self, user: (self.in_the_past(user.profile.coop) and
                                 not self.in_grace_period())
         ], [
             "You didn't sign up for that chore.",

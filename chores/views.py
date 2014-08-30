@@ -21,8 +21,6 @@ from profiles.models import UserProfile
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
     ShareChange)
 
-# TODO: put extra functions and lengthy variable definitions in another file.
-
 # TODO: another option (attractive) would be to put all of this as methods of
 # the Signature model. I think we would want to subclass that class, but all
 # for the sake of including some view logic in the model? Not sure what is the
@@ -45,8 +43,6 @@ class ChoreSentence():
     report_text = None
     JavaScript_function = None
 
-    # TODO: just stripped out premature optimization with caching the current
-    # date/datetime. Can reinsert if needed.
     def __init__(self, user, chore, chore_attribute=None):
         if chore_attribute is not None:
             self.chore_attribute = chore_attribute
@@ -187,7 +183,7 @@ def get_obligations(user, coop=None):
         'signed off': all_chores.signed_off(None, True),
         'not signed off': all_chores.signed_off(None, False),
         'all stewardships': all_stewardships,
-        # TODO: could new QuerySets/models/whatever in for these.
+        # TODO: could make new QuerySets/models/whatever in for these.
         'stewardships': all_stewardships.filter(
             skeleton__category=StewardshipSkeleton.STEWARDSHIP),
         'special points': all_stewardships.filter(
@@ -232,9 +228,6 @@ def get_obligations(user, coop=None):
 
     def summary_processor(items):
         def convert_to_integer(x):
-        # TODO: this is wasteful when `value` is already an integer (which
-        # has happened, at least with toy data).
-        # TODO:  I think those 'integers' might be like 'Decimal('1')'. Check.
             return decimal.Decimal(x).to_integral_value()
         return [
             {'value': convert_to_integer(value),
@@ -256,7 +249,6 @@ def get_obligations(user, coop=None):
             ], list_processor, 'original'),
         DisplayInformation('table_information', {
                 'sections': ['Chores', 'Stewardships and Similar'],
-            # TODO: should 'Needing Sign Off' be renamed 'Ready for Signature'?
                 'subsections': [['Signed Up', 'Signed Off', 'Needing Sign Off',
                                  'Voided'],
                                 ['Stewardships', 'Special Points', 'Loans']]
@@ -289,7 +281,7 @@ def calculate_load_info(user=None, coop=None):
             raise TypeError('Must specify user or co-op.')
         else:
             coop = user.profile.coop
-    today = timezone.now().date()
+    today = coop.profile.today()
     # Storing as a tuple so we can iterate over it multiple times without extra
     # cost. TODO: is this how this works?
     all_coopers = tuple(coop.user_set.all())
@@ -344,8 +336,6 @@ def calculate_load_info(user=None, coop=None):
 
         for dict_ in accounts:
             user = dict_['user']
-            #TODO: for now I like it as it is, but you could consider having
-            #loans directly affect the load (not the balance).
             load = ppds*presence_shares[user]
             #Handling chores and stewardships separately to avoid any confusion
             #about how stewardships are handled.
@@ -374,12 +364,11 @@ def calculate_balance(user, coop=None):
 @login_required()
 def chores_list(request):
 
-    # TODO: Would be nice to able for selecting by 'today' as well as by date.
     def find_day_id(date):
         return date.isoformat()
 
     def find_day_name(date, coop):
-        today = datetime.datetime.now(coop.profile.time_zone).date()
+        today = coop.profile.today()
         translations = {-1: 'yesterday', 0: 'today', 1: 'tomorrow'}
         return translations.get((date-today).days, '')
 
@@ -412,13 +401,7 @@ def chores_list(request):
 
     weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
                 'Saturday', 'Sunday']
-    # TODO: put in error checking here or something. At least test what happens
-    # when two co-ops (try to) have the same name. Maybe that is what should be
-    # forbidden -- or have `coop_short_name` be more of a URL-specific thing.
-    # Here we assume that a User is a member of only one Group. TODO: is this
-    # going to make points stewards/presidents ugly? Could address this by
-    # adding something in the UserProfile that points to the Group that is a
-    # co-op.
+    # Here (and elsewhere) we assume that a User is a member of only one Group.
     coop = request.user.profile.coop
     chores = Chore.objects.for_coop(coop)
     cycles = []
@@ -484,16 +467,16 @@ def user_stats_list(request, username):
     return render(request, 'chores/user_stats_list.html',
                   dictionary=render_dictionary)
 
-# TODO: allow for people to download it either way if they're logged in?
 def calendar_create(request, username):
-    # Test to see if that user wants a public calendar. Also do error checking
-    # with this next step.
-    user = User.objects.get(username=username)
-    if not user.profile.public_calendar:
+    #TODO: this code is repeated. Could make a function.
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+            return HttpResponse('No such user.', status=404)
+    if not user.profile.public_calendar and request.user != user:
         return HttpResponse('User has not enabled a public calendar.',
                             status=403)
     coop = user.profile.coop
-    # TODO: could remove voided chores.
     chores = Chore.objects.for_coop(coop).signed_up(user, True)
     response = HttpResponse(content_type='text/calendar')
     response['Content-Disposition'] = ('attachment; '
