@@ -17,8 +17,8 @@ def make_form_response(form):
 def create_function_creator(model=None, model_callable=None, model_form=None,
                             model_form_callable=None):
     #TODO: make this a permission, or make a function for this, or something.
-    @user_passes_test(lambda user: user.profile.points_steward)
     @login_required
+    @user_passes_test(lambda user: user.profile.points_steward)
     def create_function(request, model=model, model_callable=model_callable,
                         model_form=model_form,
                         model_form_callable=model_form_callable):
@@ -27,7 +27,6 @@ def create_function_creator(model=None, model_callable=None, model_form=None,
         if model_form is None:
             model_form = model_form_callable(request)
         form = model_form(request.POST)
-        form.is_valid()
         if form.is_valid():
             form.save(request=request)
         return make_form_response(form)

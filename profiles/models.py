@@ -14,7 +14,10 @@ import datetime
 # semester in case someone leaves or can't do it.
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, related_name='profile')
+    #`null` and `blank` are set to be `True` to make editing of users by the
+    #steward easier.
+    user = models.OneToOneField(User, null=True, blank=True,
+                                related_name='profile')
     coop = models.ForeignKey(Group)
     # Want to allow for a middle name, so I'm going to leave the first_name and
     # last_name fields in User blank and just keep everything here. Can't just
@@ -47,7 +50,9 @@ class UserProfile(models.Model):
     # TODO: add methods here to calculate presence and share for a given cycle?
 
 class GroupProfile(models.Model):
-    group = models.OneToOneField(Group, related_name='profile')
+    #`null` and `blank` chosen to mirror `UserProfile` setup.
+    group = models.OneToOneField(Group, null=True, blank=True,
+                                 related_name='profile')
     short_name = models.CharField(max_length=2**6)
     short_description = models.TextField()
     full_name  = models.CharField(max_length=2**6)

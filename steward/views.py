@@ -49,8 +49,8 @@ def users_stats_summarize(request, coop=None):
         'rows': display_info.create_template_data(accounts)
     }
 
-@user_passes_test(lambda user: user.profile.points_steward)
 @login_required()
+@user_passes_test(lambda user: user.profile.points_steward)
 def steward_forms(request):
     coop = request.user.profile.coop
     #TODO: could pull out common action for these two. Seems like overkill.

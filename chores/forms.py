@@ -71,11 +71,15 @@ def ChoreFormCreator(request):
         def clean(self):
             cleaned_data = super().clean()
             #TODO: add code to allow for possibility of failed comparison.
-            if cleaned_data.get('stop_date') < cleaned_data.get('start_date'):
+            try:
+                proper_ordering = (cleaned_data.get('stop_date') >=
+                    cleaned_data.get('start_date'))
+            except TypeError:
                 # TODO: in Django 1.7 you can use `self.add_error()`. See
                 # <https://docs.djangoproject.com/en/dev/ref/forms/api/
                 # #django.forms.Form.add_error>.
-                raise ValidationError('Stop date cannot be before start date.')
+                raise ValidationError('Stop date is before start date (or '
+                                      'comparison failed).')
             timecard = Timecard(
                 start_date=cleaned_data.get('start_date'),
                 stop_date=cleaned_data.get('start_date'),
@@ -105,7 +109,7 @@ def ChoreFormCreator(request):
                 user = coopers.get(field_name)
                 if user is not None:
                     try:
-                        getattr(timecard, method_name)(user)
+                        getattr(timecard, method_name)(user, commit=False)
                     except ChoreError as e:
                         raise ValidationError(e)
 
@@ -115,7 +119,6 @@ def ChoreFormCreator(request):
 
             #TODO: seems like '' is getting translated to `None`? Why? See
             #<https://docs.djangoproject.com/en/dev/ref/models/fields/>.
-
             return cleaned_data
 
         def save(self, *args, **kwargs):

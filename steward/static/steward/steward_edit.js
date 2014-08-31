@@ -1,5 +1,5 @@
 $(document).ready(function() {
-  $('.date_picker').datepicker();
+  $('.date_picker').datepicker({dateFormat: 'yy-mm-dd'});
   //TODO: activate once you have 'particulars' section up.
   //$('#coop_overview').accordion({active: 0, collapsible: true,
                                 //heightStyle: 'content', animate: false});

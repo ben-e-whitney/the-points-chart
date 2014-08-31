@@ -173,6 +173,8 @@ class Timecard(models.Model):
     voided = models.ForeignKey(Signature, related_name='timecard_voided')
 
     def save(self, *args, **kwargs):
+        for signature_name in ('signed_up', 'signed_off', 'voided'):
+            getattr(self, signature_name).save()
         self.updated = timezone.now()
         super().save(*args, **kwargs)
 
@@ -334,12 +336,14 @@ class Timecard(models.Model):
 
     def actor_creator(permission_method_name, signature_name, action_name):
         def actor(self, user, *args, **kwargs):
+            commit = kwargs.get('commit', True)
             permission = getattr(self, permission_method_name)(user)
             if permission['boolean']:
                 getattr(getattr(self, signature_name), action_name)(
                     user, *args, **kwargs)
                 #Save the Timecard itself to update the 'updated' field.
-                self.save()
+                if commit:
+                    self.save()
             else:
                 #TODO: figure out how to send down both permission and status.
                 #Half the problem might be in the JavaScript.
