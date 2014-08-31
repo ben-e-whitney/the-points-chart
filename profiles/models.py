@@ -16,8 +16,7 @@ import datetime
 class UserProfile(models.Model):
     #`null` and `blank` are set to be `True` to make editing of users by the
     #steward easier.
-    user = models.OneToOneField(User, null=True, blank=True,
-                                related_name='profile')
+    user = models.OneToOneField(User, blank=True, related_name='profile')
     coop = models.ForeignKey(Group)
     # Want to allow for a middle name, so I'm going to leave the first_name and
     # last_name fields in User blank and just keep everything here. Can't just
@@ -26,9 +25,9 @@ class UserProfile(models.Model):
     nickname    = models.CharField(max_length=2**6)
     #TODO: see <https://docs.djangoproject.com/en/dev/ref/models/fields/#null>.
     #Convention is to not use `null` here.
-    first_name  = models.CharField(max_length=2**6, null=True, blank=True)
-    middle_name = models.CharField(max_length=2**6, null=True, blank=True)
-    last_name   = models.CharField(max_length=2**6, null=True, blank=True)
+    first_name  = models.CharField(max_length=2**6, blank=True)
+    middle_name = models.CharField(max_length=2**6, blank=True)
+    last_name   = models.CharField(max_length=2**6, blank=True)
     email_address = models.EmailField()
     birthday = models.DateField(null=True, blank=True)
 
@@ -37,7 +36,7 @@ class UserProfile(models.Model):
     # TODO: somewhere this needs to be checked against a table of carriers and
     # gateways. Where to do this? Actually, this should probably be a choice
     # between a dropdown list of options.
-    phone_carrier = models.CharField(max_length=2**6, blank=True, null=True)
+    phone_carrier = models.CharField(max_length=2**6, blank=True)
     public_calendar = models.BooleanField()
     points_steward  = models.BooleanField()
 
@@ -58,7 +57,7 @@ class GroupProfile(models.Model):
     full_name  = models.CharField(max_length=2**6)
     time_zone = timezone_field.TimeZoneField()
     email_prefix = models.CharField(max_length=2**6, default='[Points]',
-                                    null=True, blank=True)
+                                    blank=True)
     start_date = models.DateField()
     # TODO: if this is changed in the middle of the semester it could cause
     # havoc (writing this just after making cycle-picker for new Loans and
