@@ -5,6 +5,7 @@ static/icons
 static/400 Hand-Drawn
 rhc
 initializer.py
+user_initializer.py
 test.py
 manage.py
 downloaded.txt

@@ -73,6 +73,7 @@ class GroupProfile(models.Model):
     def today(self):
         return self.now().date()
 
+    #TODO: add method for getting the current cycle.
     def cycles(self, start_date=None, stop_date=None):
 
         def ceil_integer_division(x, y):

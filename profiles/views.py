@@ -6,19 +6,37 @@ from django.template import loader, Context
 from django.utils import timezone
 
 from profiles.forms import UserProfileForm
+from stewardships.models import Stewardship
 
 import datetime
 
 @login_required()
 def contacts_list(request):
     coop = request.user.profile.coop
+    today = coop.profile.today()
+    start_date = None
+    stop_date = None
+    for cycle_num, start_date, stop_date in coop.profile.cycles():
+        if start_date <= today <= stop_date:
+            break
+    #TODO: improve.
+    assert start_date is not None
+    assert stop_date is not None
+    all_stewardships = (Stewardship.objects.all().classical().for_coop(coop)
+        .in_window(start_date, stop_date))
+
+    def get_classical_stewardships(cooper):
+        return ', '.join(stewardship.skeleton.short_name for stewardship in
+                         all_stewardships.signed_up(cooper, True))
+
+    coop = request.user.profile.coop
     coopers = coop.user_set.all().order_by('profile__first_name')
-    # TODO: consider putting stewardship or any other info here. Consider also
-    # any highlighting of self, presidents, etc.
-    # contacts = sorted(map(lambda x: x.profile, coopers), key=lambda y:
-                      # y.first_name)
+    stewardships = [
+        get_classical_stewardships(cooper) for cooper in coopers
+    ]
     return render(request, 'profiles/contacts.html',
-                  dictionary={'coop': coop, 'coopers': coopers})
+                  dictionary={'coop': coop,
+                              'coopers': zip(coopers, stewardships)})
 
 # TODO: try getting it exported as a PDF.
 @login_required()

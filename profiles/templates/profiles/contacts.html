@@ -16,10 +16,10 @@ contacts
 <table id="contacts_table">
 	<caption>Contact List for {{ coop.profile.full_name }}</caption>
 	<thead>
-		<tr><th>Name</th><th>Phone Number</th><th>Email Address</th><th>Birthday</th></tr>
+		<tr><th>Name</th><th>Phone Number</th><th>Email Address</th><th>Birthday</th><th>Stewardship(s)</th></tr>
 	</thead>
 	<tbody>
-	{% for cooper in coopers %}
+	{% for cooper, stewardships in coopers %}
 		<tr>
 			<!--TODO: trying this for now to see if we get an extra space. If so, might need a separate field,-->
 			<!--or to make it in the view, or whatever.-->
@@ -36,6 +36,9 @@ contacts
 			</td>
 			<td>
 				{{ cooper.profile.birthday|date:"Y-m-d" }}
+			</td>
+			<td>
+				{{ stewardships }}
 			</td>
 		</tr>
 	{% endfor %}
