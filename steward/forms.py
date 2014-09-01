@@ -74,12 +74,8 @@ def UserFormCreator(request):
             #TODO: Unsure this is consistent with how other forms use `commit`.
             if commit:
                 #Avoid saving twice.
-                if not profile_already_there:
-                    profile.save()
                 new_user.save()
                 if not profile_already_there:
-                    #TODO: can this be done before the profile is saved (and
-                    #before `new_user` is saved)?
                     profile.user = new_user
                     profile.save()
                 coop.user_set.add(new_user)
