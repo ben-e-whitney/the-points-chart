@@ -81,7 +81,7 @@ class GroupProfile(models.Model):
 
         if start_date is None:
             start_date = self.start_date
-        window_width = datetime.timedelta(days=self.cycle_length)
+        window_width = datetime.timedelta(days=self.cycle_length-1)
         if stop_date is None:
             stop_date = (datetime.datetime.now(self.time_zone).date()+
                 datetime.timedelta(days=self.release_buffer))
