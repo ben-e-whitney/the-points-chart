@@ -6,6 +6,7 @@ static/400 Hand-Drawn
 rhc
 initializer.py
 user_initializer.py
+balance_checker.py
 test.py
 manage.py
 downloaded.txt
