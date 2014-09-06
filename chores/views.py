@@ -11,6 +11,7 @@ import datetime
 import pytz
 import itertools
 import decimal
+import math
 
 from utilities import timedelta
 from utilities.views import DisplayInformation, format_balance
@@ -484,4 +485,25 @@ def calendar_create(request, username):
     context = Context({'coop': coop, 'chores': chores})
     response.write(template.render(context))
     return response
+
+@login_required()
+def balances_summarize(request, num_columns=5):
+    coop = request.user.profile.coop
+    accounts = calculate_load_info(coop=coop)
+    accounts.sort(key=lambda x: x['user'].profile.nickname)
+    accounts = [{
+        'cooper': row['user'],
+        'balance': format_balance(load=row['load'][-1],
+                                  balance=row['balance'][-1])
+    } for row in accounts]
+    #TODO: find a better way to do this. Could use itertools, maybe. Keep in
+    #mind template limitations.
+    num_rows = math.ceil(len(accounts)/num_columns)
+    #Fill out the shorter columns.
+    while len(accounts) % num_rows:
+        accounts.append(None)
+    accounts = [list(accounts[i*num_columns+j] for j in range(num_columns))
+                for i in range(num_rows)]
+    return render(request, 'chores/balances_summarize.html',
+                  {'accounts': accounts})
 

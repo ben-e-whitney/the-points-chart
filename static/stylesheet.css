@@ -267,6 +267,10 @@ form.submit_button {
 	border-spacing: 4em 0em;
 }
 
+#balances_table {
+	font-size: 1.5em;
+}
+
 .selected_information_section {
 	vertical-align: top
 }

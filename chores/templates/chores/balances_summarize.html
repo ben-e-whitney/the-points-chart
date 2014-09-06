@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+balance summary
+{% endblock %}
+
+{% block head %}
+{% load staticfiles %}
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+{% endblock head %}
+
+{% block body %}
+<table id="balances_table">
+	<caption>Balances for {{ user.profile.coop.profile.full_name }}</caption>
+	<thead>
+	</thead>
+	<tbody>
+	{% for row in accounts %}
+		<tr>
+			{% for account in row %}
+				{% if account %}
+					<td style="text-align: right">
+						{% if user.profile.points_steward %}
+						<a href="/chores/{{ account.cooper.username }}/">
+							{{ account.cooper.profile.nickname }}
+						</a>
+						{% else %}
+							{{ account.cooper.profile.nickname }}
+						{% endif %}
+					</td>
+					<td class="{{ account.balance.CSS_class }}" title="{{ account.balance.html_title }}">{{ account.balance.value }}</td>
+				{% endif %}
+			{% endfor %}
+		</tr>
+	{% endfor %}
+	</tbody>
+</table>
+
+{% endblock body %}
