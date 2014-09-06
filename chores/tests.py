@@ -67,7 +67,9 @@ class ChoreTestCase(TestCase):
             last_name=random_letters(16),
             email_address=user.email,
             presence=coop.profile.cycle_length,
-            share=1
+            share=1,
+            public_calendar=True,
+            points_steward=False,
         )
         profile.save()
         coop.user_set.add(user)
@@ -161,6 +163,25 @@ class ChoreTestCase(TestCase):
         skeleton = self.make_chore_skeleton()
         future_date = timezone.now().date()+datetime.timedelta(days=1)
         past_date = timezone.now().date()+datetime.timedelta(days=-1)
+
+        with self.assertRaises(ChoreError):
+            chore = self.make_chore(skeleton=skeleton, start_date=past_date)
+            signing_up_user = self.make_user()
+            voiding_user = self.make_user()
+            chore.sign_up(signing_up_user)
+            chore.void(voiding_user)
+
+        #This should raise no exceptions.
+        try:
+            chore = self.make_chore(skeleton=skeleton, start_date=past_date)
+            signing_up_user = self.make_user()
+            points_steward_user = self.make_user()
+            points_steward_user.profile.points_steward = True
+            points_steward_user.profile.save()
+            chore.sign_up(signing_up_user)
+            chore.void(points_steward_user)
+        except ChoreError as e:
+            self.fail("Points steward couldn't void a chore.")
 
         with self.assertRaises(ChoreError):
             chore = self.make_chore(skeleton=skeleton, start_date=future_date)

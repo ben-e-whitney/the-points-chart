@@ -248,6 +248,8 @@ class Timecard(models.Model):
     # the admin interface.
     # TODO: are there going to be timezone problems here?
 
+    #TODO: reverse this? So if `condition` evaluates to `True`, you can do the
+    #action?
     def permission_creator(conditions, potential_msgs):
         # TODO: mark in docstring that `conditions`/`potential_msgs` should be
         # ordered according to decreasing priority.
@@ -296,10 +298,14 @@ class Timecard(models.Model):
     )
     void_permission = permission_creator(
         [
+            lambda self, user: not (self.signed_up.who == user or
+                user.profile.points_steward),
             lambda self, user: self.in_the_future(user.profile.coop),
             lambda self, user: self.voided,
             lambda self, user: self.signed_off
         ], [
+            "You can't void a chore that isn't yours unless you're points "
+                "steward.",
             "You can't void a chore before it has been done.",
             lambda self, user: self.get_scoop_message(user, 'voided',
                                                       'voided'),
