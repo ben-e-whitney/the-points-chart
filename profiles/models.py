@@ -81,10 +81,10 @@ class GroupProfile(models.Model):
 
         if start_date is None:
             start_date = self.start_date
-        window_width = datetime.timedelta(days=self.cycle_length-1)
         if stop_date is None:
-            stop_date = (datetime.datetime.now(self.time_zone).date()+
-                datetime.timedelta(days=self.release_buffer))
+            stop_date = self.today()+datetime.timedelta(
+                days=self.release_buffer)
+        window_width = datetime.timedelta(days=self.cycle_length-1)
         assert window_width > datetime.timedelta(days=0)
         assert stop_date >= start_date
         num_cycles = ceil_integer_division((stop_date-start_date).days,
