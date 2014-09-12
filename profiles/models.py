@@ -87,7 +87,8 @@ class GroupProfile(models.Model):
         window_width = datetime.timedelta(days=self.cycle_length-1)
         assert window_width > datetime.timedelta(days=0)
         assert stop_date >= start_date
-        num_cycles = ceil_integer_division((stop_date-start_date).days,
+        #Adding one so that `start_date` is counted as a day.
+        num_cycles = ceil_integer_division((stop_date-start_date).days+1,
                                            self.cycle_length)
         num_width = len(str(num_cycles))
         window = [start_date, start_date+window_width]
