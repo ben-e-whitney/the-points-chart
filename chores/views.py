@@ -275,6 +275,15 @@ def get_obligations(user, coop=None):
 # TODO: this method is quite long. See if there's a way to pull some of it out
 # into another function.
 def calculate_load_info(user=None, coop=None):
+
+    def absence_summer(absences, cycle_start_date, cycle_stop_date):
+        total = 0
+        for absence in absences:
+            #Add 1 to count both endpoints.
+            total += (min(absence.stop_date,  cycle_stop_date)-
+                      max(absence.start_date, cycle_start_date)).days+1
+        return total
+
     if coop is None:
         if user is None:
             raise TypeError('Must specify user or co-op.')
@@ -300,30 +309,26 @@ def calculate_load_info(user=None, coop=None):
     accounts = [{'user': cooper, 'load': [], 'credits': [], 'balance': []} for
                 cooper in user_set]
     for cycle_num, start_date, stop_date in coop.profile.cycles():
+        print('Cycle {num} from {stad} to {stod}'.format(num=cycle_num,
+                                                         stad=start_date,
+                                                         stod=stop_date))
         cycle_data = {key: value.in_window(start_date, stop_date)
                       for key, value in data.items()}
-        adds_to_points = tuple(itertools.chain(cycle_data['chores'],
-                                               cycle_data['stewardships']))
-        adds_to_presence = cycle_data['absences']
-        adds_to_share = cycle_data['share changes']
 
         # TODO: could move around to iterate through only once.
-        total_points   =  sum(adds_to_points)
-        total_presence = -sum(adds_to_presence)+sum(cooper.profile.presence for
-                                                    cooper in all_coopers)
-        total_share    =  sum(adds_to_share)+sum(cooper.profile.share for
-                                                 cooper in all_coopers)
-
-        # 'ppds' stands for 'points per day-share.'
-        # TODO: here and elsewhere, add error handling (for division).
-        # base_presence = sum(cooper.profile.presence*cooper.profile.share for
-                            # cooper in all_coopers)
+        total_points = sum(itertools.chain(cycle_data['chores'],
+                                           cycle_data['stewardships']))
+        total_presence = -absence_summer(cycle_data['absences'], start_date,
+            stop_date)+sum(cooper.profile.presence for cooper in all_coopers)
+        total_share = sum(cycle_data['share changes'])+sum(
+            cooper.profile.share for cooper in all_coopers)
 
         total_presence_share = 0
         presence_shares = {}
         for cooper in all_coopers:
-            presence = cooper.profile.presence-sum(cycle_data['absences']
-                                                   .signed_up(cooper, True))
+            presence = cooper.profile.presence-absence_summer(
+                cycle_data['absences'].signed_up(cooper, True),
+                start_date, stop_date)
             share = cooper.profile.share+sum(cycle_data['share changes']
                                              .signed_up(cooper, True))
             presence_share = presence*share
@@ -331,6 +336,8 @@ def calculate_load_info(user=None, coop=None):
             #TODO: don't like how this is done.
             if cooper in user_set:
                 presence_shares.update({cooper: presence_share})
+        # TODO: here and elsewhere, add error handling (for division).
+        # 'ppds' stands for 'points per day-share.'
         ppds = total_points/total_presence_share
 
         for dict_ in accounts:

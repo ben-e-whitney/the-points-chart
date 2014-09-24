@@ -94,8 +94,10 @@ class Absence(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton, related_name='absence')
     objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
 
+    #TODO: is there a use case for this that isn't sensitive to cycles?
     def __radd__(self, other):
-        return (self.stop_date-self.start_date).days+other
+        #Add 1 to count both endpoints.
+        return (self.stop_date-self.start_date).days+1+other
 
     def __str__(self):
         return 'Absence of {use} from {sta} to {sto}'.format(
