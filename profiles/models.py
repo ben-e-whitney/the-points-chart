@@ -98,9 +98,9 @@ class GroupProfile(models.Model):
 
     def get_cycle_endpoints(self, cycle_num):
         cycle_start_date = self.start_date+datetime.timedelta(
-            days=1+self.cycle_length)*(cycle_num-1)
+            days=self.cycle_length)*(cycle_num-1)
         cycle_stop_date = cycle_start_date+datetime.timedelta(
-            days=self.cycle_length)
+            days=self.cycle_length-1)
         return (cycle_start_date, cycle_stop_date)
 
     def get_cycle(self, cycle_start_date, cycle_stop_date):
