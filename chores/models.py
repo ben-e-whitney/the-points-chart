@@ -300,7 +300,8 @@ class Timecard(models.Model):
         [
             lambda self, user: not (self.signed_up.who == user or
                 user.profile.points_steward),
-            lambda self, user: self.in_the_future(user.profile.coop),
+            lambda self, user: (self.in_the_future(user.profile.coop) and not
+                user.profile.points_steward),
             lambda self, user: self.voided,
             lambda self, user: self.signed_off
         ], [
