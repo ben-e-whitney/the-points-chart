@@ -28,7 +28,7 @@ chores
 			<h1 id="{{ day.id }}"> {{ day.weekday }} {{ day.date|date:"Y-m-d" }} </h1>
 			<ul class="chores_list">
 				{% for schedule_item in day.schedule %}
-				<li class="{{ schedule_item.class }}" id="chore_{{ schedule_item.chore.id }}"> <strong>{{ schedule_item.chore.skeleton.short_name }} ({{ schedule_item.chore.skeleton.point_value }}):</strong>
+				<li class="{{ schedule_item.class }}" id="chore_{{ schedule_item.chore.id }}"> <strong>{{ schedule_item.chore.skeleton__short_name }} ({{ schedule_item.chore.skeleton__point_value }}):</strong>
 					{% for sentence in schedule_item.sentences %}
 						<span id="{{ sentence.identifier }}_sentence_{{ schedule_item.chore.id }}">
 							{% if sentence.report %}
@@ -41,6 +41,7 @@ chores
 							{% endif %}
 						</span>
 					{% endfor %}
+					</li>
 				{% endfor %}
 			</ul>
 		</div>
@@ -55,7 +56,10 @@ TODO: check out <http://jsfiddle.net/karalamalar/atNva/9/>.
 Forgot about this note and did it myself. Compare at some point.
 {% endcomment %}
 {% block current_balance %}
+{% comment %}
 <div id="current_balance" class="{{ current_balance.CSS_class }}">
 	{{ current_balance.value }}
 </div>
+{% endcomment %}
+<div id="current_balance" class="balance OK_balance">…</div>
 {% endblock %}

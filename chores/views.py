@@ -1,3 +1,5 @@
+from django.db import connection
+
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import (login_required, user_passes_test,
@@ -12,10 +14,11 @@ import pytz
 import itertools
 import decimal
 import math
+import collections
 
 from utilities import timedelta
 from utilities.views import DisplayInformation, format_balance
-from chores.models import Chore
+from chores.models import Chore, ChoreSkeleton
 from profiles.models import UserProfile
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
     ShareChange)
@@ -45,6 +48,8 @@ class ChoreSentence():
     def __init__(self, user, chore, chore_attribute=None):
         if chore_attribute is not None:
             self.chore_attribute = chore_attribute
+        #TODO: should this use the co-op's timezone? Look to see how chore dates
+        #are stored. Check here and everywhere else.
         # Otherwise use the class attribute.
         self.current_datetime = datetime.datetime.now()
         self.current_date = self.current_datetime.date()
@@ -402,17 +407,40 @@ def chores_list(request):
                 'Saturday', 'Sunday']
     # Here (and elsewhere) we assume that a User is a member of only one Group.
     coop = request.user.profile.coop
-    chores = Chore.objects.for_coop(coop)
+    #print('before getting chore skeletons: {lcn}'.format(
+        #lcn=len(connection.queries)))
+    chore_skeletons = set(ChoreSkeleton.objects.for_coop(coop=coop))
+    #print('after getting chore skeletons: {lcn}'.format(
+        #lcn=len(connection.queries)))
+    chores = list(Chore.objects.prefetch_related('signed_up__who',
+        'signed_off__who', 'voided__who').filter(skeleton__in=chore_skeletons))
+    #print('after adding all chores: {lcn}'.format(
+        #lcn=len(connection.queries)))
+    chores_by_day = collections.defaultdict(list)
+    for chore in chores:
+        chores_by_day[chore.start_date].append(chore)
+    #print('after sorting chores: {lcn}'.format(
+        #lcn=len(connection.queries)))
+
     cycles = []
     for cycle_num, start_date, stop_date in coop.profile.cycles():
         chores_by_date = []
+        #print('checking at beginning of cycle {cyn}: {lcn}'.format(
+            #cyn=cycle_num, lcn=len(connection.queries)))
         for date in timedelta.daterange(start_date, stop_date, inclusive=True):
-            chores_today = (chores.filter(start_date=date)
-                              .order_by('skeleton__start_time',
-                                        'skeleton__short_name'))
+            chores_today = chores_by_day[date]
+            #print('checking at beginning of {dat}: {lcn}'.format(dat=date,
+                #lcn=len(connection.queries)))
             if chores_today:
                 chore_dicts = [{
-                        'chore': chore,
+                    #TODO: would like to eventually use the chore itself, but
+                    #that isn't feasible until we can have all the skeletons
+                    #preloaded.
+                        'chore': {
+                            'id': chore.id,
+                            'skeleton__short_name': chore.skeleton.short_name,
+                            'skeleton__point_value': chore.skeleton.point_value,
+                        },
                         'class': chore.find_CSS_classes(request.user),
                         'sentences': get_chore_sentences(request.user, chore)
                 } for chore in chores_today]
@@ -429,10 +457,12 @@ def chores_list(request):
             'class': find_cycle_classes(cycle_num, start_date, stop_date),
             'id': cycle_num,
         })
-    return render(request,'chores/chores_list.html', dictionary={
+    #print('right before rendering: {lcn}'.format(lcn=len(connection.queries)))
+    output = render(request,'chores/chores_list.html', dictionary={
         'coop': coop, 'cycles': cycles,
-        'current_balance': calculate_balance(request.user, coop)
     })
+    #print('right after rendering: {lcn}'.format(lcn=len(connection.queries)))
+    return output
 
 @login_required()
 def user_stats_list(request, username):

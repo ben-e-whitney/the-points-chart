@@ -85,5 +85,7 @@ var fetch_updates = function() {
 
 $(window).load(function() {
   $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
+  //TODO: figure out a nicer way of doing this.
+  fetch_updates();
   setInterval(fetch_updates, 1000*fetch_interval);
 });

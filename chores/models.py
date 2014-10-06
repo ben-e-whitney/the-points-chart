@@ -30,6 +30,7 @@ class ChoreSkeletonQuerySet(models.query.QuerySet):
 
         #Return an iterator yielding those chores skeletons which belong to `coop`.
         #'''
+
         return self.filter(coop=coop)
 
 class ChoreQuerySet(models.query.QuerySet):
@@ -43,7 +44,17 @@ class ChoreQuerySet(models.query.QuerySet):
 
         Return an iterator yielding those chores which belong to `coop`.
         '''
-        return self.filter(skeleton__coop=coop)
+        query_set = self.filter(skeleton__coop=coop)
+        #TODO: when using Django 1.7 you will be able to pass in all these
+        #arguments at once.
+        for signature in ('signed_up', 'signed_off', 'voided'):
+            #query_set = query_set.select_related(signature)
+            #query_set = query_set.select_related(signature+'__who')
+            #query_set = query_set.select_related(signature+'_when')
+            pass
+        #query_set = query_set.select_related('signed_off')
+        #query_set = query_set.select_related()
+        return query_set
 
     def in_window(self, window_start_date, window_stop_date):
         '''
@@ -224,6 +235,7 @@ class Timecard(models.Model):
         return timedelta.in_interval(0, timezone.now()-self.signed_up.when,
             REVERT_SIGN_UP_GRACE_PERIOD_HOURS, unit='hours')
 
+    #TODO: add optional argument for current time. Will save regenerating it.
     def too_close_to_revert_sign_up(self):
         return timedelta.in_interval(0, self.start_date-timezone.now().date(),
                                      MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
@@ -377,19 +389,27 @@ class Timecard(models.Model):
         # TODO: seems like an example of somewhere we want to use the
         # GroupProfile time zone.
         current_date = timezone.now().date()
+        old_count = len(connection.queries)
         css_classes = {
             # TODO: names are outdated. Need to fix!
+
+            #TODO: reinstate.
             'needs_sign_up': self.sign_up_permission(user)['boolean'],
             'needs_sign_off': self.sign_off_permission(user)['boolean'],
             'completed_successfully': self.completed_successfully(),
-            #TODO: here you were checking whether the user voided, it looks
-            #like. Keeping for the time being; to delete when comfortable.
-            #'voided': self.revert_void_permission(user)['boolean'],
+
+            #TODO: reinstate.
             'voided': self.voided,
             'user_signed_up': user == self.signed_up.who,
             'user_signed_off': user == self.signed_off.who,
             'user_voided': user == self.voided.who
         }
+        #TODO: remove when done.
+        #' '.join([key for key, bool_ in css_classes.items() if bool_])
+        #try:
+            #assert len(connection.queries) == old_count
+        #except:
+            #print(len(connection.queries)-old_count)
         return ' '.join([key for key, bool_ in css_classes.items() if bool_])
 
 class Skeleton(models.Model):
