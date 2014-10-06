@@ -1,4 +1,4 @@
-from django.db import connection
+from django.db import connection, reset_queries
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
@@ -412,35 +412,26 @@ def chores_list(request):
     chore_skeletons = set(ChoreSkeleton.objects.for_coop(coop=coop))
     #print('after getting chore skeletons: {lcn}'.format(
         #lcn=len(connection.queries)))
-    chores = list(Chore.objects.prefetch_related('signed_up__who',
-        'signed_off__who', 'voided__who').filter(skeleton__in=chore_skeletons))
-    #print('after adding all chores: {lcn}'.format(
-        #lcn=len(connection.queries)))
-    chores_by_day = collections.defaultdict(list)
-    for chore in chores:
-        chores_by_day[chore.start_date].append(chore)
-    #print('after sorting chores: {lcn}'.format(
-        #lcn=len(connection.queries)))
-
+    chores = Chore.objects.filter(skeleton__in=chore_skeletons)
     cycles = []
     for cycle_num, start_date, stop_date in coop.profile.cycles():
+        chores_this_cycle = (chores.filter(start_date__gte=start_date,
+                                           start_date__lte=stop_date)
+            .prefetch_related('signed_up__who__profile',
+                'signed_off__who__profile', 'voided__who__profile', 'skeleton')
+        )
+        sorted_chores = collections.defaultdict(list)
+        for chore in chores_this_cycle:
+            sorted_chores[chore.start_date].append(chore)
+
         chores_by_date = []
         #print('checking at beginning of cycle {cyn}: {lcn}'.format(
             #cyn=cycle_num, lcn=len(connection.queries)))
         for date in timedelta.daterange(start_date, stop_date, inclusive=True):
-            chores_today = chores_by_day[date]
-            #print('checking at beginning of {dat}: {lcn}'.format(dat=date,
-                #lcn=len(connection.queries)))
+            chores_today = sorted_chores[date]
             if chores_today:
                 chore_dicts = [{
-                    #TODO: would like to eventually use the chore itself, but
-                    #that isn't feasible until we can have all the skeletons
-                    #preloaded.
-                        'chore': {
-                            'id': chore.id,
-                            'skeleton__short_name': chore.skeleton.short_name,
-                            'skeleton__point_value': chore.skeleton.point_value,
-                        },
+                        'chore': chore,
                         'class': chore.find_CSS_classes(request.user),
                         'sentences': get_chore_sentences(request.user, chore)
                 } for chore in chores_today]
@@ -452,17 +443,15 @@ def chores_list(request):
                     'schedule': chore_dicts,
                     'weekday' : weekdays[date.weekday()],
                  })
+            #print('checking at end of {dat}: {lcn}'.format(dat=date,
+                #lcn=len(connection.queries)))
         cycles.append({
             'days': chores_by_date,
             'class': find_cycle_classes(cycle_num, start_date, stop_date),
             'id': cycle_num,
         })
-    #print('right before rendering: {lcn}'.format(lcn=len(connection.queries)))
-    output = render(request,'chores/chores_list.html', dictionary={
-        'coop': coop, 'cycles': cycles,
-    })
-    #print('right after rendering: {lcn}'.format(lcn=len(connection.queries)))
-    return output
+    return render(request,'chores/chores_list.html', dictionary={'coop': coop,
+        'cycles': cycles})
 
 @login_required()
 def user_stats_list(request, username):

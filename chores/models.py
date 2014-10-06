@@ -35,6 +35,10 @@ class ChoreSkeletonQuerySet(models.query.QuerySet):
 
 class ChoreQuerySet(models.query.QuerySet):
 
+    #TODO: could change this so that it first finds the skeletons and then finds
+    #chores whose skeletons belong in that set. Unclear if we will keep using
+    #this, though (need to look into order of operations with
+    #`prefetch_related`).
     def for_coop(self, coop):
         '''
         Query the model database and return an iterator of Chore instances.
@@ -44,17 +48,7 @@ class ChoreQuerySet(models.query.QuerySet):
 
         Return an iterator yielding those chores which belong to `coop`.
         '''
-        query_set = self.filter(skeleton__coop=coop)
-        #TODO: when using Django 1.7 you will be able to pass in all these
-        #arguments at once.
-        for signature in ('signed_up', 'signed_off', 'voided'):
-            #query_set = query_set.select_related(signature)
-            #query_set = query_set.select_related(signature+'__who')
-            #query_set = query_set.select_related(signature+'_when')
-            pass
-        #query_set = query_set.select_related('signed_off')
-        #query_set = query_set.select_related()
-        return query_set
+        return self.filter(skeleton__coop=coop)
 
     def in_window(self, window_start_date, window_stop_date):
         '''
