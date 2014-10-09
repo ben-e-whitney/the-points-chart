@@ -109,3 +109,6 @@ class GroupProfile(models.Model):
                 return int(cycle_num)
         else:
             raise ValueError('No cycle matched.')
+
+    def points_steward(self):
+        return self.group.user_set.get(profile__points_steward=True)

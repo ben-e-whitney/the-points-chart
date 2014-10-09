@@ -329,8 +329,10 @@ class Timecard(models.Model):
                                                      'voided'),
             lambda self, user: self.get_scoop_message(user, 'signed_off',
                                                       'signed off'),
-            ("It's too close to the chore. Talk to {ste} if you really can't "
-             'do it.').format(ste=None),
+            lambda self, user: (
+                "It's too close to the chore. Talk to {ste} if you really "
+                "can't do it."
+            ).format(ste=user.profile.coop.points_steward().profile.nickname),
             "The chore's already past. Void instead."
         ]
     )
