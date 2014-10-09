@@ -396,10 +396,11 @@ def chores_list(request):
         actual formatting information is kept in a CSS file.
         '''
         today = datetime.date.today()
+        #TODO: think I applied a fix here. Check that it's working.
         css_classes = {
-            'cycle_past'   : today < start_date,
+            'cycle_past'   : stop_date < today,
             'cycle_current': start_date <= today <= stop_date,
-            'cycle_future' : stop_date < today,
+            'cycle_future' : today < start_date,
         }
         return ' '.join([key for key,value in css_classes.items() if value])
 
@@ -419,6 +420,7 @@ def chores_list(request):
                                            start_date__lte=stop_date)
             .prefetch_related('signed_up__who__profile',
                 'signed_off__who__profile', 'voided__who__profile', 'skeleton')
+            .order_by('skeleton__start_time')
         )
         sorted_chores = collections.defaultdict(list)
         for chore in chores_this_cycle:

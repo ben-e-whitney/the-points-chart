@@ -184,22 +184,37 @@ ul.chores_list {
 	list-style-type: none;
 }
 
+ul.chores_list li button {
+	font-variant: small-caps;
+	font-size: 0.5em;
+	color: #FFFFFF;
+	font-weight: bold;
+	border: 0;
+	border-radius: 0.6em;
+	height: 100%;
+	display: inline-block;
+	vertical-align: middle;
+}
 
-/*.cycle_past {*/
-	/*opacity: 0.75;*/
-/*}*/
+ul.chores_list li button:disabled {
+	opacity: 0.6;
+}
 
-/*.cycle_current {*/
-	/*opacity: 1;*/
-/*}*/
+button.signed_up_button, button.signed_off_button {
+	background-color: #073763;
+}
 
-/*.cycle_future {*/
-	/*opacity: 0.75;*/
-/*}*/
+button.signed_up_button:hover, button.signed_off_button:hover {
+	color: #F1C232;
+}
 
-/*.cycle_past:hover, .cycle_future:hover {*/
-	/*opacity: 1;*/
-/*}*/
+button.voided_button {
+	background-color: #FF0000;
+}
+
+button.voided_button:hover {
+	color: #000000;
+}
 
 .needs_sign_up {
 	background-color: #B8D8F5;

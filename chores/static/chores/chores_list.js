@@ -88,4 +88,6 @@ $(window).load(function() {
   //TODO: figure out a nicer way of doing this.
   fetch_updates();
   setInterval(fetch_updates, 1000*fetch_interval);
+  //Quick fix to get all buttons enabled to start off.
+  $('.submit_button').prop('disabled', false);
 });
