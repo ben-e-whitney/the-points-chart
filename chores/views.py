@@ -309,9 +309,6 @@ def calculate_load_info(user=None, coop=None):
     accounts = [{'user': cooper, 'load': [], 'credits': [], 'balance': []} for
                 cooper in user_set]
     for cycle_num, start_date, stop_date in coop.profile.cycles():
-        print('Cycle {num} from {stad} to {stod}'.format(num=cycle_num,
-                                                         stad=start_date,
-                                                         stod=stop_date))
         cycle_data = {key: value.in_window(start_date, stop_date)
                       for key, value in data.items()}
 
