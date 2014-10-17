@@ -32,7 +32,7 @@ def updates_report(response, chores=None):
     } for chore in chores}
     return HttpResponse(json.dumps({
         'chores': chores,
-        'current_balance': calculate_balance(response.user)
+        #'current_balance': calculate_balance(response.user)
     }), status=200)
 
 #TODO: also take `method_name` from `request.POST`? Would be a little involved,

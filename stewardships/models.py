@@ -19,6 +19,7 @@ class StewardshipSkeletonQuerySet(ChoreSkeletonQuerySet):
 
 class StewardshipQuerySet(ChoreQuerySet):
 
+    #TODO: update this docstring (doesn't mention override of `for_coop`).
     '''
     Modification of `ChoreQuerySet` to allow for a different understanding of
     when a Stewardship falls inside a time window. See `in_window`
@@ -50,6 +51,11 @@ class StewardshipQuerySet(ChoreQuerySet):
                 'skeleton__category': getattr(StewardshipSkeleton, category)
             })
         return category_filter
+
+    def for_coop(self, coop):
+        stewardship_skeletons = set(StewardshipSkeleton.objects.for_coop(
+            coop=coop))
+        return self.filter(skeleton__in=stewardship_skeletons)
 
     classical = make_category_filter('STEWARDSHIP')
     special_points = make_category_filter('SPECIAL_POINTS')
@@ -90,9 +96,20 @@ class Stewardship(Timecard):
 class BenefitChangeSkeleton(Skeleton):
     pass
 
+class BenefitChangeQuerySet(StewardshipQuerySet):
+    #TODO: explain that you're inheriting from StewardshipQuerySet instead of
+    #ChoreQuerySet because (at least) you want `in_window`. There is probably a
+    #cleaner way to do this.
+
+    #TODO: explain more, but the idea is that this won't be so bad because
+    #there aren't as many of these. Still, deserves more though that it's
+    #getting now.
+    def for_coop(self, coop):
+        return self.filter(skeleton__coop=coop)
+
 class Absence(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton, related_name='absence')
-    objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
+    objects = PassThroughManager.for_queryset_class(BenefitChangeQuerySet)()
 
     def __radd__(self, other):
         return (self.stop_date-self.start_date).days+other
@@ -101,11 +118,15 @@ class Absence(Timecard):
         return 'Absence of {use} from {sta} to {sto}'.format(
             use=self.signed_up.who, sta=self.start_date, sto=self.stop_date)
 
+    def window_overlap(self, start_date, stop_date):
+        return (min(stop_date, self.stop_date)-
+                max(start_date, self.start_date)).days+1
+
 class ShareChange(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton,
                                  related_name='share_change')
     share_change = models.DecimalField(max_digits=3, decimal_places=2)
-    objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
+    objects = PassThroughManager.for_queryset_class(BenefitChangeQuerySet)()
 
     def __radd__(self, other):
         return self.share_change+other

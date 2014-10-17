@@ -22,33 +22,12 @@ class ChoreError(Exception):
 class ChoreSkeletonQuerySet(models.query.QuerySet):
 
     def for_coop(self, coop):
-        #'''
-        #Query the model database and return an iterator of ChoreSkeleton instances.
-
-        #Arguments:
-            #coop -- Group whose chores skeletons we are interested in.
-
-        #Return an iterator yielding those chores skeletons which belong to `coop`.
-        #'''
-
         return self.filter(coop=coop)
 
 class ChoreQuerySet(models.query.QuerySet):
-
-    #TODO: could change this so that it first finds the skeletons and then finds
-    #chores whose skeletons belong in that set. Unclear if we will keep using
-    #this, though (need to look into order of operations with
-    #`prefetch_related`).
     def for_coop(self, coop):
-        '''
-        Query the model database and return an iterator of Chore instances.
-
-        Arguments:
-            coop -- Group whose chores we are interested in.
-
-        Return an iterator yielding those chores which belong to `coop`.
-        '''
-        return self.filter(skeleton__coop=coop)
+        chore_skeletons = set(ChoreSkeleton.objects.for_coop(coop=coop))
+        return self.filter(skeleton__in=chore_skeletons)
 
     def in_window(self, window_start_date, window_stop_date):
         '''

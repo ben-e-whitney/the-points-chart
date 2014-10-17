@@ -1,3 +1,5 @@
+from django.db import connection, reset_queries
+
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django import forms
@@ -21,6 +23,7 @@ from chores.views import calculate_load_info
 
 # TODO: include also lists of all stewardships, absences, etc.
 def users_stats_summarize(request, coop=None):
+    reset_queries()
     if coop is None:
         coop = request.user.profile.coop
     cycles = [{
@@ -44,6 +47,7 @@ def users_stats_summarize(request, coop=None):
 
     display_info = DisplayInformation('rows', {'sections': [None],
         'subsections': [users]}, user_ids, lambda x: x, None)
+    print('TOTAL before returning: {lcn}'.format(lcn=len(connection.queries)))
     return {
         'point_cycles': cycles,
         'rows': display_info.create_template_data(accounts)
