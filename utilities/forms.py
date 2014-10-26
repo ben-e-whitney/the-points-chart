@@ -62,8 +62,11 @@ def cooper_field_creator(coop, blank=False, required=True):
     Return a CharField with the current members as choices. No initial or
     default choice is made.
     '''
-    COOPER_CHOICES = [(cooper.id, cooper.profile.nickname) for cooper in
-                           coop.user_set.all()]
+    COOPER_CHOICES = [
+        (cooper.id, cooper.profile.nickname)
+        for cooper in coop.user_set.all().prefetch_related('profile').order_by(
+            'profile__nickname')
+    ]
     if blank:
         COOPER_CHOICES = BLANK_CHOICE_DASH+COOPER_CHOICES
     cooper = forms.CharField(required=required,
