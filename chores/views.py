@@ -508,7 +508,7 @@ def calendar_create(request, username):
     return response
 
 @login_required()
-def balances_summarize(request, num_columns=5):
+def balances_summarize(request, num_columns=1):
     coop = request.user.profile.coop
     accounts = calculate_load_info(coop=coop)
     accounts.sort(key=lambda x: x['user'].profile.nickname)
