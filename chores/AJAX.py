@@ -21,7 +21,8 @@ def updates_fetch(request):
     cutoff = datetime.datetime.utcfromtimestamp(milliseconds/1000).replace(
         tzinfo=timezone.get_default_timezone())
     changed_chores = Chore.objects.for_coop(request.user.profile.coop).filter(
-        updated__gte=cutoff)
+        updated__gte=cutoff).prefetch_related('signed_up__who__profile',
+        'signed_off__who__profile', 'voided__who__profile')
     return updates_report(request, chores=changed_chores)
 
 def updates_report(response, chores=None):

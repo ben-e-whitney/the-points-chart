@@ -445,6 +445,7 @@ def chores_list(request):
     chores = Chore.objects.for_coop(coop)
     cycles = []
     for cycle_num, start_date, stop_date in coop.profile.cycles():
+        #TODO: look into fetching all chores and then sorting in Python.
         chores_this_cycle = (chores.filter(start_date__gte=start_date,
                                            start_date__lte=stop_date)
             .prefetch_related('signed_up__who__profile',
