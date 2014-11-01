@@ -90,11 +90,8 @@ def format_balance(load=None, balance=None):
             # We will use the value of `CSS_class`. If we never make it to this
             # block, `CSS_class` will end up `CSS_classes[-1]`.
             break
-    approx_balance = balance.to_integral_value()
     return {
-        'value': '{sgn}{val}'.format(sgn='+'if approx_balance >= 0 else '−',
-            # TODO: how to decide how to zfill?
-            val=str(abs(approx_balance)).zfill(2)),
+        'value': float(balance.to_integral_value()),
         'html_title': 'Exact value: {val}'.format(val=balance),
         'CSS_class': ' '.join(('balance', CSS_class)),
     }

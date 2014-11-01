@@ -6,12 +6,21 @@ var CSRF_before_send = function(jqXHR, settings) {
   }
 };
 
-var fetch_interval = 30;
+var fetch_interval = 10*60;
 var last_fetch_milliseconds = (new Date()).getTime();
 //TODO: to use if you get setTimeout working.
 //var changes_made = false;
 
 var replaceSentences = function(data, textStatus, jqXHR) {
+  var prepend_sign = function(balance) {
+    var sign;
+    if (balance >= 0) {
+      sign = '+';
+    } else {
+      sign = '−';
+    }
+    return sign+String(Math.abs(balance));
+  };
   var responseAsObject = JSON.parse(data);
   //changes_made = $.isEmptyObject(responseAsObject.chores);
   $.each(responseAsObject.chores, function(chore_id, chore_HTML) {
@@ -36,10 +45,17 @@ var replaceSentences = function(data, textStatus, jqXHR) {
       .addClass(chore_HTML.CSS_classes);
     return null;
   });
-  //$('#current_balance').empty()
-    //.append(responseAsObject.current_balance.value)
-    //.removeClass()
-    //.addClass(responseAsObject.current_balance.CSS_class);
+  var $current_balance = $('#current_balance');
+  if (responseAsObject.hasOwnProperty('current_balance')) {
+    $current_balance.empty()
+      .append(prepend_sign(responseAsObject.current_balance.value))
+      .removeClass()
+      .addClass(responseAsObject.current_balance.CSS_class);
+   }
+  if (responseAsObject.hasOwnProperty('balance_change')) {
+    var balance = parseFloat($current_balance.html().replace('−', '-'), 10);
+    $current_balance.html(prepend_sign(balance+responseAsObject.balance_change));
+  }
   return null;
 };
 
@@ -85,7 +101,6 @@ var fetch_updates = function() {
 
 $(window).load(function() {
   $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
-  //TODO: figure out a nicer way of doing this.
-  //fetch_updates();
-  //setInterval(fetch_updates, 1000*fetch_interval);
+  fetch_updates();
+  setInterval(fetch_updates, 1000*fetch_interval);
 });
