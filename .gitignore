@@ -1,16 +1,11 @@
 # Added manually.
-SECRET_KEY.txt
 *.sqlite3
+SECRET_KEY.txt
+scripts/
+rhc
 static/icons
 static/400 Hand-Drawn
-rhc
-initializer.py
-user_initializer.py
-balance_checker.py
-test.py
 manage.py
-downloaded.txt
-todo.txt
 
 # Copied from <https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore>.
 
