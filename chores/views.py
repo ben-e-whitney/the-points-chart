@@ -70,15 +70,14 @@ class ChoreSentence():
             self.user)['boolean']
 
     def get_button(self):
+        self.button_text = self.button_action_text
         if self.action_permitted():
             self.button = True
             self.JavaScript_function = self.JavaScript_action_function
-            self.button_text = self.button_action_text
         else:
             if self.reversion_permitted():
                 self.button = True
                 self.JavaScript_function = self.JavaScript_reversion_function
-                self.button_text = self.button_reversion_text
             else:
                 self.button = False
 

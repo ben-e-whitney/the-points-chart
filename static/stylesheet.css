@@ -23,6 +23,16 @@ a:hover {
 	color: #F1C232;
 }
 
+/*a, button {*/
+/*[>Copied from <http://stackoverflow.com/a/4407335>.<]*/
+	/*-webkit-touch-callout: none;*/
+	/*-webkit-user-select: none;*/
+	/*-khtml-user-select: none;*/
+	/*-moz-user-select: none;*/
+	/*-ms-user-select: none;*/
+	/*user-select: none;*/
+/*}*/
+
 table caption {
 	font-variant: small-caps;
 	font-size: 1.5em;
@@ -48,11 +58,6 @@ table caption {
 }
 
 #header {
-	/*top: 0em;*/
-	/*height: 3.0em;*/
-	/*height: 8em;*/
-	/*position: fixed;*/
-	/*border: 5px solid white;*/
 }
 
 #footer {
@@ -65,9 +70,7 @@ table caption {
 
 #middle_section {
 	width: 100%;
-	/*height: 100%;*/
 	clear: both;
-	/*overflow: auto;*/
 }
 
 #sidebar {
@@ -140,8 +143,6 @@ table caption {
 
 #sidebar .nav_button a:hover {
 	margin-left: 0.5em;
-	/*This makes the icons look blurry.*/
-	/*transform: rotate(22.5deg);*/
 }
 
 #logo {
@@ -160,17 +161,11 @@ table caption {
 .nav_button {
 	float: left;
 	margin-left: 1em;
-	/*position: absolute;*/
 }
 
 .nav_button a {
 	display: block;
 }
-
-/*#header .nav_button a:hover, #footer .nav_button a:hover {*/
-	/*color: #F1C232;*/
-	/*[>margin-top: 0.25em;<]*/
-/*}*/
 
 .nav_icon {
 	vertical-align: middle;
@@ -184,51 +179,85 @@ ul.chores_list {
 	list-style-type: none;
 }
 
-ul.chores_list li button {
+table.chores_list button {
 	font-variant: small-caps;
 	font-size: 0.5em;
 	color: #FFFFFF;
 	font-weight: bold;
-	border: 0;
+	border-width: 0.2em;
+	border-style: solid;
 	border-radius: 0.6em;
 	height: 100%;
 	display: inline-block;
 	vertical-align: middle;
 }
 
-ul.chores_list li button:disabled {
-	opacity: 0.6;
+table.chores_list button:disabled {
+	background-color: #FFFFFF;
+	color: #000000;
+	border-color: #000000;
+}
+
+/*This needs to come after the disabled selector so that it*/
+/*overrides on 'no_button' disabled buttons.*/
+table.chores_list button.no_button {
+	background-color: #FFFFFF;
+	color: #FFFFFF;
+	border-color: #000000;
+}
+
+table.chores_list button:active {
+	background-color: #FFFFFF;
+	color: #000000;
+	border-color: #000000;
+	
 }
 
 button.signed_up_button, button.signed_off_button {
 	background-color: #073763;
-}
-
-button.signed_up_button:hover, button.signed_off_button:hover {
+	border-color:	#073763;
 	color: #F1C232;
 }
 
 button.voided_button {
 	background-color: #FF0000;
+	border-color: #FF0000;
+	color: #000000;
+}
+
+table.chores_list button.revert {
+	background-color: #FFFFFF;
+	color: #000000;
+}
+
+table.chores_list button.revert.signed_up_button, button.revert.signed_off_button {
+	border-color: #F1C232;
+}
+
+button.signed_up_button:hover, button.signed_up_bottom.revert:hover {
+	color: #F1C232;
+}
+
+button.signed_off_button:hover, button.signed_off_button.revert:hover {
+	color: #F1C232;
 }
 
 button.voided_button:hover {
 	color: #000000;
 }
 
+button.voided_button.revert:hover {
+	color: #FF0000;
+}
+
 .needs_sign_up {
 	background-color: #B8D8F5;
-	/*background-color: #CFE2F3;*/
 }
 
 .needs_sign_off {
-	/*background-color: #E0ECDA;*/
-	/*background-color: #B6D7A8;*/
 }
 
 .voided {
-	/*color: #C400FF;*/
-	/*background-color: #E6B8F4;*/
 	text-decoration: line-through;
 }
 
@@ -237,11 +266,9 @@ button.voided_button:hover {
 }
 
 .user_signed_off {
-	/*background-color: #C1F132;*/
 }
 
 .completed_successfully {
-	/*background-color: #E2F3CF;*/
 	text-decoration: line-through;
 }
 
@@ -250,7 +277,6 @@ form th {
 }
 
 form.submit_button {
-	/*text-align: right;*/
 	float: right;
 }
 
