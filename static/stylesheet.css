@@ -180,6 +180,7 @@ ul.chores_list {
 }
 
 table.chores_list button {
+	display: block;
 	font-variant: small-caps;
 	font-size: 0.5em;
 	color: #FFFFFF;
@@ -234,7 +235,7 @@ table.chores_list button.revert.signed_up_button, button.revert.signed_off_butto
 	border-color: #F1C232;
 }
 
-button.signed_up_button:hover, button.signed_up_bottom.revert:hover {
+button.signed_up_button:hover, button.signed_up_button.revert:hover {
 	color: #F1C232;
 }
 
@@ -255,6 +256,7 @@ button.voided_button.revert:hover {
 }
 
 .needs_sign_off {
+	background-color: #B8D8F5;
 }
 
 .voided {
