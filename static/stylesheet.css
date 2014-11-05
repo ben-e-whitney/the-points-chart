@@ -23,6 +23,10 @@ a:hover {
 	color: #F1C232;
 }
 
+button, button:active {
+	outline-style: 0;
+}
+
 /*a, button {*/
 /*[>Copied from <http://stackoverflow.com/a/4407335>.<]*/
 	/*-webkit-touch-callout: none;*/
@@ -207,47 +211,34 @@ table.chores_list button.no_button {
 	border-color: #000000;
 }
 
-table.chores_list button:active {
+button:active {
 	background-color: #FFFFFF;
 	color: #000000;
 	border-color: #000000;
 	
 }
 
-button.signed_up_button, button.signed_off_button {
+.signed_up_button, .signed_off_button {
 	background-color: #073763;
 	border-color:	#073763;
 	color: #F1C232;
 }
 
-button.voided_button {
+.voided_button {
 	background-color: #FF0000;
 	border-color: #FF0000;
 	color: #000000;
 }
 
-table.chores_list button.revert {
-	background-color: #FFFFFF;
-	color: #000000;
-}
-
-table.chores_list button.revert.signed_up_button, button.revert.signed_off_button {
+.signed_up_button.revert, .signed_off_button.revert {
+	background-color: #F1C232;
 	border-color: #F1C232;
+	color: #073763;
 }
 
-button.signed_up_button:hover, button.signed_up_button.revert:hover {
-	color: #F1C232;
-}
-
-button.signed_off_button:hover, button.signed_off_button.revert:hover {
-	color: #F1C232;
-}
-
-button.voided_button:hover {
-	color: #000000;
-}
-
-button.voided_button.revert:hover {
+.voided_button.revert {
+	background-color: #000000;
+	border-color: #000000;
 	color: #FF0000;
 }
 
