@@ -197,6 +197,11 @@ table.chores_list button {
 	vertical-align: middle;
 }
 
+table.chores_list td.button_cell {
+	white-space: nowrap;
+	vertical-align: top;
+}
+
 table.chores_list button:disabled {
 	background-color: #FFFFFF;
 	color: #000000;

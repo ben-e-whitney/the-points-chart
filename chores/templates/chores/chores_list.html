@@ -32,7 +32,7 @@ chores
 				{% for schedule_item in day.schedule %}
 				<tr id="chore_{{ schedule_item.chore.id }}_row">
 					{% for sentence in schedule_item.sentences %}
-					<td>
+					<td class="button_cell">
 						<button class="{{ sentence.identifier }}_button{% if 'revert' in sentence.JavaScript_function %} revert{% endif %} {% if sentence.button %}{% else %}no_button{% endif %}"
 							id="{{ sentence.identifier }}_button_{{ schedule_item.chore.id }}"
 							onclick="{{ sentence.JavaScript_function }}({{ schedule_item.chore.id }})"
