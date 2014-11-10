@@ -545,11 +545,12 @@ def balances_summarize(request, num_columns=5):
     coop = request.user.profile.coop
     accounts = calculate_load_info(coop=coop)
     accounts.sort(key=lambda x: x['user'].profile.nickname)
+    #TODO: here and elsewhere, call some sort of function to get active users.
     accounts = [{
         'cooper': row['user'],
         'balance': format_balance(load=row['load'][-1],
                                   balance=row['balance'][-1])
-    } for row in accounts]
+    } for row in accounts if row['user'].is_active]
     #TODO: find a better way to do this. Could use itertools, maybe. Keep in
     #mind template limitations.
     num_rows = math.ceil(len(accounts)/num_columns)

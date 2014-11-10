@@ -64,8 +64,8 @@ def cooper_field_creator(coop, blank=False, required=True):
     '''
     COOPER_CHOICES = [
         (cooper.id, cooper.profile.nickname)
-        for cooper in coop.user_set.all().prefetch_related('profile').order_by(
-            'profile__nickname')
+        for cooper in coop.user_set.filter(is_active=True).prefetch_related(
+            'profile').order_by('profile__nickname')
     ]
     if blank:
         COOPER_CHOICES = BLANK_CHOICE_DASH+COOPER_CHOICES
