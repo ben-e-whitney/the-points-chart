@@ -75,15 +75,14 @@ class ChoreSentence():
             self.user)['boolean']
 
     def get_button(self):
+        self.button_text = self.button_action_text
         if self.action_permitted():
             self.button = True
             self.JavaScript_function = self.JavaScript_action_function
-            self.button_text = self.button_action_text
         else:
             if self.reversion_permitted():
                 self.button = True
                 self.JavaScript_function = self.JavaScript_reversion_function
-                self.button_text = self.button_reversion_text
             else:
                 self.button = False
 
@@ -429,10 +428,11 @@ def chores_list(request):
         actual formatting information is kept in a CSS file.
         '''
         today = datetime.date.today()
+        #TODO: think I applied a fix here. Check that it's working.
         css_classes = {
-            'cycle_past'   : today < start_date,
+            'cycle_past'   : stop_date < today,
             'cycle_current': start_date <= today <= stop_date,
-            'cycle_future' : stop_date < today,
+            'cycle_future' : today < start_date,
         }
         return ' '.join([key for key,value in css_classes.items() if value])
 
@@ -450,6 +450,7 @@ def chores_list(request):
                                            start_date__lte=stop_date)
             .prefetch_related('signed_up__who__profile',
                 'signed_off__who__profile', 'voided__who__profile', 'skeleton')
+            .order_by('skeleton__start_time')
         )
         sorted_chores = collections.defaultdict(list)
         for chore in chores_this_cycle:
@@ -541,7 +542,7 @@ def calendar_create(request, username):
     return response
 
 @login_required()
-def balances_summarize(request, num_columns=5):
+def balances_summarize(request, num_columns=1):
     coop = request.user.profile.coop
     accounts = calculate_load_info(coop=coop)
     accounts.sort(key=lambda x: x['user'].profile.nickname)

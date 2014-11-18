@@ -16,14 +16,14 @@
 <div id="header">
 	{% block headertext %}
 	<span id="logo">
-		<a href="/summary/">the points chart</a>
+		<a href="/">the points chart</a>
 	</span>
 	<div class="nav_bar">
 		<span class="nav_button">
 			<a href="/chores/">
 				chores
 				<object class="nav_icon" data={% static "icons/house.svg" %}>
-					chores button
+					chores-button
 				</object>
 			</a>
 		</span>
@@ -31,7 +31,7 @@
 			<a href="/chores/{{ user }}/">
 				stats
 				<object class="nav_icon" data={% static "icons/calculator.svg" %}>
-					stats button
+					stats-button
 				</object>
 			</a>
 		</span>
@@ -39,7 +39,7 @@
 			<a href="/contacts/">
 			contacts
 			<object class="nav_icon" data={% static "icons/love2.svg" %}>
-				contacts button
+				contacts-button
 			</object>
 			</a>
 		</span>
@@ -47,7 +47,7 @@
 			<a href="/settings/">
 				settings
 				<object class="nav_icon" data={% static "icons/cog.svg" %}>
-					settings button
+					settings-button
 				</object>
 			</a>
 		</span>
@@ -55,7 +55,7 @@
 			<a href="/logout/">
 				log out
 				<object class="nav_icon" data={% static "icons/forward2.svg" %}>
-					log out button
+					log-out-button
 				</object>
 			</a>
 		</span>
@@ -65,59 +65,60 @@
 
 <div id="middle_section">
 	<div id="sidebar">
-		<!--We use the 'img' instead of the 'svg' tag to make the icons clickable.-->
 		{% if user.profile.points_steward %}
 			<div class="nav_button">
 				<a href="/steward/">
-					<!--<img class="nav_icon" src={% static "icons/tool3_big.svg" %} alt="steward button">-->
 					<object class="nav_icon" data={% static "icons/tool3_big.svg" %}>
-						steward button
+						steward-button
 					</object>
 				</a>
 			</div>
 			<br>
 		{% endif %}
 			<div class="nav_button">
+				<a href="/summary/">
+					<object class="nav_icon" data={% static "icons/balance_big.svg" %}>
+						balance-button
+					</object>
+				</a>
+			</div>
+			<br>
+			<div class="nav_button">
 				<a href="/chores/">
-					<!--<img class="nav_icon" src={% static "icons/house_big.svg" %} alt="chores button">-->
 					<object class="nav_icon" data={% static "icons/house_big.svg" %}>
-						chores button
+						chores-button
 					</object>
 				</a>
 			</div>
 			<br>
 			<div class="nav_button">
 				<a href="/chores/{{ user }}/">
-					<!--<img class="nav_icon" src={% static "icons/calculator_big.svg" %} alt="stats button">-->
 					<object class="nav_icon" data={% static "icons/calculator_big.svg" %}>
-						stats button
+						stats-button
 					</object>
 				</a>
 			</div>
 			<br>
 			<div class="nav_button">
 				<a href="/contacts/">
-					<!--<img class="nav_icon" src={% static "icons/love2_big.svg" %} alt="contacts button">-->
 					<object class="nav_icon" data={% static "icons/love2_big.svg" %}>
-						contacts button
+						contacts-button
 					</object>
 				</a>
 			</div>
 			<br>
 			<div class="nav_button">
 				<a href="/settings/">
-					<!--<img class="nav_icon" src={% static "icons/cog_big.svg" %} alt="settings button">-->
 					<object class="nav_icon" data={% static "icons/cog_big.svg" %}>
-						settings button
+						settings-button
 					</object>
 				</a>
 			</div>
 			<br>
 			<div class="nav_button">
 				<a href="/logout/">
-					<!--<img class="nav_icon" src={% static "icons/forward2_big.svg" %} alt="log out button">-->
 					<object class="nav_icon" data={% static "icons/forward2_big.svg" %}>
-						log out button
+						log out-button
 					</object>
 				</a>
 			</div>
@@ -134,7 +135,7 @@
 			<a href="/about/">
 				about
 				<object class="nav_icon" data={% static "icons/question2.svg" %}>
-					about button
+					about-button
 				</object>
 			</a>
 		</div>

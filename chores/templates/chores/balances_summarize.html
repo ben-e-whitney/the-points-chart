@@ -8,6 +8,7 @@ balance summary
 {% load staticfiles %}
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+<script src={% static "chores/balances_summarize.js" %}></script>
 {% endblock head %}
 
 {% block body %}
@@ -20,7 +21,7 @@ balance summary
 		<tr>
 			{% for account in row %}
 				{% if account %}
-					<td style="text-align: right">
+					<td style="text-align: left">
 						{% if user.profile.points_steward %}
 						<a href="/chores/{{ account.cooper.username }}/">
 							{{ account.cooper.profile.nickname }}
