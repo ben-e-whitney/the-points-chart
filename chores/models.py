@@ -210,8 +210,9 @@ class Timecard(models.Model):
 
     #TODO: add optional argument for current time. Will save regenerating it.
     def too_close_to_revert_sign_up(self):
-        return timedelta.in_interval(0, self.start_date-timezone.now().date(),
-                                     MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
+        return False
+        #return timedelta.in_interval(0, self.start_date-timezone.now().date(),
+                                     #MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
 
     def get_scoop_message(self, user, attribute, verb):
         owner = getattr(self, attribute).who
@@ -300,7 +301,8 @@ class Timecard(models.Model):
     )
     revert_sign_up_permission = permission_creator(
         [
-            lambda self, user: self.signed_up.who != user,
+            lambda self, user: not (self.signed_up.who == user or
+                user.profile.points_steward),
             lambda self, user: self.voided,
             lambda self, user: self.signed_off,
             lambda self, user: (self.too_close_to_revert_sign_up() and
@@ -321,9 +323,18 @@ class Timecard(models.Model):
     revert_sign_off_permission = permission_creator(
         [lambda self, user: self.signed_off.who != user],
         ["You didn't sign off on that chore."])
+
     revert_void_permission = permission_creator(
-        [lambda self, user: self.voided.who != user],
-        ["You didn't void that chore."])
+        [
+            lambda self, user: not self.voided,
+            lambda self, user: not (self.voided.who == user or
+                user.profile.points_steward)
+        ],
+        [
+            "That chore hasn't been voided.",
+            "You didn't void that chore."
+        ]
+    )
 
     def actor_creator(permission_method_name, signature_name, action_name):
         def actor(self, user, *args, **kwargs):
