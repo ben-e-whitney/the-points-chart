@@ -1,0 +1,122 @@
+* {
+	font-family: "Avant Garde", Avantgarde, "Century Gothic", CenturyGothic, "AppleGothic", sans-serif;
+}
+
+html, body {
+	height: 100%;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+}
+
+body {
+	background-color: #073763;
+}
+
+a {
+	text-decoration: none;
+	color: inherit;
+}
+
+a:hover {
+	color: #F1C232;
+}
+
+#main_content a {
+	font-weight: bold;
+}
+
+#wrapper {
+	min-height: 100%;
+	position: relative;
+}
+
+#header, #footer, #sidebar {
+	color: white;
+}
+
+#header, #footer {
+	width: 100%;
+	overflow: auto;
+}
+
+#header {
+}
+
+#footer {
+	clear: both;
+	width: 100%;
+	bottom: 0;
+	left: 0;
+	z-index: 1;
+}
+
+#middle_section {
+	width: 100%;
+	clear: both;
+}
+
+#sidebar {
+	position: fixed;
+	bottom: 0;
+	text-align: center;
+	/*TODO: look up what this does.*/
+	z-index: 1;
+}
+
+#sidebar object {
+	pointer-events: none;
+}
+
+#main_content {
+	border-radius: 1em;
+	background-color: white;
+	color: black;
+	padding-left: 1em;
+	padding-right: 1em;
+	padding-top: 0.125em;
+	padding-bottom: 0.125em;
+	margin-left: 5em;
+	overflow: auto;
+}
+
+#sidebar.nav_icon {
+	margin-left: 0em;
+}
+
+#sidebar .nav_button a:hover {
+	margin-left: 0.5em;
+}
+
+#logo {
+	float: left;
+	font-size: 3em;
+}
+
+.nav_bar {
+	float: right;
+	font-size: 2em;
+	/*TODO: this is gross. Figure out how to do it the right way.*/
+	margin-top: 0.25em;
+	margin-right: 0.75em;
+}
+
+.nav_button {
+	float: left;
+	margin-left: 1em;
+}
+
+.nav_button a {
+	display: block;
+}
+
+.nav_icon {
+	vertical-align: middle;
+	margin-left: -0.2em;
+}
+
+table caption {
+	font-variant: small-caps;
+	font-size: 1.5em;
+}
+

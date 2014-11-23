@@ -1,0 +1,23 @@
+form th {
+	text-align: left;
+}
+
+form.submit_button {
+	float: right;
+}
+
+.form_error, .form_status {
+	color: red;
+}
+
+.form_container {
+	display: table-cell;
+}
+
+.form_fields {
+	display: table-row;
+}
+
+.form_report {
+	color: red;
+}

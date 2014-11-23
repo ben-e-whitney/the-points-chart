@@ -1,0 +1,25 @@
+.balance {
+	text-align: center;
+	color: #FFFFFF;
+}
+
+.very_low_balance {
+	background-color: #FF0000;
+}
+
+.low_balance {
+	background-color: #FF8080;
+}
+
+.OK_balance {
+	background-color: #7E7E7E;
+}
+
+.high_balance {
+	background-color: #FF8080;
+}
+
+.very_high_balance {
+	background-color: #FF0000;
+}
+

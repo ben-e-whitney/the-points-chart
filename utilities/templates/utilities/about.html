@@ -2,6 +2,7 @@
 
 {% block head %}
 {% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "about.css" %}"/>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 {% endblock head %}
 
@@ -16,7 +17,7 @@ about
 {% endcomment %}
 
 {% block body %}
-<div class="larger_text">
+<div class="about_section">
 	<p>
 		The Points Chart is a website used to manage the chore system of a co-operative house.
 		It was written for <a href="http://www.hcs.harvard.edu/~dudcoop/">the Dudley Co-op</a> and is currently in alpha.

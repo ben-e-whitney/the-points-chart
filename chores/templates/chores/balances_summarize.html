@@ -6,13 +6,15 @@ balance summary
 
 {% block head %}
 {% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "balances_summarize.css" %}"/>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
 <script src={% static "chores/balances_summarize.js" %}></script>
 {% endblock head %}
 
 {% block body %}
-<table id="balances_table">
+<table class="balances_table">
 	<caption>Balances for {{ user.profile.coop.profile.full_name }}</caption>
 	<thead>
 	</thead>

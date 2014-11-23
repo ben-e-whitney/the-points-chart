@@ -1,3 +1,3 @@
 $(window).load(function() {
-  columnize($('#balances_table'));
+  columnize($('table.balances_table'));
 });

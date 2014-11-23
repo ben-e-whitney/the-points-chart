@@ -4,6 +4,11 @@
 login
 {% endblock %}
 
+{% block head %}
+{% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
+{% endblock head %}
+
 {% block body %}
 {% if form.errors %}
 <p>Your username and password didn't match. Please try again.</p>

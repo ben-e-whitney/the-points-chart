@@ -12,6 +12,8 @@ stats
 
 {% block head %}
 {% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "user_stats_list.css" %}"/>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
 <script src={% static "chores/user_stats_list.js" %}></script>
@@ -30,7 +32,7 @@ Will this always have data to display? Might even need to cut this out.
 <h1 style="text-align: center">Information for {{ cooper.profile.nickname }} </h1>
 <div id="form_accordion">
 <h2>Particulars</h2>
-<table id="selected_information_table">
+<table class="selected_information_table">
 	<thead>
 	</thead>
 	<tbody>

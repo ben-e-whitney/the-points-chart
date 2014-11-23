@@ -1,5 +1,11 @@
 {% extends 'base.html' %}
 
+{% block head %}
+{% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "contacts.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
+{% endblock head %}
+
 {% block pagetitle %}
 contacts
 {% endblock %}
@@ -13,7 +19,7 @@ contacts
 
 {% block body %}
 
-<table id="contacts_table">
+<table class="contacts_table">
 	<caption>Contact List for {{ coop.profile.full_name }}</caption>
 	<thead>
 		<tr><th>Name</th><th>Phone Number</th><th>Email Address</th><th>Birthday</th><th>Stewardship(s)</th></tr>
