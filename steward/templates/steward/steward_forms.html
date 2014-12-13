@@ -45,7 +45,7 @@ steward
 					</a>
 				</td>
 				{% for dictionary in subsection.dictionaries %}
-				<td class="{{ dictionary.CSS_class }}"  title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
+				<td class="{{ dictionary.CSS_class }}" title="{{ dictionary.html_title }}">{{ dictionary.formatted_value }}</td>
 				{% endfor %}
 			</tr>
 		{% endfor %}

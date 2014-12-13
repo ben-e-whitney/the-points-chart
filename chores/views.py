@@ -394,7 +394,7 @@ def calculate_load_info(user=None, coop=None):
 def calculate_balance(user, coop=None):
     load_info = calculate_load_info(user=user, coop=coop)[0]
     return format_balance(load=load_info['load'][-1],
-                                    balance=load_info['balance'][-1])
+                          balance=load_info['balance'][-1])
 
 @ensure_csrf_cookie
 @login_required()
@@ -552,6 +552,12 @@ def balances_summarize(request, num_columns=1):
         'balance': format_balance(load=row['load'][-1],
                                   balance=row['balance'][-1])
     } for row in accounts if row['user'].is_active]
+    max_width = max(len(account['balance']['formatted_value'])
+                    for account in accounts)
+    for account in accounts:
+        current = account['balance']['formatted_value']
+        account['balance']['formatted_value'] = '{sgn}{pad}{val}'.format(
+            sgn=current[0], pad='0'*(max_width-len(current)), val=current[1:])
     #TODO: find a better way to do this. Could use itertools, maybe. Keep in
     #mind template limitations.
     num_rows = math.ceil(len(accounts)/num_columns)
