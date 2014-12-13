@@ -44,6 +44,17 @@ def users_stats_summarize(request, coop=None):
         ]
         for row in accounts
     }
+    max_width = 0
+    print(accounts)
+    for row, balances in accounts.items():
+        max_width = max(max_width, *[len(balance['formatted_value']) for
+                                     balance in balances])
+    for row, balances in accounts.items():
+        for balance in balances:
+            current = balance['formatted_value']
+            balance['formatted_value'] = '{sgn}{pad}{val}'.format(
+                sgn=current[0], pad='0'*(max_width-len(current)),
+                val=current[1:])
 
     display_info = DisplayInformation('rows', {'sections': [None],
         'subsections': [users]}, user_ids, lambda x: x, None)

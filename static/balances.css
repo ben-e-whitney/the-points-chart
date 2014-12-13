@@ -1,6 +1,8 @@
 .balance {
 	text-align: center;
 	color: #FFFFFF;
+	border-radius: 0.333333em;
+	padding: 0em 0.25em 0em 0.25em;
 }
 
 .very_low_balance {
