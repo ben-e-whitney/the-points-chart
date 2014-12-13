@@ -6,7 +6,6 @@
 <link type="text/css" rel="stylesheet" href="{% static "chores_list.css" %}"/>
 <script src={% static "jquery-cookie/src/jquery.cookie.js" %}></script>
 <script src={% static "chores/chores_list.js" %}></script>
-<script src={% static "chores/balance_mover.js" %}></script>
 {% endblock head %}
 
 {% block pagetitle %}
@@ -43,7 +42,7 @@ chores
 						</button>
 					</td>
 					{% endfor %}
-					<td id="chore_{{ schedule_item.chore.id }}" class="{{ schedule_item.class }}">
+					<td id="chore_{{ schedule_item.chore.id }}" class="chore_cell {{ schedule_item.class }}">
 				<strong>{{ schedule_item.chore.skeleton.short_name }} ({{ schedule_item.chore.skeleton.point_value }})</strong>
 					{% for sentence in schedule_item.sentences %}
 						<span id="{{ sentence.identifier }}_sentence_{{ schedule_item.chore.id }}">
@@ -74,5 +73,5 @@ Forgot about this note and did it myself. Compare at some point.
 	{{ current_balance.value }}
 </div>
 {% endcomment %}
-<div id="current_balance" class="balance OK_balance">…</div>
+<div id="current_balance" class="balance OK_balance"></div>
 {% endblock %}

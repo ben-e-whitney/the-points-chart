@@ -1,14 +1,20 @@
 #current_balance { 
+	display: none;
+
 	position: fixed;
 	/*All other em measurements are in multiples of this font size.*/
 	font-size: 3em;
-	bottom: 0.5em;
-	right: 0.5em;
+
+	/*bottom: 0.5em;*/
+	/*right: 0.5em;*/
+	bottom: 64px;
+	right: 64px;
+
 	vertical-align: middle;
 	line-height: 1em;
-	padding: 0.25em;
 	z-index: 1;
-	border-radius: 0.333333em;
+
+	padding: 0.25em;
 }
 
 button, button:active {
@@ -32,6 +38,14 @@ table.chores_list button {
 table.chores_list td.button_cell {
 	white-space: nowrap;
 	vertical-align: top;
+}
+
+table.chores_list td.chore_cell {
+	/*max-width: 33em;*/
+	width: 33em;
+	padding-left: 3em;
+	text-indent: -3em;
+	text-align: justify;
 }
 
 table.chores_list button:disabled {
