@@ -6,40 +6,68 @@ var CSRF_before_send = function(jqXHR, settings) {
   }
 };
 
-var fetch_interval = 30;
+var fetch_interval = 10*60;
 var last_fetch_milliseconds = (new Date()).getTime();
 //TODO: to use if you get setTimeout working.
 //var changes_made = false;
 
 var replaceSentences = function(data, textStatus, jqXHR) {
+  var prepend_sign = function(balance) {
+    var sign;
+    if (balance >= 0) {
+      sign = '+';
+    } else {
+      sign = '−';
+    }
+    return sign+String(Math.abs(balance));
+  };
+  var make_new_button = function(sentence, chore_id) {
+    var CSS_classes = sentence.identifier+'_button';
+    if (sentence.JavaScript_function && sentence.JavaScript_function.indexOf('revert') != -1) {
+      CSS_classes += ' revert';
+    }
+    if (!sentence.button) {
+      CSS_classes += ' no_button';
+    }
+    CSS_classes = '"'+CSS_classes+'"';
+    var enabled = '';
+    if (!sentence.button) {
+      enabled = ' disabled=""';
+    }
+    var button_id = '"'+sentence.identifier+'_button_'+chore_id+'"';
+    var button_onclick = '"'+sentence.JavaScript_function+'('+chore_id+')"';
+    var html = '<button class='+CSS_classes+' id='+button_id+
+      ' onclick='+button_onclick+enabled+'> '+sentence.button_text+'</button>';
+    return html;
+  };
   var responseAsObject = JSON.parse(data);
-  //changes_made = $.isEmptyObject(responseAsObject.chores);
   $.each(responseAsObject.chores, function(chore_id, chore_HTML) {
     $.each(chore_HTML.sentences, function(index, sentence) {
       var $sentenceElement = $('#'+sentence.identifier+'_sentence_'+chore_id);
       $sentenceElement.empty();
       if (sentence.report) {
         $sentenceElement.append(sentence.report_text);
-        if (sentence.button) {
-          $sentenceElement.append(' ');
-        }
       }
-      if (sentence.button) {
-        $sentenceElement.append('<button class="'+sentence.identifier+'_button"'+
-          ' id="'+sentence.identifier+'_button_'+chore_id+'"'+
-          ' onclick="'+sentence.JavaScript_function+'('+chore_id+')">'+
-          sentence.button_text+'</button>');
-      }
+      $('#'+sentence.identifier+'_button_'+chore_id).replaceWith(
+        make_new_button(sentence, chore_id));
       return null;
     });
     $('#chore_'+chore_id).removeClass()
       .addClass(chore_HTML.CSS_classes);
     return null;
   });
-  $('#current_balance').empty()
-    .append(responseAsObject.current_balance.value)
-    .removeClass()
-    .addClass(responseAsObject.current_balance.CSS_class);
+  var $current_balance = $('#current_balance');
+  if (responseAsObject.hasOwnProperty('current_balance')) {
+    $current_balance.empty()
+      .append(prepend_sign(responseAsObject.current_balance.value))
+      .removeClass()
+      .addClass(responseAsObject.current_balance.CSS_class);
+   }
+  if (responseAsObject.hasOwnProperty('balance_change')) {
+    var balance = parseFloat($current_balance.html().replace('−', '-'), 10);
+    $current_balance.html(prepend_sign(balance+responseAsObject.balance_change));
+  }
+  $current_balance.fadeIn();
   return null;
 };
 
@@ -84,6 +112,13 @@ var fetch_updates = function() {
 };
 
 $(window).load(function() {
+	$('table.chores_list').each(function(index, element) {columnize($(element));});
+
   $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
+  fetch_updates();
   setInterval(fetch_updates, 1000*fetch_interval);
+  $('#current_balance').hover(
+    function(eventObject) {$(this).stop().fadeTo('slow', 0);},
+    function(eventObject) {$(this).stop().fadeTo('slow', 1);}
+  );
 });

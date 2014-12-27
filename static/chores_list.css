@@ -1,0 +1,118 @@
+#current_balance { 
+	display: none;
+
+	position: fixed;
+	/*All other em measurements are in multiples of this font size.*/
+	font-size: 3em;
+
+	/*bottom: 0.5em;*/
+	/*right: 0.5em;*/
+	bottom: 64px;
+	right: 64px;
+
+	vertical-align: middle;
+	line-height: 1em;
+	z-index: 1;
+
+	padding: 0.25em;
+}
+
+button, button:active {
+	outline-style: 0;
+}
+
+table.chores_list button {
+	display: block;
+	font-variant: small-caps;
+	font-size: 0.5em;
+	color: #FFFFFF;
+	font-weight: bold;
+	border-width: 0.2em;
+	border-style: solid;
+	border-radius: 0.6em;
+	height: 100%;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+table.chores_list td.button_cell {
+	white-space: nowrap;
+	vertical-align: top;
+}
+
+table.chores_list td.chore_cell {
+	/*max-width: 33em;*/
+	width: 33em;
+	padding-left: 3em;
+	text-indent: -3em;
+	text-align: justify;
+}
+
+table.chores_list button:disabled {
+	background-color: #FFFFFF;
+	color: #000000;
+	border-color: #000000;
+}
+
+/*This needs to come after the disabled selector so that it*/
+/*overrides on 'no_button' disabled buttons.*/
+table.chores_list button.no_button {
+	background-color: #FFFFFF;
+	color: #FFFFFF;
+	border-color: #000000;
+}
+
+button:active {
+	background-color: #FFFFFF;
+	color: #000000;
+	border-color: #000000;
+	
+}
+
+.signed_up_button, .signed_off_button {
+	background-color: #073763;
+	border-color:	#073763;
+	color: #F1C232;
+}
+
+.voided_button {
+	background-color: #FF0000;
+	border-color: #FF0000;
+	color: #000000;
+}
+
+.signed_up_button.revert, .signed_off_button.revert {
+	background-color: #F1C232;
+	border-color: #F1C232;
+	color: #073763;
+}
+
+.voided_button.revert {
+	background-color: #000000;
+	border-color: #000000;
+	color: #FF0000;
+}
+
+.needs_sign_up {
+	background-color: #B8D8F5;
+}
+
+.needs_sign_off {
+	background-color: #B8D8F5;
+}
+
+.voided {
+	text-decoration: line-through;
+}
+
+.user_signed_up {
+	background-color: #F1C232;
+}
+
+.user_signed_off {
+}
+
+.completed_successfully {
+	text-decoration: line-through;
+}
+

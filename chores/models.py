@@ -22,28 +22,12 @@ class ChoreError(Exception):
 class ChoreSkeletonQuerySet(models.query.QuerySet):
 
     def for_coop(self, coop):
-        #'''
-        #Query the model database and return an iterator of ChoreSkeleton instances.
-
-        #Arguments:
-            #coop -- Group whose chores skeletons we are interested in.
-
-        #Return an iterator yielding those chores skeletons which belong to `coop`.
-        #'''
         return self.filter(coop=coop)
 
 class ChoreQuerySet(models.query.QuerySet):
-
     def for_coop(self, coop):
-        '''
-        Query the model database and return an iterator of Chore instances.
-
-        Arguments:
-            coop -- Group whose chores we are interested in.
-
-        Return an iterator yielding those chores which belong to `coop`.
-        '''
-        return self.filter(skeleton__coop=coop)
+        chore_skeletons = set(ChoreSkeleton.objects.for_coop(coop=coop))
+        return self.filter(skeleton__in=chore_skeletons)
 
     def in_window(self, window_start_date, window_stop_date):
         '''
@@ -224,9 +208,11 @@ class Timecard(models.Model):
         return timedelta.in_interval(0, timezone.now()-self.signed_up.when,
             REVERT_SIGN_UP_GRACE_PERIOD_HOURS, unit='hours')
 
+    #TODO: add optional argument for current time. Will save regenerating it.
     def too_close_to_revert_sign_up(self):
-        return timedelta.in_interval(0, self.start_date-timezone.now().date(),
-                                     MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
+        return False
+        #return timedelta.in_interval(0, self.start_date-timezone.now().date(),
+                                     #MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
 
     def get_scoop_message(self, user, attribute, verb):
         owner = getattr(self, attribute).who
@@ -316,7 +302,8 @@ class Timecard(models.Model):
     )
     revert_sign_up_permission = permission_creator(
         [
-            lambda self, user: self.signed_up.who != user,
+            lambda self, user: not (self.signed_up.who == user or
+                user.profile.points_steward),
             lambda self, user: self.voided,
             lambda self, user: self.signed_off,
             lambda self, user: (self.too_close_to_revert_sign_up() and
@@ -339,9 +326,18 @@ class Timecard(models.Model):
     revert_sign_off_permission = permission_creator(
         [lambda self, user: self.signed_off.who != user],
         ["You didn't sign off on that chore."])
+
     revert_void_permission = permission_creator(
-        [lambda self, user: self.voided.who != user],
-        ["You didn't void that chore."])
+        [
+            lambda self, user: not self.voided,
+            lambda self, user: not (self.voided.who == user or
+                user.profile.points_steward)
+        ],
+        [
+            "That chore hasn't been voided.",
+            "You didn't void that chore."
+        ]
+    )
 
     def actor_creator(permission_method_name, signature_name, action_name):
         def actor(self, user, *args, **kwargs):
@@ -380,19 +376,27 @@ class Timecard(models.Model):
         # TODO: seems like an example of somewhere we want to use the
         # GroupProfile time zone.
         current_date = timezone.now().date()
+        old_count = len(connection.queries)
         css_classes = {
             # TODO: names are outdated. Need to fix!
+
+            #TODO: reinstate.
             'needs_sign_up': self.sign_up_permission(user)['boolean'],
             'needs_sign_off': self.sign_off_permission(user)['boolean'],
             'completed_successfully': self.completed_successfully(),
-            #TODO: here you were checking whether the user voided, it looks
-            #like. Keeping for the time being; to delete when comfortable.
-            #'voided': self.revert_void_permission(user)['boolean'],
+
+            #TODO: reinstate.
             'voided': self.voided,
             'user_signed_up': user == self.signed_up.who,
             'user_signed_off': user == self.signed_off.who,
             'user_voided': user == self.voided.who
         }
+        #TODO: remove when done.
+        #' '.join([key for key, bool_ in css_classes.items() if bool_])
+        #try:
+            #assert len(connection.queries) == old_count
+        #except:
+            #print(len(connection.queries)-old_count)
         return ' '.join([key for key, bool_ in css_classes.items() if bool_])
 
 class Skeleton(models.Model):

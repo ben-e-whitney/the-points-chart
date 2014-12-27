@@ -6,13 +6,16 @@ balance summary
 
 {% block head %}
 {% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "balances_summarize.css" %}"/>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+<script src={% static "chores/balances_summarize.js" %}></script>
 {% endblock head %}
 
 {% block body %}
-<table id="balances_table">
-	<caption>Balances for {{ user.profile.coop.profile.full_name }}</caption>
+<table class="balances_table">
+	<caption>Balances</caption>
 	<thead>
 	</thead>
 	<tbody>
@@ -20,7 +23,8 @@ balance summary
 		<tr>
 			{% for account in row %}
 				{% if account %}
-					<td style="text-align: right">
+					<td class="{{ account.balance.CSS_class }}" title="{{ account.balance.html_title }}">{{ account.balance.formatted_value }}</td>
+					<td>
 						{% if user.profile.points_steward %}
 						<a href="/chores/{{ account.cooper.username }}/">
 							{{ account.cooper.profile.nickname }}
@@ -29,7 +33,6 @@ balance summary
 							{{ account.cooper.profile.nickname }}
 						{% endif %}
 					</td>
-					<td class="{{ account.balance.CSS_class }}" title="{{ account.balance.html_title }}">{{ account.balance.value }}</td>
 				{% endif %}
 			{% endfor %}
 		</tr>

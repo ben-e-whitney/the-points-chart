@@ -1,3 +1,5 @@
+from django.db import connection, reset_queries
+
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import (login_required, user_passes_test,
@@ -12,13 +14,19 @@ import pytz
 import itertools
 import decimal
 import math
+import collections
 
 from utilities import timedelta
 from utilities.views import DisplayInformation, format_balance
-from chores.models import Chore
+from chores.models import Chore, ChoreSkeleton
 from profiles.models import UserProfile
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
     ShareChange)
+
+def pretty_print_query(query):
+    import string
+    query = str(query).replace(', ', ',\n')
+    print(query)
 
 # TODO: another option (attractive) would be to put all of this as methods of
 # the Signature model. I think we would want to subclass that class, but all
@@ -45,6 +53,8 @@ class ChoreSentence():
     def __init__(self, user, chore, chore_attribute=None):
         if chore_attribute is not None:
             self.chore_attribute = chore_attribute
+        #TODO: should this use the co-op's timezone? Look to see how chore dates
+        #are stored. Check here and everywhere else.
         # Otherwise use the class attribute.
         self.current_datetime = datetime.datetime.now()
         self.current_date = self.current_datetime.date()
@@ -65,15 +75,14 @@ class ChoreSentence():
             self.user)['boolean']
 
     def get_button(self):
+        self.button_text = self.button_action_text
         if self.action_permitted():
             self.button = True
             self.JavaScript_function = self.JavaScript_action_function
-            self.button_text = self.button_action_text
         else:
             if self.reversion_permitted():
                 self.button = True
                 self.JavaScript_function = self.JavaScript_reversion_function
-                self.button_text = self.button_reversion_text
             else:
                 self.button = False
 
@@ -182,16 +191,13 @@ def get_obligations(user, coop=None):
         'signed off': all_chores.signed_off(None, True),
         'not signed off': all_chores.signed_off(None, False),
         'all stewardships': all_stewardships,
-        # TODO: could make new QuerySets/models/whatever in for these.
-        'stewardships': all_stewardships.filter(
-            skeleton__category=StewardshipSkeleton.STEWARDSHIP),
-        'special points': all_stewardships.filter(
-            skeleton__category=StewardshipSkeleton.SPECIAL_POINTS),
-        'loans': all_stewardships.filter(
-            skeleton__category=StewardshipSkeleton.LOAN),
+        'stewardships': all_stewardships.classical(),
+        'special points': all_stewardships.special_points(),
+        'loans': all_stewardships.loan(),
         'absences': Absence.objects.signed_up(user, True),
         'share changes': ShareChange.objects.signed_up(user, True)
     }
+    #TODO: use `coop.profile` timezone thing.
     data['ready for signature'] = (data['not signed off'].voided(None, False)
                                .filter(start_date__lte=datetime.date.today()))
     # Rearranging.
@@ -292,7 +298,7 @@ def calculate_load_info(user=None, coop=None):
     today = coop.profile.today()
     # Storing as a tuple so we can iterate over it multiple times without extra
     # cost. TODO: is this how this works?
-    all_coopers = tuple(coop.user_set.all())
+    all_coopers = tuple(coop.user_set.all().prefetch_related('profile'))
     if user is None:
         user_set = all_coopers
     else:
@@ -301,67 +307,100 @@ def calculate_load_info(user=None, coop=None):
     # (since currently that doesn't happen/has no meaning/effect). Maybe
     # should be changed (TODO).
     data = {
+        #TODO: lots of quick fixes here. Needs more thought and efficiency.
         'chores'       : Chore.objects.for_coop(coop).voided(None, False),
         'stewardships' : Stewardship.objects.for_coop(coop),
         'absences'     : Absence.objects.for_coop(coop),
-        'share changes': ShareChange.objects.for_coop(coop)
+        'share changes': ShareChange.objects.for_coop(coop),
     }
-    accounts = [{'user': cooper, 'load': [], 'credits': [], 'balance': []} for
-                cooper in user_set]
+    #TODO: only necessary to get accounts for coopers in `user_set`.
+    accounts = {cooper: {'user': cooper, 'load': [], 'credits': [],
+                         'balance': []} for cooper in all_coopers}
+    print('setting up: {lcn}'.format(lcn=len(connection.queries)-olcn))
     for cycle_num, start_date, stop_date in coop.profile.cycles():
+        print('TOTAL at the beginning of cycle {cn}: {lcn}'.format(
+            cn=cycle_num, lcn=len(connection.queries)))
+        olcn = len(connection.queries)
         cycle_data = {key: value.in_window(start_date, stop_date)
                       for key, value in data.items()}
-
-        # TODO: could move around to iterate through only once.
-        total_points = sum(itertools.chain(cycle_data['chores'],
-                                           cycle_data['stewardships']))
-        total_presence = -absence_summer(cycle_data['absences'], start_date,
-            stop_date)+sum(cooper.profile.presence for cooper in all_coopers)
-        total_share = sum(cycle_data['share changes'])+sum(
-            cooper.profile.share for cooper in all_coopers)
-
-        total_presence_share = 0
-        presence_shares = {}
-        for cooper in all_coopers:
-            presence = cooper.profile.presence-absence_summer(
-                cycle_data['absences'].signed_up(cooper, True),
+        cycle_data['chores'] = cycle_data['chores'].prefetch_related(
+            'signed_up__who', 'signed_off__who', 'skeleton')
+        for key in ('stewardships', 'absences', 'share changes'):
+            cycle_data[key] = cycle_data[key].prefetch_related(
+                'signed_up__who', 'skeleton')
+        print('    getting cycle data: {lcn}'.format(
+            lcn=len(connection.queries)-olcn))
+        olcn = len(connection.queries)
+        adds_to_points = itertools.chain(cycle_data['chores'],
+                                         cycle_data['stewardships'])
+        total_points = sum(adds_to_points)
+        #TODO:  Doesn't increase (or decrease) database hits. However, if you
+        #decide to totally strip out `__radd__` usage, can use this. I think
+        #that might be a good thing to do.
+        #total_points = 0
+        #for chore in cycle_data['chores']:
+            #total_points += chore.skeleton.point_value
+        #for stewardship in cycle_data['stewardships']:
+            #total_points += stewardship.skeleton.point_value
+        print("    summing 'total's: {lcn}".format(
+            lcn=len(connection.queries)-olcn))
+        olcn = lcn=len(connection.queries)
+        presences = {cooper: cooper.profile.presence for cooper in all_coopers}
+        shares = {cooper: cooper.profile.share for cooper in all_coopers}
+        #TODO: this assumes that all absences are signed up for.
+        for absence in cycle_data['absences']:
+            presences[absence.signed_up.who] -= absence.window_overlap(
                 start_date, stop_date)
-            share = cooper.profile.share+sum(cycle_data['share changes']
-                                             .signed_up(cooper, True))
-            presence_share = presence*share
-            total_presence_share += presence_share
-            #TODO: don't like how this is done.
-            if cooper in user_set:
-                presence_shares.update({cooper: presence_share})
-        # TODO: here and elsewhere, add error handling (for division).
+        for share_change in cycle_data['share changes']:
+            shares[share_change.signed_up.who] += share_change.share_change
+        total_presence_share = sum(presence*share for presence, share in
+                                   zip(presences.values(), shares.values()))
+        presence_shares = {cooper: presences[cooper]*shares[cooper]
+                           for cooper in all_coopers}
+        total_presence_share = sum(presence_shares.values())
         # 'ppds' stands for 'points per day-share.'
         ppds = total_points/total_presence_share
+        print('    getting ppds: {lcn}'.format(
+            lcn=len(connection.queries)-olcn))
 
-        for dict_ in accounts:
-            user = dict_['user']
-            load = ppds*presence_shares[user]
-            #Handling chores and stewardships separately to avoid any confusion
-            #about how stewardships are handled.
-            user_signed_up_chores = cycle_data['chores'].signed_up(user, True)
-            total_signed_up = sum(user_signed_up_chores)
-            total_completed = sum(user_signed_up_chores.signed_off(None, True))
-            credits = (total_signed_up if today <= stop_date else
-                total_completed)
-            credits += sum(cycle_data['stewardships'].signed_up(user, True))
+        #Initialize credit count for this cycle.
+        for account in accounts.values():
+            account['credits'].append(0)
+        olcn = len(connection.queries)
+        if today <= stop_date:
+            for chore in cycle_data['chores']:
+                if chore.signed_up:
+                    accounts[chore.signed_up.who]['credits'][-1] += (
+                        chore.skeleton.point_value)
+        else:
+            for chore in cycle_data['chores']:
+                #Superfluous to check that the chore is signed up. Better to
+                #check again or trust controls on signing off?
+                if chore.signed_up and chore.signed_off:
+                    accounts[chore.signed_up.who]['credits'][-1] += (
+                        chore.skeleton.point_value)
+        for stewardship in cycle_data['stewardships']:
+            accounts[stewardship.signed_up.who]['credits'][-1] += (
+                stewardship.skeleton.point_value)
+        for cooper, account in accounts.items():
+            load = ppds*presence_shares[cooper]
             try:
-                old_balance = dict_['balance'][-1]
+                old_balance = account['balance'][-1]
             except IndexError:
                 old_balance = 0
-            balance = credits-load+old_balance
-            dict_['load'].append(load)
-            dict_['credits'].append(credits)
-            dict_['balance'].append(balance)
-    return accounts
+            balance = account['credits'][-1]-load+old_balance
+            account['load'].append(load)
+            account['balance'].append(balance)
+        print('    calculating balances: {lcn}'.format(
+            lcn=len(connection.queries)-olcn))
+    print('TOTAL total: {lcn}'.format(lcn=len(connection.queries)))
+    return [account for cooper, account in  accounts.items()
+            if cooper in user_set]
 
 def calculate_balance(user, coop=None):
     load_info = calculate_load_info(user=user, coop=coop)[0]
     return format_balance(load=load_info['load'][-1],
-                                    balance=load_info['balance'][-1])
+                          balance=load_info['balance'][-1])
 
 @ensure_csrf_cookie
 @login_required()
@@ -395,10 +434,11 @@ def chores_list(request):
         actual formatting information is kept in a CSS file.
         '''
         today = datetime.date.today()
+        #TODO: think I applied a fix here. Check that it's working.
         css_classes = {
-            'cycle_past'   : today < start_date,
+            'cycle_past'   : stop_date < today,
             'cycle_current': start_date <= today <= stop_date,
-            'cycle_future' : stop_date < today,
+            'cycle_future' : today < start_date,
         }
         return ' '.join([key for key,value in css_classes.items() if value])
 
@@ -406,14 +446,27 @@ def chores_list(request):
                 'Saturday', 'Sunday']
     # Here (and elsewhere) we assume that a User is a member of only one Group.
     coop = request.user.profile.coop
+    #print('before getting chore skeletons: {lcn}'.format(
+        #lcn=len(connection.queries)))
     chores = Chore.objects.for_coop(coop)
     cycles = []
     for cycle_num, start_date, stop_date in coop.profile.cycles():
+        #TODO: look into fetching all chores and then sorting in Python.
+        chores_this_cycle = (chores.filter(start_date__gte=start_date,
+                                           start_date__lte=stop_date)
+            .prefetch_related('signed_up__who__profile',
+                'signed_off__who__profile', 'voided__who__profile', 'skeleton')
+            .order_by('skeleton__start_time')
+        )
+        sorted_chores = collections.defaultdict(list)
+        for chore in chores_this_cycle:
+            sorted_chores[chore.start_date].append(chore)
+
         chores_by_date = []
+        #print('checking at beginning of cycle {cyn}: {lcn}'.format(
+            #cyn=cycle_num, lcn=len(connection.queries)))
         for date in timedelta.daterange(start_date, stop_date, inclusive=True):
-            chores_today = (chores.filter(start_date=date)
-                              .order_by('skeleton__start_time',
-                                        'skeleton__short_name'))
+            chores_today = sorted_chores[date]
             if chores_today:
                 chore_dicts = [{
                         'chore': chore,
@@ -428,18 +481,19 @@ def chores_list(request):
                     'schedule': chore_dicts,
                     'weekday' : weekdays[date.weekday()],
                  })
+            #print('checking at end of {dat}: {lcn}'.format(dat=date,
+                #lcn=len(connection.queries)))
         cycles.append({
             'days': chores_by_date,
             'class': find_cycle_classes(cycle_num, start_date, stop_date),
             'id': cycle_num,
         })
-    return render(request,'chores/chores_list.html', dictionary={
-        'coop': coop, 'cycles': cycles,
-        'current_balance': calculate_balance(request.user, coop)
-    })
+    return render(request,'chores/chores_list.html', dictionary={'coop': coop,
+        'cycles': cycles})
 
 @login_required()
 def user_stats_list(request, username):
+    reset_queries()
     #For the scenario that an anonymous user clicks the 'stats' link, logs in,
     #and is then sent to chores/AnonymousUser/'.
     #TODO: use `User.is_authenticated` or something instead?
@@ -467,10 +521,12 @@ def user_stats_list(request, username):
         'cooper': user,
     }
     render_dictionary.update(get_obligations(user, coop=coop))
+    print('TOTAL before rendering: {lcn}'.format(lcn=len(connection.queries)))
     return render(request, 'chores/user_stats_list.html',
                   dictionary=render_dictionary)
 
 def calendar_create(request, username):
+    reset_queries()
     #TODO: this code is repeated. Could make a function.
     try:
         user = User.objects.get(username=username)
@@ -488,18 +544,26 @@ def calendar_create(request, username):
     template = loader.get_template('calendars/calendar.ics')
     context = Context({'coop': coop, 'chores': chores})
     response.write(template.render(context))
+    print('TOTAL: {lcn}'.format(lcn=len(connection.queries)))
     return response
 
 @login_required()
-def balances_summarize(request, num_columns=5):
+def balances_summarize(request, num_columns=1):
     coop = request.user.profile.coop
     accounts = calculate_load_info(coop=coop)
     accounts.sort(key=lambda x: x['user'].profile.nickname)
+    #TODO: here and elsewhere, call some sort of function to get active users.
     accounts = [{
         'cooper': row['user'],
         'balance': format_balance(load=row['load'][-1],
                                   balance=row['balance'][-1])
-    } for row in accounts]
+    } for row in accounts if row['user'].is_active]
+    max_width = max(len(account['balance']['formatted_value'])
+                    for account in accounts)
+    for account in accounts:
+        current = account['balance']['formatted_value']
+        account['balance']['formatted_value'] = '{sgn}{pad}{val}'.format(
+            sgn=current[0], pad='0'*(max_width-len(current)), val=current[1:])
     #TODO: find a better way to do this. Could use itertools, maybe. Keep in
     #mind template limitations.
     num_rows = math.ceil(len(accounts)/num_columns)

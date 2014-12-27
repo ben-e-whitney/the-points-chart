@@ -30,7 +30,9 @@ def contacts_list(request):
                          all_stewardships.signed_up(cooper, True))
 
     coop = request.user.profile.coop
-    coopers = coop.user_set.all().order_by('profile__first_name')
+    #TODO: use whatever function you decide on to filter by active.
+    coopers = coop.user_set.filter(is_active=True).order_by(
+        'profile__first_name')
     stewardships = [
         get_classical_stewardships(cooper) for cooper in coopers
     ]

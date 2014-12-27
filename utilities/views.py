@@ -72,6 +72,14 @@ class DisplayInformation():
         return self.structured_data
 
 def format_balance(load=None, balance=None):
+
+    def sign_int(balance):
+        balance = int(balance.to_integral_value())
+        if balance >= 0:
+            return '+{bal}'.format(bal=balance)
+        else:
+            return '−{bal}'.format(bal=abs(balance))
+
     endpoints = (-float('inf'), -0.35, -0.15, 0.15, 0.35, float('inf'))
     CSS_classes = ('very_low_balance', 'low_balance', 'OK_balance',
                    'high_balance', 'very_high_balance')
@@ -90,11 +98,9 @@ def format_balance(load=None, balance=None):
             # We will use the value of `CSS_class`. If we never make it to this
             # block, `CSS_class` will end up `CSS_classes[-1]`.
             break
-    approx_balance = balance.to_integral_value()
     return {
-        'value': '{sgn}{val}'.format(sgn='+'if approx_balance >= 0 else '−',
-            # TODO: how to decide how to zfill?
-            val=str(abs(approx_balance)).zfill(2)),
+        'value': balance,
+        'formatted_value': sign_int(balance),
         'html_title': 'Exact value: {val}'.format(val=balance),
         'CSS_class': ' '.join(('balance', CSS_class)),
     }

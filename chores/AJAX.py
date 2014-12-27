@@ -21,25 +21,33 @@ def updates_fetch(request):
     cutoff = datetime.datetime.utcfromtimestamp(milliseconds/1000).replace(
         tzinfo=timezone.get_default_timezone())
     changed_chores = Chore.objects.for_coop(request.user.profile.coop).filter(
-        updated__gte=cutoff)
-    return updates_report(request, chores=changed_chores)
+        updated__gte=cutoff).prefetch_related('signed_up__who__profile',
+        'signed_off__who__profile', 'voided__who__profile')
+    return updates_report(request, chores=changed_chores,
+                          include_balances=True)
 
-def updates_report(response, chores=None):
+def updates_report(response, chores=None, include_balances=False,
+                   balance_change=None):
     chores = {chore.id: {
         'sentences': [sentence.dict_for_json() for sentence in
                       get_chore_sentences(response.user, chore)],
         'CSS_classes': chore.find_CSS_classes(response.user),
     } for chore in chores}
-    return HttpResponse(json.dumps({
-        'chores': chores,
-        'current_balance': calculate_balance(response.user)
-    }), status=200)
+    response_dict = {'chores': chores}
+    if include_balances:
+        response_dict.update({
+            'current_balance': calculate_balance(response.user)
+        })
+    if balance_change is not None:
+        response_dict.update({'balance_change': balance_change})
+    return HttpResponse(json.dumps(response_dict), status=200)
 
 #TODO: also take `method_name` from `request.POST`? Would be a little involved,
 #since there's creating/editing/fetching as well, and they use different
 #request methods.
 @login_required()
 def act(request, method_name):
+    user = request.user
     chore_id = int(request.POST.get('chore_id', ''))
     if not chore_id:
         return HttpResponse('', reason='No chore ID provided.', status=400)
@@ -55,11 +63,28 @@ def act(request, method_name):
     except ObjectDoesNotExist as e:
         return HttpResponse('', reason=e.args[0], status=404)
     try:
-        getattr(chore, method_name)(request.user)
+        getattr(chore, method_name)(user)
     except ChoreError as e:
         #TODO: here `status` should be pulled from `e`.
         return HttpResponse('', reason=e, status=403)
-    return updates_report(request, chores=(chore,))
+
+    #TODO: change to method that gets current cycle if you make one.
+    coop = user.profile.coop
+    for cycle_num, start_date, stop_date in coop.profile.cycles():
+        pass
+    current_cycle = chore.start_date >= start_date
+    my_chore = chore.signed_up.who == user
+    point_value = chore.skeleton.point_value
+    balance_change = {
+        'sign_up': point_value if current_cycle else 0,
+        'sign_off': 0,
+        'void': -point_value if current_cycle and my_chore else 0,
+        'revert_sign_up': -point_value if current_cycle else 0,
+        'revert_sign_off': 0,
+        'revert_void': point_value if current_cycle and my_chore else 0,
+    }[method_name]
+    return updates_report(request, chores=(chore,), include_balances=False,
+                          balance_change=balance_change)
 
 chore_skeleton_create = create_function_creator(model=ChoreSkeleton,
                                                 model_form=ChoreSkeletonForm)
