@@ -115,6 +115,11 @@ a:hover {
 	margin-left: -0.2em;
 }
 
+#footer .nav_bar {
+	/*TODO: again, gross.*/
+	margin-bottom: 0.25em;
+}
+
 table caption {
 	font-variant: small-caps;
 	font-size: 1.5em;

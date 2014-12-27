@@ -67,6 +67,7 @@ var replaceSentences = function(data, textStatus, jqXHR) {
     var balance = parseFloat($current_balance.html().replace('−', '-'), 10);
     $current_balance.html(prepend_sign(balance+responseAsObject.balance_change));
   }
+  $current_balance.fadeIn();
   return null;
 };
 
@@ -116,4 +117,8 @@ $(window).load(function() {
   $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
   fetch_updates();
   setInterval(fetch_updates, 1000*fetch_interval);
+  $('#current_balance').hover(
+    function(eventObject) {$(this).stop().fadeTo('slow', 0);},
+    function(eventObject) {$(this).stop().fadeTo('slow', 1);}
+  );
 });
