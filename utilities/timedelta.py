@@ -39,11 +39,10 @@ def pretty_print(timedelta):
         pretty_print += ' from now'
     return pretty_print
 
-def daterange(start_date, stop_date, inclusive=False):
-    delta = datetime.timedelta(days=1)
+def daterange(start, stop, step=datetime.timedelta(days=1), inclusive=False):
     if inclusive:
-        stop_date += delta
-    date = start_date
-    while date < stop_date:
+        stop += step
+    date = start
+    while date < stop:
         yield date
-        date += delta
+        date += step
