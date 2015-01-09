@@ -1,38 +1,48 @@
-#current_balance { 
-	display: none;
+#chores {
+	margin-top: -1em;
+}
 
-	position: fixed;
-	/*All other em measurements are in multiples of this font size.*/
-	font-size: 3em;
-
-	/*bottom: 0.5em;*/
-	/*right: 0.5em;*/
-	bottom: 64px;
-	right: 64px;
-
+#current_balance {
 	vertical-align: middle;
 	line-height: 1em;
-	z-index: 1;
-
 	padding: 0.25em;
+	border-radius: 0;
+	/*For initial question mark.*/
+	font-size: 4em;
 }
 
-button, button:active {
-	outline-style: 0;
+#right_sidebar {
+  width: 7em;
 }
 
-table.chores_list button {
-	display: block;
-	font-variant: small-caps;
-	font-size: 0.5em;
+#load_more_button {
+	font-size: 1.5em;
+	background-color: #073763;
 	color: #FFFFFF;
-	font-weight: bold;
-	border-width: 0.2em;
-	border-style: solid;
-	border-radius: 0.6em;
-	height: 100%;
-	display: inline-block;
-	vertical-align: middle;
+	border-color: #073763;
+	width: 100%;
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+	border-top-left-radius: 0.6em;
+	border-top-right-radius: 0;
+}
+
+/*TODO: this is just copying the general `button:disabled` styling from*/
+/*the `common.css` file. Haven't looked into doing this nicely yet.*/
+#load_more_button:disabled {
+	background-color: #CCCCCC;
+	border-color: #CCCCCC;
+	color: #FFFFFF;
+}
+
+#loaderImage {
+	width: 100%;
+}
+
+#loaderMessage {
+	font-size: 2em;
+	position: absolute;
+	white-space: nowrap;
 }
 
 table.chores_list td.button_cell {
@@ -41,33 +51,21 @@ table.chores_list td.button_cell {
 }
 
 table.chores_list td.chore_cell {
-	/*max-width: 33em;*/
 	width: 33em;
 	padding-left: 3em;
-	text-indent: -3em;
+	text-indent: -2.75em;
 	text-align: justify;
-}
-
-table.chores_list button:disabled {
-	background-color: #FFFFFF;
-	color: #000000;
-	border-color: #000000;
+	border-top-right-radius: 0.6em;
+	border-bottom-right-radius: 0.6em;
 }
 
 /*This needs to come after the disabled selector so that it*/
 /*overrides on 'no_button' disabled buttons.*/
-table.chores_list button.no_button {
-	background-color: #FFFFFF;
-	color: #FFFFFF;
-	border-color: #000000;
-}
-
-button:active {
-	background-color: #FFFFFF;
-	color: #000000;
-	border-color: #000000;
-	
-}
+/*table.chores_list button.no_button {*/
+	/*background-color: #FFFFFF;*/
+	/*color: #FFFFFF;*/
+	/*border-color: #000000;*/
+/*}*/
 
 .signed_up_button, .signed_off_button {
 	background-color: #073763;
@@ -115,4 +113,3 @@ button:active {
 .completed_successfully {
 	text-decoration: line-through;
 }
-

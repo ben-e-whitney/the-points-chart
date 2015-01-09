@@ -99,7 +99,7 @@ def format_balance(load=None, balance=None):
             # block, `CSS_class` will end up `CSS_classes[-1]`.
             break
     return {
-        'value': balance,
+        'value': float(balance),
         'formatted_value': sign_int(balance),
         'html_title': 'Exact value: {val}'.format(val=balance),
         'CSS_class': ' '.join(('balance', CSS_class)),

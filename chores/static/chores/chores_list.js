@@ -1,18 +1,73 @@
-//TODO: here and elsewhere, follow JavaScript convention for variable names.
-var csrf_token = $.cookie('csrftoken');
-var CSRF_before_send = function(jqXHR, settings) {
-  if (!this.crossDomain) {
-    jqXHR.setRequestHeader('X-CSRFToken', csrf_token);
+var firstLoad = true;
+var cycleOffsetToFetch = 0;
+
+//This value is in pixels and I am not confident it will always work.
+var resizeCurrentBalance = function(currentBalance) {
+  var defaultFontSize = 48;
+  var defaultLength = 3;
+  if (currentBalance.length <= defaultLength) {
+    return defaultFontSize;
+  } else {
+    return defaultFontSize*defaultLength/currentBalance.length;
   }
 };
 
-var fetch_interval = 10*60;
-var last_fetch_milliseconds = (new Date()).getTime();
+var loaderMessage = function(func, message) {
+  var wrappedFunction = function() {
+    var $loaderImage = $('#loaderImage');
+    $loaderImage.show();
+    var $loaderMessage = $('#loaderMessage');
+    $loaderMessage.html(message+' &hellip;')
+      .css('right', 1.1*$loaderImage.width())
+      .css('top', 0.5*($loaderImage.height()-$loaderMessage.height()));
+    func.apply(this, arguments);
+  };
+  return wrappedFunction;
+};
+
+var loaderClear = function(func) {
+  var wrappedFunction = function() {
+    func.apply(this, arguments);
+    $('#loaderImage').hide();
+    $('#loaderMessage').fadeOut()
+      .empty()
+      .fadeIn();
+  };
+  return wrappedFunction;
+};
+
+//TODO: here and elsewhere, follow JavaScript convention for variable names.
+var csrfToken = $.cookie('csrftoken');
+var csrfBeforeSend = function(jqXHR, settings) {
+  if (!this.crossDomain) {
+    jqXHR.setRequestHeader('X-CSRFToken', csrfToken);
+  }
+};
+
+var fetchInterval = 10*60;
+var lastFetchMilliseconds = (new Date()).getTime();
 //TODO: to use if you get setTimeout working.
 //var changes_made = false;
 
+var insertChores = function(data, textStatus, jqXHR) {
+  var responseAsObject = JSON.parse(data);
+  if (responseAsObject.least_cycle_num == 1) {
+    $('#load_more_button').prop('disabled', true);
+  }
+  $('#chores').prepend(responseAsObject.html);
+  cycleOffsetToFetch -= 1;
+  if (firstLoad) {
+    $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
+    firstLoad = false;
+  } else {
+    window.scrollTo(0, 0);
+  }
+  return null;
+};
+insertChores = loaderClear(insertChores);
+
 var replaceSentences = function(data, textStatus, jqXHR) {
-  var prepend_sign = function(balance) {
+  var prependSign = function(balance) {
     var sign;
     if (balance >= 0) {
       sign = '+';
@@ -21,7 +76,7 @@ var replaceSentences = function(data, textStatus, jqXHR) {
     }
     return sign+String(Math.abs(balance));
   };
-  var make_new_button = function(sentence, chore_id) {
+  var makeNewButton = function(sentence, chore_id) {
     var CSS_classes = sentence.identifier+'_button';
     if (sentence.JavaScript_function && sentence.JavaScript_function.indexOf('revert') != -1) {
       CSS_classes += ' revert';
@@ -49,50 +104,58 @@ var replaceSentences = function(data, textStatus, jqXHR) {
         $sentenceElement.append(sentence.report_text);
       }
       $('#'+sentence.identifier+'_button_'+chore_id).replaceWith(
-        make_new_button(sentence, chore_id));
+        makeNewButton(sentence, chore_id));
       return null;
     });
     $('#chore_'+chore_id).removeClass()
+      .addClass('chore_cell')
       .addClass(chore_HTML.CSS_classes);
     return null;
   });
   var $current_balance = $('#current_balance');
+  var fontSize;
   if (responseAsObject.hasOwnProperty('current_balance')) {
+    fontSize = resizeCurrentBalance(responseAsObject.current_balance.formatted_value);
     $current_balance.empty()
-      .append(prepend_sign(responseAsObject.current_balance.value))
+      .css('font-size', fontSize)
+      .append(responseAsObject.current_balance.formatted_value)
       .removeClass()
       .addClass(responseAsObject.current_balance.CSS_class);
    }
   if (responseAsObject.hasOwnProperty('balance_change')) {
     var balance = parseFloat($current_balance.html().replace('−', '-'), 10);
-    $current_balance.html(prepend_sign(balance+responseAsObject.balance_change));
+    balance = prependSign(balance+responseAsObject.balance_change);
+    fontSize = resizeCurrentBalance(balance);
+    $current_balance.css('font-size', fontSize)
+      .html(balance);
   }
-  $current_balance.fadeIn();
   return null;
 };
+replaceSentences = loaderClear(replaceSentences);
 
-var AJAXCreator = function(URL_function, signature_name) {
+var AJAXCreator = function(urlFunction, signatureName) {
   var inner = function(chore_id) {
     //TODO: there is something funny going on here. Some buttons get voided right
     //at the beginning.
-    $.each(['signed_up', 'signed_off', 'voided'], function(index, signature_name) {
-      $('#'+signature_name+'_button_'+chore_id).prop('disabled', true);
+    $.each(['signed_up', 'signed_off', 'voided'], function(index, signatureName) {
+      $('#'+signatureName+'_button_'+chore_id).prop('disabled', true);
     });
     $.ajax({
       //TODO: send in `chore_id` as data, not as part of the URL.
-      url: '/chores/actions/'+URL_function+'/',
+      url: '/chores/actions/'+urlFunction+'/',
       data: {'chore_id': chore_id},
       type: 'POST',
       async: true,
       success: replaceSentences,
       error: function(jqXHR, textStatus, errorThrown) {
-	alert('Error: '+jqXHR.statusText+jqXHR.responseText);
+  alert('Error: '+jqXHR.statusText+jqXHR.responseText);
       },
       complete: function() {},
-      beforeSend: CSRF_before_send,
+      //TODO: does this need to be used for other AJAX requests as well?
+      beforeSend: csrfBeforeSend,
     });
   };
-  return inner;
+  return loaderMessage(inner, 'saving');
 };
 
 var signUpChore        = AJAXCreator('sign_up', 'signed_up');
@@ -102,23 +165,27 @@ var revertSignUpChore  = AJAXCreator('revert_sign_up', 'signed_up');
 var revertSignOffChore = AJAXCreator('revert_sign_off', 'signed_off');
 var revertVoidChore    = AJAXCreator('revert_void', 'voided');
 
-var fetch_updates = function() {
-  var new_milliseconds = (new Date()).getTime();
+var fetchUpdates = function() {
+  var newMilliseconds = (new Date()).getTime();
   $.get('/chores/actions/fetch/updates/',
-        {'milliseconds': last_fetch_milliseconds},
+        {'milliseconds': lastFetchMilliseconds},
         replaceSentences
   );
-  last_fetch_milliseconds = new_milliseconds;
+  lastFetchMilliseconds = newMilliseconds;
 };
+fetchUpdates = loaderMessage(fetchUpdates, 'updating');
+
+var fetchChores = function() {
+  $.get('/chores/actions/fetch/chores/',
+        {'cycle_offset': cycleOffsetToFetch},
+        insertChores
+  );
+  return null;
+};
+fetchChores = loaderMessage(fetchChores, 'loading');
 
 $(window).load(function() {
-	$('table.chores_list').each(function(index, element) {columnize($(element));});
-
-  $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
-  fetch_updates();
-  setInterval(fetch_updates, 1000*fetch_interval);
-  $('#current_balance').hover(
-    function(eventObject) {$(this).stop().fadeTo('slow', 0);},
-    function(eventObject) {$(this).stop().fadeTo('slow', 1);}
-  );
+  fetchChores(0);
+  fetchUpdates();
+  setInterval(fetchUpdates, 1000*fetchInterval);
 });

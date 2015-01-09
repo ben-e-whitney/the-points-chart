@@ -73,8 +73,16 @@ class GroupProfile(models.Model):
     def today(self):
         return self.now().date()
 
-    #TODO: add method for getting the current cycle.
-    def cycles(self, start_date=None, stop_date=None):
+    def find_cycle(self, date):
+        return 1+(date-self.start_date)//self.cycle_length
+
+
+    def cycles(self, start_date=None, stop_date=None, offset=None):
+        print('arguments:\n'
+              '    start_date: {std}\n'
+              '    stop_date:  {spd}\n'
+              '    offset:     {off}'.format(std=start_date, spd=stop_date,
+                                             off=offset))
 
         def ceil_integer_division(x, y):
             return x//y+(1 if x%y else 0)
@@ -84,18 +92,44 @@ class GroupProfile(models.Model):
         if stop_date is None:
             stop_date = self.today()+datetime.timedelta(
                 days=self.release_buffer)
-        window_width = datetime.timedelta(days=self.cycle_length-1)
+###############################################################################
+        #TODO: FIGURE OUT WHAT IT GOING ON HERE!
+        window_width = datetime.timedelta(days=self.cycle_length)
         assert window_width > datetime.timedelta(days=0)
         assert stop_date >= start_date
         #Adding one so that `start_date` is counted as a day.
         num_cycles = ceil_integer_division((stop_date-start_date).days+1,
                                            self.cycle_length)
+        #TODO: should we be adding 1 here?
         num_width = len(str(num_cycles))
         window = [start_date, start_date+window_width]
-        for cycle_index in range(num_cycles):
-            yield str(1+cycle_index).zfill(num_width), window[0], window[1]
-            window = [window[1]+datetime.timedelta(days=1),
-                      window[1]+datetime.timedelta(days=1)+window_width]
+
+        if offset is None:
+            index_range = range(num_cycles)
+        else:
+            #TODO: check this.
+            current_cycle = ceil_integer_division(
+                (self.today()-start_date).days+1, self.cycle_length)
+            print('current cycle: {cc}'.format(cc=current_cycle))
+            #Subtract one since these will correspond to indices.
+
+            #TODO: disabling this for now.
+            #lower_bound = min(max(1, current_cycle+offset), num_cycles)-1
+            lower_bound = current_cycle+offset-1
+
+            #Currently a positive `upper_bound` is treated the same as a zero
+            #`upper_bound`: go all the way to the latest cycle.
+            #TODO: when writing docstring, mention this (or change it).
+            upper_bound = lower_bound+1 if offset < 0 else num_cycles
+            index_range = range(lower_bound, upper_bound)
+
+        one_day = datetime.timedelta(days=1)
+        for cycle_index in index_range:
+            #TODO: maybe some better way to do this.
+            lower_bound = start_date+window_width*cycle_index
+            upper_bound = lower_bound+window_width-one_day
+            yield str(1+cycle_index).zfill(num_width), lower_bound, upper_bound
+###############################################################################
 
     def get_cycle_endpoints(self, cycle_num):
         cycle_start_date = self.start_date+datetime.timedelta(

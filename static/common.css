@@ -13,42 +13,18 @@ body {
 	background-color: #073763;
 }
 
-a {
-	text-decoration: none;
-	color: inherit;
-}
-
-a:hover {
-	color: #F1C232;
-}
-
-#main_content a {
-	font-weight: bold;
-}
-
 #wrapper {
 	min-height: 100%;
 	position: relative;
 }
 
-#header, #footer, #sidebar {
+#header, #left_sidebar {
 	color: white;
 }
 
-#header, #footer {
+#header {
 	width: 100%;
 	overflow: auto;
-}
-
-#header {
-}
-
-#footer {
-	clear: both;
-	width: 100%;
-	bottom: 0;
-	left: 0;
-	z-index: 1;
 }
 
 #middle_section {
@@ -56,7 +32,7 @@ a:hover {
 	clear: both;
 }
 
-#sidebar {
+.sidebar {
 	position: fixed;
 	bottom: 0;
 	text-align: center;
@@ -64,27 +40,43 @@ a:hover {
 	z-index: 1;
 }
 
-#sidebar object {
+#left_sidebar {
+	left: 0;
+}
+
+#right_sidebar {
+	right: 0;
+}
+
+#left_sidebar object {
 	pointer-events: none;
 }
 
 #main_content {
-	border-radius: 1em;
-	background-color: white;
+	border-top-left-radius: 1em;
+	background-color: #FFFFFF;
 	color: black;
 	padding-left: 1em;
-	padding-right: 1em;
-	padding-top: 0.125em;
-	padding-bottom: 0.125em;
 	margin-left: 5em;
-	overflow: auto;
+	/*overflow: auto;*/
+
+	border-left-width: 0.3em;
+	border-top-width: 0.3em;
+
+	border-right-width: 0em;
+	border-bottom-width: 0em;
+
+	border-style: solid;
+	border-color: #F1C232;
+
+	/*height: auto;*/
 }
 
-#sidebar.nav_icon {
+#left_sidebar.nav_icon {
 	margin-left: 0em;
 }
 
-#sidebar .nav_button a:hover {
+#left_sidebar .nav_button a:hover {
 	margin-left: 0.5em;
 }
 
@@ -115,13 +107,57 @@ a:hover {
 	margin-left: -0.2em;
 }
 
-#footer .nav_bar {
-	/*TODO: again, gross.*/
-	margin-bottom: 0.25em;
-}
-
 table caption {
 	font-variant: small-caps;
 	font-size: 1.5em;
 }
 
+a {
+	text-decoration: none;
+	color: inherit;
+}
+
+a:hover {
+	color: #F1C232;
+}
+
+button, input[type='submit'] {
+	display: block;
+	font-variant: small-caps;
+	font-size: 0.75em;
+	color: #FFFFFF;
+	font-weight: bold;
+	border-width: 0.2em;
+	border-style: solid;
+	border-radius: 0.6em;
+	/*height: 100%;*/
+	display: inline-block;
+	vertical-align: middle;
+
+	background-color: #073763;
+	border-color: #073763;
+	color: #FFFFFF;
+}
+
+button, button:active {
+	/*There was an error in parsing this.*/
+	/*outline-style: 0;*/
+	outline-style: none;
+}
+
+button:disabled {
+	background-color: #CCCCCC;
+	border-color: #CCCCCC;
+	color: #FFFFFF;
+}
+
+button:active {
+	background-color: #FFFFFF;
+	color: #000000;
+	border-color: #000000;
+	
+}
+
+#main_content a {
+	font-weight: bold;
+}

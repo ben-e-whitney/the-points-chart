@@ -316,6 +316,7 @@ def calculate_load_info(user=None, coop=None):
     #TODO: only necessary to get accounts for coopers in `user_set`.
     accounts = {cooper: {'user': cooper, 'load': [], 'credits': [],
                          'balance': []} for cooper in all_coopers}
+    olcn = len(connection.queries)
     print('setting up: {lcn}'.format(lcn=len(connection.queries)-olcn))
     for cycle_num, start_date, stop_date in coop.profile.cycles():
         print('TOTAL at the beginning of cycle {cn}: {lcn}'.format(
@@ -402,95 +403,6 @@ def calculate_balance(user, coop=None):
     return format_balance(load=load_info['load'][-1],
                           balance=load_info['balance'][-1])
 
-@ensure_csrf_cookie
-@login_required()
-def chores_list(request):
-
-    def find_day_id(date):
-        return date.isoformat()
-
-    def find_day_name(date, coop):
-        today = coop.profile.today()
-        translations = {-1: 'yesterday', 0: 'today', 1: 'tomorrow'}
-        return translations.get((date-today).days, '')
-
-    def find_day_classes(date):
-        '''
-        Sets flags relating to `date` that are read by the template. The actual
-        formatting information is kept in a CSS file.
-        '''
-        now = datetime.date.today()
-        difference = date-now
-        css_classes = {
-            'day_near_past'  : timedelta.in_interval(None, difference, -3),
-            'day_current'    : timedelta.in_interval(  -3, difference,  0),
-            'day_near_future': timedelta.in_interval(   0, difference,  3),
-        }
-        return ' '.join([key for key,value in css_classes.items() if value])
-
-    def find_cycle_classes(cycle_num, start_date, stop_date):
-        '''
-        Sets flags relating to `cycle` that are read by the template. The
-        actual formatting information is kept in a CSS file.
-        '''
-        today = datetime.date.today()
-        #TODO: think I applied a fix here. Check that it's working.
-        css_classes = {
-            'cycle_past'   : stop_date < today,
-            'cycle_current': start_date <= today <= stop_date,
-            'cycle_future' : today < start_date,
-        }
-        return ' '.join([key for key,value in css_classes.items() if value])
-
-    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                'Saturday', 'Sunday']
-    # Here (and elsewhere) we assume that a User is a member of only one Group.
-    coop = request.user.profile.coop
-    #print('before getting chore skeletons: {lcn}'.format(
-        #lcn=len(connection.queries)))
-    chores = Chore.objects.for_coop(coop)
-    cycles = []
-    for cycle_num, start_date, stop_date in coop.profile.cycles():
-        #TODO: look into fetching all chores and then sorting in Python.
-        chores_this_cycle = (chores.filter(start_date__gte=start_date,
-                                           start_date__lte=stop_date)
-            .prefetch_related('signed_up__who__profile',
-                'signed_off__who__profile', 'voided__who__profile', 'skeleton')
-            .order_by('skeleton__start_time')
-        )
-        sorted_chores = collections.defaultdict(list)
-        for chore in chores_this_cycle:
-            sorted_chores[chore.start_date].append(chore)
-
-        chores_by_date = []
-        #print('checking at beginning of cycle {cyn}: {lcn}'.format(
-            #cyn=cycle_num, lcn=len(connection.queries)))
-        for date in timedelta.daterange(start_date, stop_date, inclusive=True):
-            chores_today = sorted_chores[date]
-            if chores_today:
-                chore_dicts = [{
-                        'chore': chore,
-                        'class': chore.find_CSS_classes(request.user),
-                        'sentences': get_chore_sentences(request.user, chore)
-                } for chore in chores_today]
-                chores_by_date.append({
-                    'date'    : date,
-                    'class'   : find_day_classes(date),
-                    'id'      : find_day_id(date),
-                    'name'    : find_day_name(date, coop),
-                    'schedule': chore_dicts,
-                    'weekday' : weekdays[date.weekday()],
-                 })
-            #print('checking at end of {dat}: {lcn}'.format(dat=date,
-                #lcn=len(connection.queries)))
-        cycles.append({
-            'days': chores_by_date,
-            'class': find_cycle_classes(cycle_num, start_date, stop_date),
-            'id': cycle_num,
-        })
-    return render(request,'chores/chores_list.html', dictionary={'coop': coop,
-        'cycles': cycles})
-
 @login_required()
 def user_stats_list(request, username):
     reset_queries()
@@ -524,6 +436,10 @@ def user_stats_list(request, username):
     print('TOTAL before rendering: {lcn}'.format(lcn=len(connection.queries)))
     return render(request, 'chores/user_stats_list.html',
                   dictionary=render_dictionary)
+
+@login_required()
+def chores_list(request):
+    return render(request,'chores/chores_list.html')
 
 def calendar_create(request, username):
     reset_queries()

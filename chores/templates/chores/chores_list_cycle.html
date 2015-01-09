@@ -1,0 +1,41 @@
+{% for point_cycle in cycles %}
+	<div id="cycle_{{ point_cycle.id }}" class="{{ point_cycle.class }}">
+	{% for day in point_cycle.days %}
+		<div class="{{ day.class }}">
+			{% if day.name %}
+				<a name="{{ day.name }}"></a>
+			{% endif %}
+			<h1 id="{{ day.id }}"> {{ day.weekday }} {{ day.date|date:"Y-m-d" }} </h1>
+			<table class="chores_list">
+				<thead></thead>
+				<tbody>
+				{% for schedule_item in day.schedule %}
+				<tr id="chore_{{ schedule_item.chore.id }}_row">
+					{% for sentence in schedule_item.sentences %}
+					<td class="button_cell">
+						<button class="{{ sentence.identifier }}_button{% if 'revert' in sentence.JavaScript_function %} revert{% endif %} {% if sentence.button %}{% else %}no_button{% endif %}"
+							id="{{ sentence.identifier }}_button_{{ schedule_item.chore.id }}"
+							onclick="{{ sentence.JavaScript_function }}({{ schedule_item.chore.id }})"
+							{% if sentence.button %}{% else %}disabled=""{% endif %}>
+								{{ sentence.button_text }}
+						</button>
+					</td>
+					{% endfor %}
+					<td id="chore_{{ schedule_item.chore.id }}" class="chore_cell {{ schedule_item.class }}">
+				<strong>{{ schedule_item.chore.skeleton.short_name }} ({{ schedule_item.chore.skeleton.point_value }})</strong>
+					{% for sentence in schedule_item.sentences %}
+						<span id="{{ sentence.identifier }}_sentence_{{ schedule_item.chore.id }}">
+							{% if sentence.report %}
+								{{ sentence.report_text }}
+							{% endif %}
+						</span>
+					{% endfor %}
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		</div>
+	{% endfor %}
+	</div>
+{% endfor %}

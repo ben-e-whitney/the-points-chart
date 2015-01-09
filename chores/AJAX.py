@@ -2,45 +2,158 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
+from django.template.loader import render_to_string
 from django.utils import timezone
+from django.contrib.auth.decorators import (login_required, user_passes_test,
+    permission_required)
+from django.views.decorators.csrf import ensure_csrf_cookie
 
+import collections
 import datetime
 import json
 from chores.models import Chore, ChoreSkeleton, ChoreError
 from chores.forms import ChoreSkeletonForm, ChoreFormCreator
 from chores.views import get_chore_sentences, calculate_balance
+from utilities import timedelta
 from utilities.AJAX import (make_form_response, create_function_creator,
     edit_function_creator)
 
 @login_required()
 def updates_fetch(request):
-    milliseconds = int(request.GET.get('milliseconds', ''))
+    print('in AJAX.updates_fetch')
+    try:
+        milliseconds = int(request.GET.get('milliseconds', ''))
+    except ValueError as e:
+        #TODO: return an error.
+        milliseconds = 10
+
     if not milliseconds:
         return HttpResponse('', reason='No milliseconds value provided.',
                             status=400)
+    print('milliseconds: {ms}'.format(ms=milliseconds))
     cutoff = datetime.datetime.utcfromtimestamp(milliseconds/1000).replace(
         tzinfo=timezone.get_default_timezone())
     changed_chores = Chore.objects.for_coop(request.user.profile.coop).filter(
         updated__gte=cutoff).prefetch_related('signed_up__who__profile',
         'signed_off__who__profile', 'voided__who__profile')
+    print('about to call updates_report')
     return updates_report(request, chores=changed_chores,
                           include_balances=True)
 
-def updates_report(response, chores=None, include_balances=False,
+@ensure_csrf_cookie
+@login_required()
+def chores_fetch(request):
+    print('got to chores_fetch')
+
+    def find_day_id(date):
+        return date.isoformat()
+
+    def find_day_name(date, coop):
+        today = coop.profile.today()
+        translations = {-1: 'yesterday', 0: 'today', 1: 'tomorrow'}
+        return translations.get((date-today).days, '')
+
+    def find_day_classes(date):
+        '''
+        Sets flags relating to `date` that are read by the template. The actual
+        formatting information is kept in a CSS file.
+        '''
+        now = datetime.date.today()
+        difference = date-now
+        css_classes = {
+            'day_near_past'  : timedelta.in_interval(None, difference, -3),
+            'day_current'    : timedelta.in_interval(  -3, difference,  0),
+            'day_near_future': timedelta.in_interval(   0, difference,  3),
+        }
+        return ' '.join([key for key,value in css_classes.items() if value])
+
+    def find_cycle_classes(cycle_num, start_date, stop_date):
+        '''
+        Sets flags relating to `cycle` that are read by the template. The
+        actual formatting information is kept in a CSS file.
+        '''
+        today = datetime.date.today()
+        #TODO: think I applied a fix here. Check that it's working.
+        css_classes = {
+            'cycle_past'   : stop_date < today,
+            'cycle_current': start_date <= today <= stop_date,
+            'cycle_future' : today < start_date,
+        }
+        return ' '.join([key for key,value in css_classes.items() if value])
+
+    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+                'Saturday', 'Sunday']
+    # Here (and elsewhere) we assume that a User is a member of only one Group.
+    coop = request.user.profile.coop
+
+    try:
+        cycle_offset = int(request.GET.get('cycle_offset', 0))
+    except ValueError as e:
+        #TODO: here `status` should be pulled from `e` (?).
+        return HttpResponse('', reason=e, status=400)
+    chores = Chore.objects.for_coop(coop)
+    cycles = []
+    for cycle_num, start_date, stop_date in coop.profile.cycles(
+        offset=cycle_offset):
+        #TODO: look into fetching all chores and then sorting in Python.
+        chores_this_cycle = (chores.filter(start_date__gte=start_date,
+                                           start_date__lte=stop_date)
+            .prefetch_related('signed_up__who__profile',
+                'signed_off__who__profile', 'voided__who__profile', 'skeleton')
+            .order_by('skeleton__start_time')
+        )
+        sorted_chores = collections.defaultdict(list)
+        for chore in chores_this_cycle:
+            sorted_chores[chore.start_date].append(chore)
+
+        chores_by_date = []
+        for date in timedelta.daterange(start_date, stop_date, inclusive=True):
+            chores_today = sorted_chores[date]
+            if chores_today:
+                chore_dicts = [{
+                        'chore': chore,
+                        'class': chore.find_CSS_classes(request.user),
+                        'sentences': get_chore_sentences(request.user, chore)
+                } for chore in chores_today]
+                chores_by_date.append({
+                    'date'    : date,
+                    'class'   : find_day_classes(date),
+                    'id'      : find_day_id(date),
+                    'name'    : find_day_name(date, coop),
+                    'schedule': chore_dicts,
+                    'weekday' : weekdays[date.weekday()],
+                 })
+        if chores_by_date:
+            #TODO: might want to change these keys.
+            cycles.append({
+                'days': chores_by_date,
+                'class': find_cycle_classes(cycle_num, start_date, stop_date),
+                'id': cycle_num,
+            })
+    if cycles:
+        return HttpResponse(json.dumps({
+            'html': render_to_string('chores/chores_list_cycle.html',
+                                     {'coop': coop, 'cycles': cycles}),
+            'least_cycle_num': min(int(cycle['id']) for cycle in cycles),
+        }), status=200)
+    else:
+        return HttpResponse('', reason='No chores found.', status=204)
+
+def updates_report(request, chores=None, include_balances=False,
                    balance_change=None):
     chores = {chore.id: {
         'sentences': [sentence.dict_for_json() for sentence in
-                      get_chore_sentences(response.user, chore)],
-        'CSS_classes': chore.find_CSS_classes(response.user),
+                      get_chore_sentences(request.user, chore)],
+        'CSS_classes': chore.find_CSS_classes(request.user),
     } for chore in chores}
-    response_dict = {'chores': chores}
+    request_dict = {'chores': chores}
     if include_balances:
-        response_dict.update({
-            'current_balance': calculate_balance(response.user)
+        request_dict.update({
+            'current_balance': calculate_balance(request.user)
         })
     if balance_change is not None:
-        response_dict.update({'balance_change': balance_change})
-    return HttpResponse(json.dumps(response_dict), status=200)
+        request_dict.update({'balance_change': balance_change})
+    return HttpResponse(json.dumps(request_dict), status=200)
 
 #TODO: also take `method_name` from `request.POST`? Would be a little involved,
 #since there's creating/editing/fetching as well, and they use different
@@ -48,7 +161,11 @@ def updates_report(response, chores=None, include_balances=False,
 @login_required()
 def act(request, method_name):
     user = request.user
-    chore_id = int(request.POST.get('chore_id', ''))
+    try:
+        chore_id = int(request.POST.get('chore_id', ''))
+    except ValueError as e:
+        #TODO: here `status` should be pulled from `e` (?).
+        return HttpResponse('', reason=e, status=400)
     if not chore_id:
         return HttpResponse('', reason='No chore ID provided.', status=400)
     whitelist = ('sign_up', 'sign_off', 'void', 'revert_sign_up',
@@ -94,28 +211,3 @@ chore_create = create_function_creator(model=Chore,
                                        model_form_callable=ChoreFormCreator)
 chore_edit = edit_function_creator(model=Chore,
                                    model_form_callable=ChoreFormCreator)
-
-#TODO: move this into the bulk creation.
-@login_required()
-def chore_create_TO_CHANGE(request):
-    raise NotImplementedError
-    form = ChoreForm(request.POST)
-    if form.is_valid():
-        #Django (as of version 1.6.5) doesn't permit bulk creation of
-        #inherited models, and Chore inherits from Timecard. So we have to do
-        #it one-by-one. Haven't managed to get it working with Signatures,
-        #either. Guessing a problem with pk? See <https://docs.djangoproject
-        #.com/en/dev/ref/models/querysets/#bulk-create>.
-        repeat_interval = datetime.timedelta(days=form.cleaned_data[
-            'repeat_interval'])
-        for repeat in range(form.cleaned_data['number_of_repeats']):
-            shift = repeat*repeat_interval
-            chore = Chore.objects.create_blank(
-                skeleton=form.cleaned_data['skeleton'],
-                start_date=form.cleaned_data['start_date']+shift,
-                stop_date=form.cleaned_data['stop_date']+shift,
-            )
-    return make_form_response(form)
-
-def chore_edit_TO_CHANGE(request):
-    raise NotImplementedError
