@@ -19,8 +19,12 @@ contacts
 
 {% block body %}
 
-<table class="contacts_table">
-	<caption>Contact List for {{ coop.profile.full_name }}</caption>
+<table id="contacts_table">
+	<caption>Contact List for {{ coop.profile.full_name }}
+		<form id="exportForm" action="/contacts/export/">
+			<input type="submit" class="submit_button" value="Export as vCard">
+		</form>
+	</caption>
 	<thead>
 		<tr><th>Name</th><th>Phone Number</th><th>Email Address</th><th>Birthday</th><th>Stewardship(s)</th></tr>
 	</thead>
@@ -54,7 +58,4 @@ contacts
 		<td></td>
 	</tbody>
 </table>
-<form action="/contacts/export/">
-	<input type="submit" class="submit_button" value="Export as vCard">
-</form>
 {% endblock %}

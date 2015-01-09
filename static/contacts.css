@@ -1,3 +1,8 @@
-table.contacts_table {
+#contacts_table {
 	border-spacing: 2em 0em;
+}
+
+#exportForm {
+	font-size: 0.75em;
+	display: inline; 
 }
