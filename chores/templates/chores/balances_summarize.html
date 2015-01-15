@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 
 {% block pagetitle %}
-balance summary
+balances
 {% endblock %}
 
 {% block head %}
 {% load staticfiles %}
-<link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
 <link type="text/css" rel="stylesheet" href="{% static "balances_summarize.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
-<script src={% static "chores/balances_summarize.js" %}></script>
+<script src={% static "chores/balances.js" %}></script>
 {% endblock head %}
 
 {% block body %}
