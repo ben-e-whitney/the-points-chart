@@ -51,13 +51,14 @@ var lastFetchMilliseconds = (new Date()).getTime();
 
 var insertChores = function(data, textStatus, jqXHR) {
   var responseAsObject = JSON.parse(data);
+  //TODO: disable button if the first cycle is already loaded.
   if (responseAsObject.least_cycle_num == 1) {
     $('#load_more_button').prop('disabled', true);
   }
   $('#chores').prepend(responseAsObject.html);
   cycleOffsetToFetch -= 1;
   if (firstLoad) {
-    $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1500)
+    $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1000);
     firstLoad = false;
   } else {
     window.scrollTo(0, 0);
@@ -173,7 +174,10 @@ var fetchUpdates = function() {
   );
   lastFetchMilliseconds = newMilliseconds;
 };
-fetchUpdates = loaderMessage(fetchUpdates, 'updating');
+//Delaying this (temporarily, maybe) until after it's called once so that the
+//message from fetching chores isn't immediately overridden when the page is
+//loaded.
+//fetchUpdates = loaderMessage(fetchUpdates, 'updating');
 
 var fetchChores = function() {
   $.get('/chores/actions/fetch/chores/',
@@ -187,5 +191,7 @@ fetchChores = loaderMessage(fetchChores, 'loading');
 $(window).load(function() {
   fetchChores(0);
   fetchUpdates();
+  //See note above.
+  fetchUpdates = loaderMessage(fetchUpdates, 'updating');
   setInterval(fetchUpdates, 1000*fetchInterval);
 });
