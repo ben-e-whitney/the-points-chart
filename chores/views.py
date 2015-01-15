@@ -171,50 +171,6 @@ def get_chore_sentences(user, chore):
 
 def get_obligations(user, coop=None):
 
-    if coop is None:
-        coop = user.profile.coop
-
-    upcoming_lower_boundary = datetime.date.today()
-    upcoming_upper_boundary = (upcoming_lower_boundary+
-            datetime.timedelta(days=coop.profile.release_buffer))
-    all_chores = (Chore.objects.for_coop(coop).signed_up(user, True)
-                     .order_by('start_date'))
-    all_stewardships = Stewardship.objects.for_coop(coop).signed_up(
-        user, True).order_by('start_date')
-    data = {
-        'all chores': all_chores,
-        'upcoming chores': all_chores.in_window(upcoming_lower_boundary,
-                                                upcoming_upper_boundary),
-        # For these next three it doesn't matter who has (or hasn't) signed.
-        # off. Putting no checks for validity here.
-        'voided': all_chores.voided(None, True),
-        'signed off': all_chores.signed_off(None, True),
-        'not signed off': all_chores.signed_off(None, False),
-        'all stewardships': all_stewardships,
-        'stewardships': all_stewardships.classical(),
-        'special points': all_stewardships.special_points(),
-        'loans': all_stewardships.loan(),
-        'absences': Absence.objects.signed_up(user, True),
-        'share changes': ShareChange.objects.signed_up(user, True)
-    }
-    #TODO: use `coop.profile` timezone thing.
-    data['ready for signature'] = (data['not signed off'].voided(None, False)
-                               .filter(start_date__lte=datetime.date.today()))
-    # Rearranging.
-    for key, item in data.items():
-        data[key] = {'original': item, 'per cycle': []}
-    cycles = []
-    accounts = []
-    for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
-        cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
-                       'cycle_stop': cycle_stop})
-        for key in data:
-            data[key]['per cycle'].append(
-                data[key]['original'].in_window(cycle_start, cycle_stop)
-            )
-    # Rearranging again.
-    data.update(calculate_load_info(user=user, coop=coop)[0])
-
     def list_processor(items):
         return [
             {'items': item} for item in items if item
@@ -239,6 +195,58 @@ def get_obligations(user, coop=None):
              'html_title': 'Exact value: {val}'.format(val=value)}
             for value in items
         ]
+
+    if coop is None:
+        coop = user.profile.coop
+
+    print('    total inside get_obligations: {lcn}'.format(lcn=len(connection.queries)))
+    upcoming_lower_boundary = datetime.date.today()
+    upcoming_upper_boundary = (upcoming_lower_boundary+
+            datetime.timedelta(days=coop.profile.release_buffer))
+    all_chores = Chore.objects.for_coop(coop).signed_up(user, True).order_by(
+        'start_date').prefetch_related('skeleton', 'signed_up', 'signed_off',
+                                       'voided')
+    all_stewardships = Stewardship.objects.for_coop(coop).signed_up(
+        user, True).order_by('start_date')
+    print('    total after getting all_chores and all_stewardships: {lcn}'.format(
+        lcn=len(connection.queries)))
+    data = {
+        'all chores': all_chores,
+        'upcoming chores': all_chores.in_window(upcoming_lower_boundary,
+                                                upcoming_upper_boundary),
+        # For these next three it doesn't matter who has (or hasn't) signed.
+        # off. Putting no checks for validity here.
+        'voided': all_chores.voided(None, True),
+        'signed off': all_chores.signed_off(None, True),
+        'not signed off': all_chores.signed_off(None, False),
+        'all stewardships': all_stewardships,
+        'stewardships': all_stewardships.classical(),
+        'special points': all_stewardships.special_points(),
+        'loans': all_stewardships.loan(),
+        'absences': Absence.objects.signed_up(user, True),
+        'share changes': ShareChange.objects.signed_up(user, True)
+    }
+    print('    total after defining data: {lcn}'.format(lcn=len(connection.queries)))
+    #TODO: use `coop.profile` timezone thing.
+    data['ready for signature'] = (data['not signed off'].voided(None, False)
+                               .filter(start_date__lte=datetime.date.today()))
+    # Rearranging.
+    for key, item in data.items():
+        data[key] = {'original': item, 'per cycle': []}
+    print('    total after rearranging: {lcn}'.format(lcn=len(connection.queries)))
+    cycles = []
+    accounts = []
+    for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
+        cycles.append({'cycle_num': cycle_num, 'cycle_start': cycle_start,
+                       'cycle_stop': cycle_stop})
+        for key in data:
+            data[key]['per cycle'].append(
+                data[key]['original'].in_window(cycle_start, cycle_stop)
+            )
+    # Rearranging again.
+    print('    total after sorting (?): {lcn}'.format(lcn=len(connection.queries)))
+    data.update(calculate_load_info(user=user, coop=coop)[0])
+    print('    total after using calculate_load_info: {lcn}'.format(lcn=len(connection.queries)))
 
     display_infos = [
         DisplayInformation('list_information', {
@@ -276,6 +284,8 @@ def get_obligations(user, coop=None):
     dict_to_return['table_information'].insert(0,
         dict_to_return['summary_information'][0])
     dict_to_return.update({'point_cycles': cycles})
+    print('    total just before returning: {lcn}'.format(lcn=len(connection.queries)))
+    #TODO: get rid of temporary variables here.
     return dict_to_return
 
 # TODO: this method is quite long. See if there's a way to pull some of it out
@@ -317,10 +327,7 @@ def calculate_load_info(user=None, coop=None):
     accounts = {cooper: {'user': cooper, 'load': [], 'credits': [],
                          'balance': []} for cooper in all_coopers}
     olcn = len(connection.queries)
-    print('setting up: {lcn}'.format(lcn=len(connection.queries)-olcn))
     for cycle_num, start_date, stop_date in coop.profile.cycles():
-        print('TOTAL at the beginning of cycle {cn}: {lcn}'.format(
-            cn=cycle_num, lcn=len(connection.queries)))
         olcn = len(connection.queries)
         cycle_data = {key: value.in_window(start_date, stop_date)
                       for key, value in data.items()}
@@ -329,8 +336,6 @@ def calculate_load_info(user=None, coop=None):
         for key in ('stewardships', 'absences', 'share changes'):
             cycle_data[key] = cycle_data[key].prefetch_related(
                 'signed_up__who', 'skeleton')
-        print('    getting cycle data: {lcn}'.format(
-            lcn=len(connection.queries)-olcn))
         olcn = len(connection.queries)
         adds_to_points = itertools.chain(cycle_data['chores'],
                                          cycle_data['stewardships'])
@@ -343,8 +348,6 @@ def calculate_load_info(user=None, coop=None):
             #total_points += chore.skeleton.point_value
         #for stewardship in cycle_data['stewardships']:
             #total_points += stewardship.skeleton.point_value
-        print("    summing 'total's: {lcn}".format(
-            lcn=len(connection.queries)-olcn))
         olcn = lcn=len(connection.queries)
         presences = {cooper: cooper.profile.presence for cooper in all_coopers}
         shares = {cooper: cooper.profile.share for cooper in all_coopers}
@@ -361,8 +364,6 @@ def calculate_load_info(user=None, coop=None):
         total_presence_share = sum(presence_shares.values())
         # 'ppds' stands for 'points per day-share.'
         ppds = total_points/total_presence_share
-        print('    getting ppds: {lcn}'.format(
-            lcn=len(connection.queries)-olcn))
 
         #Initialize credit count for this cycle.
         for account in accounts.values():
@@ -392,9 +393,6 @@ def calculate_load_info(user=None, coop=None):
             balance = account['credits'][-1]-load+old_balance
             account['load'].append(load)
             account['balance'].append(balance)
-        print('    calculating balances: {lcn}'.format(
-            lcn=len(connection.queries)-olcn))
-    print('TOTAL total: {lcn}'.format(lcn=len(connection.queries)))
     return [account for cooper, account in  accounts.items()
             if cooper in user_set]
 
@@ -411,9 +409,6 @@ def user_stats_list(request, username):
     #TODO: use `User.is_authenticated` or something instead?
     if username == 'AnonymousUser':
         return redirect('/chores/{usn}/'.format(usn=request.user))
-    #TODO: before doing this, we should make 'me' a prohibited username.
-    #elif username == 'me':
-        #user = request.user
     else:
         try:
             user = User.objects.get(username=username)
@@ -421,18 +416,26 @@ def user_stats_list(request, username):
             return HttpResponse('No such user.', status=404)
     #TODO: check that `request.user` is the points steward for the co-op `user`
     #is a member of.
-    if (request.user != user and not request.user.profile.points_steward):
+    coop = user.profile.coop
+    #The requesting user can see the stats for themself and, if they are the
+    #points steward, the other users of their coop.
+    #TODO: maybe could shave off a database hit by comparing `coop.id` and
+    #`request.user.profile.coop.id` instead of fetching entire object.
+    if (request.user != user and not (request.user.profile.points_steward and
+                                      request.user.profile.coop == coop)):
         return HttpResponse(
             'You are neither {nic} nor the Points Steward.'.format(
                 nic=user.profile.nickname),
             status=403
         )
-    coop = user.profile.coop
     render_dictionary = {
         'coop': coop,
         'cooper': user,
     }
+    print('total before get_obligations: {lcn}'.format(lcn=len(connection.queries)))
     render_dictionary.update(get_obligations(user, coop=coop))
+    print('total after get_obligations: {lcn}'.format(lcn=len(connection.queries)))
+
     print('TOTAL before rendering: {lcn}'.format(lcn=len(connection.queries)))
     return render(request, 'chores/user_stats_list.html',
                   dictionary=render_dictionary)
@@ -442,7 +445,6 @@ def chores_list(request):
     return render(request,'chores/chores_list.html')
 
 def calendar_create(request, username):
-    reset_queries()
     #TODO: this code is repeated. Could make a function.
     try:
         user = User.objects.get(username=username)
@@ -460,7 +462,6 @@ def calendar_create(request, username):
     template = loader.get_template('calendars/calendar.ics')
     context = Context({'coop': coop, 'chores': chores})
     response.write(template.render(context))
-    print('TOTAL: {lcn}'.format(lcn=len(connection.queries)))
     return response
 
 @login_required()

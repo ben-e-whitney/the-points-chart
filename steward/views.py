@@ -23,7 +23,6 @@ from chores.views import calculate_load_info
 
 # TODO: include also lists of all stewardships, absences, etc.
 def users_stats_summarize(request, coop=None):
-    reset_queries()
     if coop is None:
         coop = request.user.profile.coop
     cycles = [{
@@ -45,7 +44,6 @@ def users_stats_summarize(request, coop=None):
         for row in accounts
     }
     max_width = 0
-    print(accounts)
     for row, balances in accounts.items():
         max_width = max(max_width, *[len(balance['formatted_value']) for
                                      balance in balances])
@@ -58,7 +56,6 @@ def users_stats_summarize(request, coop=None):
 
     display_info = DisplayInformation('rows', {'sections': [None],
         'subsections': [users]}, user_ids, lambda x: x, None)
-    print('TOTAL before returning: {lcn}'.format(lcn=len(connection.queries)))
     return {
         'point_cycles': cycles,
         'rows': display_info.create_template_data(accounts)
@@ -67,6 +64,9 @@ def users_stats_summarize(request, coop=None):
 @login_required()
 @user_passes_test(lambda user: user.profile.points_steward)
 def steward_forms(request):
+
+    reset_queries()
+
     coop = request.user.profile.coop
     #TODO: could pull out common action for these two. Seems like overkill.
     HTML_create_form = lambda html_id, name, main_form, choice_objects: {
@@ -83,25 +83,33 @@ def steward_forms(request):
     }
     credit_and_edit_args = (
         ('chore_skeleton', 'Chore Skeleton', ChoreSkeletonForm(),
-             ChoreSkeleton.objects.for_coop(coop)),
+             ChoreSkeleton.objects.for_coop(coop).prefetch_related()),
         ('chore', 'Chore', ChoreFormCreator(request)(),
-             Chore.objects.for_coop(coop)),
+             Chore.objects.for_coop(coop).prefetch_related('skeleton',
+                'signed_up__who__profile', 'signed_off__who__profile',
+                'voided__who__profile')),
         ('classical_stewardship_skeleton', 'Stewardship Skeleton',
-             ClassicalStewardshipSkeletonForm(),
-             StewardshipSkeleton.objects.all().classical().for_coop(coop)),
+             ClassicalStewardshipSkeletonForm(), (StewardshipSkeleton.objects
+                .all().classical().for_coop(coop))),
         ('classical_stewardship', 'Stewardship',
-             ClassicalStewardshipFormCreator(request)(),
-             Stewardship.objects.all().classical().for_coop(coop)),
+             ClassicalStewardshipFormCreator(request)(), (Stewardship.objects
+                .all().classical().for_coop(coop)
+                .prefetch_related('skeleton'))),
         ('special_points', 'Special Points Grant',
              SpecialPointsFormCreator(request)(),
-             Stewardship.objects.all().special_points().for_coop(coop)),
-        ('loan', 'Loan', LoanFormCreator(request)(),
-             Stewardship.objects.all().loan().for_coop(coop)),
+             (Stewardship.objects.all().special_points().for_coop(coop)
+                .prefetch_related('signed_up__who__profile'))),
+        ('loan', 'Loan', LoanFormCreator(request)(), (Stewardship.objects
+            .all().loan().for_coop(coop)
+            .prefetch_related('signed_up__who__profile'))),
         ('absence', 'Absence', AbsenceFormCreator(request)(),
-             Absence.objects.for_coop(coop)),
+             Absence.objects.for_coop(coop)
+             .prefetch_related('signed_up__who__profile')),
         ('share_change', 'Share Change', ShareChangeFormCreator(request)(),
-             ShareChange.objects.for_coop(coop)),
-        ('user', 'User', UserFormCreator(request)(), coop.user_set.all()),
+             ShareChange.objects.for_coop(coop).prefetch_related(
+                 'signed_up__who__profile')),
+        ('user', 'User', UserFormCreator(request)(),
+             coop.user_set.all().prefetch_related('profile')),
     )
     create_only_args = ()
     edit_only_args = (
@@ -110,10 +118,15 @@ def steward_forms(request):
     )
     create_forms = [HTML_create_form(*args) for args in itertools.chain(
         credit_and_edit_args, create_only_args)]
+    print('total after making create_forms: {lcn}'.format(
+        lcn=len(connection.queries)))
     edit_forms = [HTML_edit_form(*args) for args in itertools.chain(
         credit_and_edit_args, edit_only_args)]
+    print('total after making edit_forms: {lcn}'.format(
+        lcn=len(connection.queries)))
     render_dictionary = {'create_forms': create_forms,
                          'edit_forms': edit_forms}
     render_dictionary.update(users_stats_summarize(request, coop=coop))
+    print('total after calling users_stats_summarize: {lcn}'.format(
+        lcn=len(connection.queries)))
     return render(request, 'steward/steward_forms.html', render_dictionary)
-

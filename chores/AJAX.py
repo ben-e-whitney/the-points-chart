@@ -1,3 +1,5 @@
+from django.db import connection, reset_queries
+
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -43,7 +45,7 @@ def updates_fetch(request):
 @ensure_csrf_cookie
 @login_required()
 def chores_fetch(request):
-    print('got to chores_fetch')
+    reset_queries()
 
     def find_day_id(date):
         return date.isoformat()
@@ -98,9 +100,10 @@ def chores_fetch(request):
         #TODO: look into fetching all chores and then sorting in Python.
         chores_this_cycle = (chores.filter(start_date__gte=start_date,
                                            start_date__lte=stop_date)
-            .prefetch_related('signed_up__who__profile',
-                'signed_off__who__profile', 'voided__who__profile', 'skeleton')
-            .order_by('skeleton__start_time')
+            .prefetch_related('skeleton', 'signed_up__who__profile',
+                'signed_off__who__profile', 'voided__who__profile')
+            .order_by('-skeleton__sort_index', 'skeleton__start_time',
+                      'skeleton__short_name')
         )
         sorted_chores = collections.defaultdict(list)
         for chore in chores_this_cycle:
