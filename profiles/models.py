@@ -44,6 +44,7 @@ class UserProfile(models.Model):
     share = models.DecimalField(max_digits=3, decimal_places=2)
     # This value should be in days.
     presence = models.PositiveSmallIntegerField()
+    cached_balance = models.FloatField(null=True, blank=True)
     def __str__(self):
         return 'UserProfile for {use}'.format(use=self.user.username)
     # TODO: add methods here to calculate presence and share for a given cycle?
@@ -78,11 +79,6 @@ class GroupProfile(models.Model):
 
 
     def cycles(self, start_date=None, stop_date=None, offset=None):
-        print('arguments:\n'
-              '    start_date: {std}\n'
-              '    stop_date:  {spd}\n'
-              '    offset:     {off}'.format(std=start_date, spd=stop_date,
-                                             off=offset))
 
         def ceil_integer_division(x, y):
             return x//y+(1 if x%y else 0)
@@ -92,8 +88,6 @@ class GroupProfile(models.Model):
         if stop_date is None:
             stop_date = self.today()+datetime.timedelta(
                 days=self.release_buffer)
-###############################################################################
-        #TODO: FIGURE OUT WHAT IT GOING ON HERE!
         window_width = datetime.timedelta(days=self.cycle_length)
         assert window_width > datetime.timedelta(days=0)
         assert stop_date >= start_date
@@ -129,7 +123,6 @@ class GroupProfile(models.Model):
             lower_bound = start_date+window_width*cycle_index
             upper_bound = lower_bound+window_width-one_day
             yield str(1+cycle_index).zfill(num_width), lower_bound, upper_bound
-###############################################################################
 
     def get_cycle_endpoints(self, cycle_num):
         cycle_start_date = self.start_date+datetime.timedelta(

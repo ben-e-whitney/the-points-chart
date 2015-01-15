@@ -424,6 +424,7 @@ class ChoreSkeleton(Skeleton):
     start_time = models.TimeField()
     end_time   = models.TimeField()
     objects = PassThroughManager.for_queryset_class(ChoreSkeletonQuerySet)()
+    sort_index = models.IntegerField(default=0)
 
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')
