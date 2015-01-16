@@ -32,7 +32,7 @@ Will this always have data to display? Might even need to cut this out.
 <h1>Information for {{ cooper.profile.nickname }} </h1>
 <div id="form_accordion">
 <h2>Particulars</h2>
-<table class="selected_information_table">
+<table id="selected_information_table">
 	<thead>
 	</thead>
 	<tbody>
@@ -57,12 +57,10 @@ Will this always have data to display? Might even need to cut this out.
 
 <h2>Summary</h2>
 <table>
-	<!--<caption>Summary for {{ cooper.profile.nickname }}</caption>-->
-	<thead>
-	</thead>
+	<thead></thead>
 	<tbody>
 	<tr>
-		<th>Category</th>
+		<th></th>
 		{% for point_cycle in point_cycles %}
 			<th title="{{ point_cycle.cycle_start }} to {{ point_cycle.cycle_stop }}">
 				Cycle {{ point_cycle.cycle_num }}
@@ -73,9 +71,9 @@ Will this always have data to display? Might even need to cut this out.
 		<tr><th>{{ section.title }}</th></tr>
 		{% for subsection in section.sections %}
 			<tr>
-				<td style="text-align: right">{{ subsection.title }}</td>
+				<td class="subsection_title">{{ subsection.title }}</td>
 				{% for dictionary in subsection.dictionaries %}
-					<td style="text-align: right" title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
+					<td class="dictionary_item" title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
 				{% endfor %}
 			</tr>
 		{% endfor %}

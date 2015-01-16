@@ -1,5 +1,13 @@
-table.selected_information_table {
+#selected_information_table {
 	border-spacing: 4em 0em;
+}
+
+th {
+	text-align: left;
+}
+
+.subsection_title, .dictionary_item {
+	text-align: right;
 }
 
 .selected_information_section {
