@@ -55,11 +55,12 @@ class GroupProfile(models.Model):
                                  related_name='profile')
     short_name = models.CharField(max_length=2**6)
     short_description = models.TextField()
-    full_name  = models.CharField(max_length=2**6)
+    full_name = models.CharField(max_length=2**6)
     time_zone = timezone_field.TimeZoneField()
     email_prefix = models.CharField(max_length=2**6, default='[Points]',
                                     blank=True)
     start_date = models.DateField()
+    stop_date = models.DateField()
     # TODO: if this is changed in the middle of the semester it could cause
     # havoc (writing this just after making cycle-picker for new Loans and
     # ShareChanges). Maybe this should not be editable by anyone but an admin.
