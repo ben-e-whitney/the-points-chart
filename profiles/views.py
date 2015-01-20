@@ -31,8 +31,8 @@ def contacts_list(request):
 
     coop = request.user.profile.coop
     #TODO: use whatever function you decide on to filter by active.
-    coopers = coop.user_set.filter(is_active=True).order_by(
-        'profile__first_name')
+    coopers = coop.user_set.filter(is_active=True).prefetch_related(
+        'profile').order_by('profile__first_name')
     stewardships = [
         get_classical_stewardships(cooper) for cooper in coopers
     ]
@@ -44,7 +44,7 @@ def contacts_list(request):
 @login_required()
 def contacts_export(request):
     coop = request.user.profile.coop
-    coopers = coop.user_set.all()
+    coopers = coop.user_set.all().prefetch_related('profile')
     contacts = sorted(
         (cooper.profile for cooper in coopers if cooper != request.user),
         key=lambda cooper: cooper.first_name

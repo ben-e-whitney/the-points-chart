@@ -454,7 +454,8 @@ def calendar_create(request, username):
         return HttpResponse('User has not enabled a public calendar.',
                             status=403)
     coop = user.profile.coop
-    chores = Chore.objects.for_coop(coop).signed_up(user, True)
+    chores = (Chore.objects.for_coop(coop).signed_up(user, True)
+        .prefetch_related('skeleton', 'signed_up'))
     response = HttpResponse(content_type='text/calendar')
     response['Content-Disposition'] = ('attachment; '
         'filename="{sho}_chore_calendar.ics"'.format(
