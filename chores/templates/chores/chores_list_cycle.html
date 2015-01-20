@@ -22,7 +22,13 @@
 					</td>
 					{% endfor %}
 					<td id="chore_{{ schedule_item.chore.id }}" class="chore_cell {{ schedule_item.class }}">
-				<strong>{{ schedule_item.chore.skeleton.short_name }} ({{ schedule_item.chore.skeleton.point_value }})</strong>
+						<strong>
+						{% if schedule_item.chore.skeleton.url %}
+							<a href="{{ schedule_item.chore.skeleton.url }}">{{ schedule_item.chore.skeleton.short_name }}</a>
+						{% else %}
+							{{ schedule_item.chore.skeleton.short_name }}
+						{% endif %}
+						({{ schedule_item.chore.skeleton.point_value }})</strong>
 					{% for sentence in schedule_item.sentences %}
 						<span id="{{ sentence.identifier }}_sentence_{{ schedule_item.chore.id }}">
 							{% if sentence.report %}

@@ -412,6 +412,7 @@ class Skeleton(models.Model):
     coop = models.ForeignKey(Group)
     short_name = models.CharField(max_length=2**6)
     short_description = models.TextField()
+    url = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return '{sn} Skeleton at {co}'.format(sn=self.short_name,
