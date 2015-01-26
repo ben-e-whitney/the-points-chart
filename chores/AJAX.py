@@ -173,6 +173,7 @@ def act(request, method_name):
         return HttpResponse('', reason='No chore ID provided.', status=400)
     whitelist = ('sign_up', 'sign_off', 'void', 'revert_sign_up',
                  'revert_sign_off', 'revert_void')
+    revert_list = ('revert_sign_up', 'revert_sign_off', 'revert_void')
     if method_name not in whitelist:
         return HttpResponse('', reason='Method name not permitted.',
                             status=403)
@@ -182,6 +183,8 @@ def act(request, method_name):
         chore = Chore.objects.get(pk=chore_id)
     except ObjectDoesNotExist as e:
         return HttpResponse('', reason=e.args[0], status=404)
+    stewardship_invoked = method_name in revert_list and (user !=
+        chore.signed_up.who)
     try:
         getattr(chore, method_name)(user)
     except ChoreError as e:
@@ -190,19 +193,26 @@ def act(request, method_name):
 
     #TODO: change to method that gets current cycle if you make one.
     coop = user.profile.coop
+    today = coop.profile.today()
     for cycle_num, start_date, stop_date in coop.profile.cycles():
-        pass
-    current_cycle = chore.start_date >= start_date
+        if stop_date >= today:
+            ongoing_cycle = chore.start_date >= start_date
+            break
+    #TODO: careful here. We might have just cleared `chore.signed_up.who`.
     my_chore = chore.signed_up.who == user
     point_value = chore.skeleton.point_value
-    balance_change = {
-        'sign_up': point_value if current_cycle else 0,
+    #Make no balance change if `user` is the Points Steward changing someone
+    #else's chore.
+    print('ongoing_cycle: {cc}'.format(cc=ongoing_cycle))
+    balance_change = 0 if stewardship_invoked else {
+        'sign_up': point_value if ongoing_cycle else 0,
         'sign_off': 0,
-        'void': -point_value if current_cycle and my_chore else 0,
-        'revert_sign_up': -point_value if current_cycle else 0,
+        'void': -point_value if ongoing_cycle and my_chore else 0,
+        'revert_sign_up': -point_value if ongoing_cycle else 0,
         'revert_sign_off': 0,
-        'revert_void': point_value if current_cycle and my_chore else 0,
+        'revert_void': point_value if ongoing_cycle and my_chore else 0,
     }[method_name]
+    print('balance_change: {bc}'.format(bc=balance_change))
     return updates_report(request, chores=(chore,), include_balances=False,
                           balance_change=balance_change)
 
