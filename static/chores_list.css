@@ -50,11 +50,75 @@ table.chores_list td.button_cell {
 	vertical-align: top;
 }
 
+table.chores_list td.buttons_cell ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+@media (orientation: landscape) {
+	.buttons_cell ul {
+		display: table;
+		table-layout: fixed;
+
+		/*width: 100%;*/
+	}
+
+	.buttons_cell ul li {
+		display: table-cell;
+	}
+}
+
+@media (orientation: portrait) {
+	table.chores_list td.buttons_cell {
+		/*Doesn't seem to work.*/
+		height: 100%;
+	}
+
+	.buttons_cell ul {
+		min-width: 100%;
+		height: 100%;
+
+
+		display: table;
+		/*display: block;*/
+	}
+
+	.buttons_cell ul li {
+		min-width: 100%;
+		/*height: 100%;*/
+
+
+		display: table-cell;
+		/*display: block;*/
+	}
+
+	.buttons_cell ul li button {
+		min-width: 100%;
+		/*height: 5em;*/
+		height: 100%;
+	}
+
+	.buttons_cell {
+		height: 100%;
+		/*font-size: 2em;*/
+		/*transform: rotate(-0.25turn);*/
+	}
+
+	.chore_cell {
+		font-size: 1.5em;
+	}
+
+	.no_button {
+		display: none;
+	}
+}
+
 table.chores_list td.chore_cell {
 	width: 33em;
 	padding-left: 3em;
 	text-indent: -2.75em;
-	text-align: justify;
+	/*text-align: justify;*/
 	border-top-right-radius: 0.6em;
 	border-bottom-right-radius: 0.6em;
 }

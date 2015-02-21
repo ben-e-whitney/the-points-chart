@@ -32,19 +32,85 @@ body {
 	clear: both;
 }
 
-.sidebar {
-	position: fixed;
-	bottom: 0;
-	text-align: center;
-	/*TODO: look up what this does.*/
-	z-index: 1;
+@media (orientation: landscape) {
+
+	#main_content {
+		border-top-left-radius: 1em;
+		padding-left: 1em;
+		margin-left: 5em;
+
+		border-left-width: 0.3em;
+		border-top-width: 0.3em;
+
+		border-right-width: 0em;
+		border-bottom-width: 0em;
+
+		border-style: solid;
+		border-color: #F1C232;
+	}
+
+	#left_sidebar {
+		left: 0;
+	}
+
+	.sidebar {
+		position: fixed;
+		bottom: 0;
+		text-align: center;
+		z-index: 1;
+	}
 }
 
-#left_sidebar {
-	left: 0;
+@media (orientation: portrait) {
+	#header {
+		display: none;
+	}
+
+	#main_content {
+		margin-top: 3.4em;
+		/*This can be avoided if every page has a title of some sort.*/
+		/*padding-top: 0.5em;*/
+		border-style: none;
+
+		padding-left: 0.5em;
+		padding-right: 0.5em;
+	}
+
+	.sidebar {
+		position: fixed;
+		text-align: center;
+		z-index: 1;
+	}
+
+	#left_sidebar {
+		width: 100%;
+		/*Unsure that these two are needed.*/
+		/*margin: auto;*/
+		overflow: auto;
+		padding-bottom: 0.4em;
+
+		top: 0;
+		background-color: #073763;
+
+		border-width: 0 0 0.3em 0;
+		border-style: solid;
+		border-color: #F1C232;
+	}
+
+	#left_sidebar ul {
+		display: table;
+		table-layout: fixed;
+		width: 100%;
+	}
+
+	#left_sidebar ul li {
+		display: table-cell;
+	}
+
 }
 
 #right_sidebar {
+	bottom: 0;
 	right: 0;
 }
 
@@ -53,31 +119,15 @@ body {
 }
 
 #main_content {
-	border-top-left-radius: 1em;
 	background-color: #FFFFFF;
 	color: black;
-	padding-left: 1em;
-	margin-left: 5em;
-	/*overflow: auto;*/
-
-	border-left-width: 0.3em;
-	border-top-width: 0.3em;
-
-	border-right-width: 0em;
-	border-bottom-width: 0em;
-
-	border-style: solid;
-	border-color: #F1C232;
-
 	/*height: auto;*/
 }
 
-#left_sidebar.nav_icon {
-	margin-left: 0em;
-}
-
-#left_sidebar .nav_button a:hover {
-	margin-left: 0.5em;
+#left_sidebar ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
 }
 
 #logo {
