@@ -73,7 +73,7 @@ class StewardshipSkeleton(Skeleton):
     category = models.CharField(max_length=4, choices=CATEGORY_CHOICES,
                                 default=STEWARDSHIP)
     # Per cycle.
-    point_value = models.PositiveSmallIntegerField()
+    point_value = models.IntegerField()
     objects = PassThroughManager.for_queryset_class(
         StewardshipSkeletonQuerySet)()
 
