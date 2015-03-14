@@ -2,10 +2,14 @@
 
 {% block head %}
 {% load staticfiles %}
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="{% static "fontello/css/fontello.css" %}"/>
 <link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
 <link type="text/css" rel="stylesheet" href="{% static "chores_list.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
 <script src={% static "jquery-cookie/src/jquery.cookie.js" %}></script>
-<script src={% static "resizers.js" %}></script>
+<script src={% static "function_creators.js" %}></script>
 <script src={% static "chores/chores_list.js" %}></script>
 {% endblock head %}
 
@@ -17,14 +21,24 @@ chores
 As of this writing this could be made a static page.
 {% endcomment %}
 
+
+{% block body_header %}
+Chores
+{% endblock  %}
 {% block body %}
+{% if user.profile.points_steward %}
+		<div id="chore_form_dialog">
+			<form id="chore_edit_form">
+			</form>	
+		</div>
+	{% endif %}
 	<div id="chores"></div>
 {% endblock %}
 
 {% block right_sidebar %}
 	<span id="loaderMessage"></span>
 	<img id="loaderImage" alt="" src="{% static "ajax-loader.gif" %}">
-	<button id="load_more_button" onclick="fetchChores()">
+	<button id="load_more_button" class="styled_button" onclick="fetchChores()">
 		Load<br>More
 	</button>
 	<div id="current_balance" class="balance OK_balance">?</div>

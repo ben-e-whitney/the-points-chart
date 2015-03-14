@@ -1,5 +1,5 @@
 #chores {
-	margin-top: -1em;
+	margin-top: -0.5em;
 }
 
 #current_balance {
@@ -45,135 +45,95 @@
 	white-space: nowrap;
 }
 
-table.chores_list td.button_cell {
+.button_cell {
 	white-space: nowrap;
-	vertical-align: top;
+  /*TODO: I do not understand what this is doing*/
+  /*or why it works.*/
+  width: 0em;
 }
 
-table.chores_list td.buttons_cell ul {
-	list-style-type: none;
-	margin: 0;
-	padding: 0;
+/*Hide titlebar in JQuery dialog.*/
+.ui-widget-header {
+	background: none;
+	border: 0;
 }
 
-@media (orientation: landscape) {
-	.buttons_cell ul {
-		display: table;
-		table-layout: fixed;
-
-		/*width: 100%;*/
-	}
-
-	.buttons_cell ul li {
-		display: table-cell;
-	}
+table.chores_list td {
+  display: table-cell;
 }
 
-@media (orientation: portrait) {
-	table.chores_list td.buttons_cell {
-		/*Doesn't seem to work.*/
-		height: 100%;
-	}
 
-	.buttons_cell ul {
-		min-width: 100%;
-		height: 100%;
-
-
-		display: table;
-		/*display: block;*/
-	}
-
-	.buttons_cell ul li {
-		min-width: 100%;
-		/*height: 100%;*/
-
-
-		display: table-cell;
-		/*display: block;*/
-	}
-
-	.buttons_cell ul li button {
-		min-width: 100%;
-		/*height: 5em;*/
-		height: 100%;
-	}
-
-	.buttons_cell {
-		height: 100%;
-		/*font-size: 2em;*/
-		/*transform: rotate(-0.25turn);*/
-	}
-
-	.chore_cell {
-		font-size: 1.5em;
-	}
-
-	.no_button {
-		display: none;
-	}
-}
-
-table.chores_list td.chore_cell {
-	width: 33em;
-	padding-left: 3em;
-	text-indent: -2.75em;
-	/*text-align: justify;*/
-	border-top-right-radius: 0.6em;
-	border-bottom-right-radius: 0.6em;
-}
-
-/*This needs to come after the disabled selector so that it*/
-/*overrides on 'no_button' disabled buttons.*/
-/*table.chores_list button.no_button {*/
-	/*background-color: #FFFFFF;*/
-	/*color: #FFFFFF;*/
-	/*border-color: #000000;*/
-/*}*/
-
-.signed_up_button, .signed_off_button {
-	background-color: #073763;
-	border-color:	#073763;
-	color: #F1C232;
-}
-
-.voided_button {
-	background-color: #FF0000;
-	border-color: #FF0000;
+button.chore_button {
+	text-align: left;
+	font-weight: normal;
+	font-variant: normal;
+	font-size: 1em;
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
 	color: #000000;
+	background-color: #FFFFFF;
+	border-color: #FFFFFF;
 }
 
-.signed_up_button.revert, .signed_off_button.revert {
+/*Need to repeat this in order to override `button:disabled` styling.*/
+.chore_button:disabled {
+	color: #000000;
+	background-color: #FFFFFF;
+	border-color: #FFFFFF;
+}
+
+.void_button, .chore_dropdown_button {
+	background-color: #FFFFFF;
+	border-color: #FFFFFF;
+	color: #000000;
+	padding: 0;
+	border: 0;
+	font-size: 1.5em;
+}
+
+.void_button:disabled, .chore_dropdown_button:disabled {
+	background-color: #FFFFFF;
+	border-color: #FFFFFF;
+	color: #CCCCCC;
+}
+
+.chore_dropdown_button {
+
+}
+
+.chore_button.needs_sign_up, .chore_button.needs_sign_off {
+	background-color: #B8D8F5;
+	border-color: #B8D8F5;
+}
+
+button.user_signed_up {
 	background-color: #F1C232;
 	border-color: #F1C232;
-	color: #073763;
 }
 
-.voided_button.revert {
-	background-color: #000000;
-	border-color: #000000;
-	color: #FF0000;
+button.user_signed_off {
 }
 
-.needs_sign_up {
-	background-color: #B8D8F5;
-}
-
-.needs_sign_off {
-	background-color: #B8D8F5;
+.completed_successfully {
+	text-decoration: line-through;
 }
 
 .voided {
 	text-decoration: line-through;
 }
 
-.user_signed_up {
-	background-color: #F1C232;
+@media screen and (min-width: 681px) {
+  button.chore_button {
+    width: 35em;
+  }
 }
 
-.user_signed_off {
-}
+@media screen and (max-width: 680px) {
+  table.chores_list {
+    width: 100%;
+  }
 
-.completed_successfully {
-	text-decoration: line-through;
+  button.chore_button {
+    width: 100%;
+  }
 }

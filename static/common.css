@@ -4,13 +4,22 @@
 
 html, body {
 	height: 100%;
-	width: 100%;
-	padding: 0;
 	margin: 0;
+	padding: 0;
+	width: 100%;
 }
 
 body {
 	background-color: #073763;
+}
+
+h1 {
+	margin-top: 0em;
+}
+
+h2 {
+	margin-bottom: 0.25em;
+
 }
 
 #wrapper {
@@ -23,91 +32,57 @@ body {
 }
 
 #header {
-	width: 100%;
 	overflow: auto;
+	width: 100%;
+}
+
+#nav_bar {
+	font-size: 2em;
+	float: right;
+
+	display: table;
+	table-layout: fixed;
+
+	list-style-type: none;
+	padding: 0;
+	margin: 0 0.25em 0 0;
+}
+
+#nav_bar.unauthenticated {
+  display: none;
+}
+
+
+#nav_bar li {
+	display: table-cell;
+	padding-left: 1em;
+	white-space: nowrap;
+}
+
+.nav_button a {
+	display: block;
+}
+
+.nav_icon {
+	margin-left: -0.2em;
+	vertical-align: middle;
 }
 
 #middle_section {
-	width: 100%;
 	clear: both;
+	width: 100%;
 }
 
-@media (orientation: landscape) {
-
-	#main_content {
-		border-top-left-radius: 1em;
-		padding-left: 1em;
-		margin-left: 5em;
-
-		border-left-width: 0.3em;
-		border-top-width: 0.3em;
-
-		border-right-width: 0em;
-		border-bottom-width: 0em;
-
-		border-style: solid;
-		border-color: #F1C232;
-	}
-
-	#left_sidebar {
-		left: 0;
-	}
-
-	.sidebar {
-		position: fixed;
-		bottom: 0;
-		text-align: center;
-		z-index: 1;
-	}
+.about_section {
+	max-width: 33em;
 }
 
-@media (orientation: portrait) {
-	#header {
-		display: none;
-	}
-
-	#main_content {
-		margin-top: 3.4em;
-		/*This can be avoided if every page has a title of some sort.*/
-		/*padding-top: 0.5em;*/
-		border-style: none;
-
-		padding-left: 0.5em;
-		padding-right: 0.5em;
-	}
-
-	.sidebar {
-		position: fixed;
-		text-align: center;
-		z-index: 1;
-	}
-
-	#left_sidebar {
-		width: 100%;
-		/*Unsure that these two are needed.*/
-		/*margin: auto;*/
-		overflow: auto;
-		padding-bottom: 0.4em;
-
-		top: 0;
-		background-color: #073763;
-
-		border-width: 0 0 0.3em 0;
-		border-style: solid;
-		border-color: #F1C232;
-	}
-
-	#left_sidebar ul {
-		display: table;
-		table-layout: fixed;
-		width: 100%;
-	}
-
-	#left_sidebar ul li {
-		display: table-cell;
-	}
-
+.sidebar {
+  position: fixed;
+  text-align: center;
+  z-index: 1;
 }
+
 
 #right_sidebar {
 	bottom: 0;
@@ -126,35 +101,18 @@ body {
 
 #left_sidebar ul {
 	list-style-type: none;
-	margin: 0;
 	padding: 0;
+	/*margin: 0;*/
+	margin-top: 0;
+	margin-bottom: 0;
 }
 
 #logo {
 	float: left;
 	font-size: 3em;
-}
-
-.nav_bar {
-	float: right;
-	font-size: 2em;
-	/*TODO: this is gross. Figure out how to do it the right way.*/
-	margin-top: 0.25em;
-	margin-right: 0.75em;
-}
-
-.nav_button {
-	float: left;
-	margin-left: 1em;
-}
-
-.nav_button a {
-	display: block;
-}
-
-.nav_icon {
-	vertical-align: middle;
-	margin-left: -0.2em;
+	/*Just trying to line this up with the left sidebar.*/
+	/*This value is reliant on the font size being used.*/
+	margin-left: 0.25em;
 }
 
 table caption {
@@ -172,29 +130,33 @@ a:hover {
 }
 
 button, input[type='submit'] {
-	display: block;
-	font-variant: small-caps;
-	font-size: 0.75em;
-	color: #FFFFFF;
-	font-weight: bold;
-	border-width: 0.2em;
-	border-style: solid;
-	border-radius: 0.6em;
-	/*height: 100%;*/
-	display: inline-block;
 	vertical-align: middle;
+}
+
+button.styled_button, input[type='submit'].styled_button {
+	border-radius: 0.6em;
+	border-style: solid;
+	border-style: solid;
+	border-width: 0.2em;
+	border-width: 0.2em;
+	color: #FFFFFF;
+	display: block;
+	display: inline-block;
+	font-size: 0.75em;
+	font-variant: small-caps;
+	font-weight: bold;
 
 	background-color: #073763;
 	border-color: #073763;
 	color: #FFFFFF;
 }
 
-button, button:active {
-	/*There was an error in parsing this.*/
-	/*outline-style: 0;*/
-	outline-style: none;
-}
+/*TODO: is this used?*/
+/*button, button:active {*/
+	/*outline-style: none;*/
+/*}*/
 
+/*TODO: decide what to apply this to.*/
 button:disabled {
 	background-color: #CCCCCC;
 	border-color: #CCCCCC;
@@ -203,11 +165,103 @@ button:disabled {
 
 button:active {
 	background-color: #FFFFFF;
-	color: #000000;
 	border-color: #000000;
-	
+	color: #000000;
 }
 
 #main_content a {
 	font-weight: bold;
 }
+
+select {
+  max-width: 16em;
+}
+
+@media screen and (min-width: 681px) {
+
+  #left_sidebar ul.unauthenticated {
+    visibility: hidden;
+  }
+
+	#unauthenticated_logo {
+		display: none;
+	}
+
+	#main_content {
+		border-top-left-radius: 1em;
+		padding-left: 1em;
+
+		border-left-width: 0.3em;
+		border-top-width: 0.3em;
+
+		border-right-width: 0em;
+		border-bottom-width: 0em;
+
+		border-style: solid;
+		border-color: #F1C232;
+	}
+
+	#left_sidebar {
+		left: 0;
+		text-align: center;
+	}
+
+	#left_sidebar ul {
+		display: inline-block;
+		margin-left: 0.75em;
+		margin-right: 0.75em;
+	}
+
+	.sidebar {
+		bottom: 0;
+	}
+}
+
+@media screen and (max-width: 680px) {
+  #left_sidebar ul.unauthenticated {
+    display: none;
+  }
+
+	#unauthenticated_logo {
+		text-align: center;
+		font-size: 3em;
+		color: #F1C232;
+	}
+
+	#header {
+		display: none;
+	}
+
+	#main_content {
+		border-style: none;
+		padding-left: 0.5em;
+		padding-right: 0.5em;
+	}
+
+	#left_sidebar {
+		background-color: #073763;
+		border-color: #F1C232;
+		border-style: solid;
+		border-width: 0 0 0.3em 0;
+		overflow: auto;
+		padding-bottom: 0.4em;
+		top: 0;
+		width: 100%;
+	}
+
+	#left_sidebar ul {
+		display: table;
+		table-layout: fixed;
+		width: 100%;
+	}
+
+	#left_sidebar ul li {
+		display: table-cell;
+	}
+
+	#left_sidebar ul li object {
+		height: 4em;
+		width: 4em;
+	}
+}
+

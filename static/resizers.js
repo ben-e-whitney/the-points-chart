@@ -34,12 +34,34 @@ var columnize = function($element) {
 };
 
 var resizeMainContent = function() {
+  var threshold_width = 680;
   $main_content = $('#main_content');
 	var paddings = $main_content.outerHeight()-$main_content.height();
-	var min_height = $(window).height()-($('#header').height()+$('#footer').height()+paddings);
+  var headerHeight = 0;
+  var sidebarWidth = 0;
+  $leftSidebar = $('#left_sidebar');
+  if ($(window).width() <= threshold_width) {
+    headerHeight = $leftSidebar.outerHeight();
+  } else {
+    sidebarWidth = $leftSidebar.outerWidth();
+  }
+  paddings -= headerHeight;
+	var min_height = $(window).height()-paddings;
   if ($main_content.height() < min_height) {
     $main_content.css('min-height', min_height);
   }
+  $main_content.css('margin-top', headerHeight);
+  $main_content.css('margin-left', sidebarWidth);
 };
 
-$(window).load(resizeMainContent);
+var repositionNavBar = function() {
+  $nav_bar = $('#nav_bar');
+  if ($nav_bar.width() + $('#logo').width() < $(window).width()) {
+    $nav_bar.css('margin-top', ($('#header').height()-$nav_bar.height())/2);
+  }
+};
+
+$(window).load(function() {
+  resizeMainContent();
+  repositionNavBar();
+});

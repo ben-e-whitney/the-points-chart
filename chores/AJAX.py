@@ -15,14 +15,13 @@ import datetime
 import json
 from chores.models import Chore, ChoreSkeleton, ChoreError
 from chores.forms import ChoreSkeletonForm, ChoreFormCreator
-from chores.views import get_chore_sentences, calculate_balance
+from chores.views import get_chore_button, calculate_balance
 from utilities import timedelta
 from utilities.AJAX import (make_form_response, create_function_creator,
     edit_function_creator)
 
 @login_required()
 def updates_fetch(request):
-    print('in AJAX.updates_fetch')
     try:
         milliseconds = int(request.GET.get('milliseconds', ''))
     except ValueError as e:
@@ -32,13 +31,11 @@ def updates_fetch(request):
     if not milliseconds:
         return HttpResponse('', reason='No milliseconds value provided.',
                             status=400)
-    print('milliseconds: {ms}'.format(ms=milliseconds))
     cutoff = datetime.datetime.utcfromtimestamp(milliseconds/1000).replace(
         tzinfo=timezone.get_default_timezone())
     changed_chores = Chore.objects.for_coop(request.user.profile.coop).filter(
         updated__gte=cutoff).prefetch_related('signed_up__who__profile',
         'signed_off__who__profile', 'voided__who__profile')
-    print('about to call updates_report')
     return updates_report(request, chores=changed_chores,
                           include_balances=True)
 
@@ -67,7 +64,7 @@ def chores_fetch(request):
             'day_current'    : timedelta.in_interval(  -3, difference,  0),
             'day_near_future': timedelta.in_interval(   0, difference,  3),
         }
-        return ' '.join([key for key,value in css_classes.items() if value])
+        return ' '.join([key for key, value in css_classes.items() if value])
 
     def find_cycle_classes(cycle_num, start_date, stop_date):
         '''
@@ -81,7 +78,7 @@ def chores_fetch(request):
             'cycle_current': start_date <= today <= stop_date,
             'cycle_future' : today < start_date,
         }
-        return ' '.join([key for key,value in css_classes.items() if value])
+        return ' '.join([key for key, value in css_classes.items() if value])
 
     weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
                 'Saturday', 'Sunday']
@@ -116,7 +113,7 @@ def chores_fetch(request):
                 chore_dicts = [{
                         'chore': chore,
                         'class': chore.find_CSS_classes(request.user),
-                        'sentences': get_chore_sentences(request.user, chore)
+                        'chore_button': get_chore_button(request.user, chore),
                 } for chore in chores_today]
                 chores_by_date.append({
                     'date'    : date,
@@ -135,8 +132,11 @@ def chores_fetch(request):
             })
     if cycles:
         return HttpResponse(json.dumps({
+            #Not sure why `user` isn't already available as a variable in the
+            #template anyway. It is in `base.html`.
             'html': render_to_string('chores/chores_list_cycle.html',
-                                     {'coop': coop, 'cycles': cycles}),
+                                     {'coop': coop, 'cycles': cycles,
+                                      'user': request.user}),
             'least_cycle_num': min(int(cycle['id']) for cycle in cycles),
         }), status=200)
     else:
@@ -145,8 +145,7 @@ def chores_fetch(request):
 def updates_report(request, chores=None, include_balances=False,
                    balance_change=None):
     chores = {chore.id: {
-        'sentences': [sentence.dict_for_json() for sentence in
-                      get_chore_sentences(request.user, chore)],
+        'button': get_chore_button(request.user, chore),
         'CSS_classes': chore.find_CSS_classes(request.user),
     } for chore in chores}
     request_dict = {'chores': chores}
@@ -158,31 +157,51 @@ def updates_report(request, chores=None, include_balances=False,
         request_dict.update({'balance_change': balance_change})
     return HttpResponse(json.dumps(request_dict), status=200)
 
-#TODO: also take `method_name` from `request.POST`? Would be a little involved,
-#since there's creating/editing/fetching as well, and they use different
-#request methods.
+#TODO: adapt this so that it can also work for other actions (creating,
+#editing, fetching, and whatever else).
 @login_required()
-def act(request, method_name):
+def act(request):
     user = request.user
     try:
-        chore_id = int(request.POST.get('chore_id', ''))
+        chore_id = int(request.POST.get('choice_id', None))
     except ValueError as e:
         #TODO: here `status` should be pulled from `e` (?).
         return HttpResponse('', reason=e, status=400)
     if not chore_id:
         return HttpResponse('', reason='No chore ID provided.', status=400)
-    whitelist = ('sign_up', 'sign_off', 'void', 'revert_sign_up',
-                 'revert_sign_off', 'revert_void')
-    revert_list = ('revert_sign_up', 'revert_sign_off', 'revert_void')
-    if method_name not in whitelist:
-        return HttpResponse('', reason='Method name not permitted.',
-                            status=403)
     #TODO: either use `Chore.DoesNotExist` here or use `ObjectDoesNotExist`
     #everywhere.
     try:
         chore = Chore.objects.get(pk=chore_id)
     except ObjectDoesNotExist as e:
         return HttpResponse('', reason=e.args[0], status=404)
+
+    whitelist = ('sign_up', 'sign_off', 'void', 'revert_sign_up',
+                 'revert_sign_off', 'revert_void')
+    revert_list = ('revert_sign_up', 'revert_sign_off', 'revert_void')
+    method_name = request.POST.get('method_name', '')
+    if not method_name:
+        return HttpResponse('', reason=e, status=400)
+    if method_name == 'deduce':
+        #Here we establish which methods we prefer/assume when a user (possibly
+        #a steward) clicks on the chore button. In particular, we try to sign
+        #off before trying to revert a sign-up.
+        for attribute_name in (
+            'sign_off_permission',
+            'revert_sign_off_permission',
+            'revert_sign_up_permission',
+            'sign_up_permission',
+        ):
+            if getattr(chore, attribute_name)(request.user)['boolean']:
+                method_name = attribute_name.replace('_permission', '')
+                break
+    elif method_name == 'void':
+        if not chore.void_permission(request.user)['boolean']:
+            method_name = 'revert_void'
+    if method_name not in whitelist:
+        return HttpResponse('', reason='Method name not permitted.',
+                            status=403)
+
     stewardship_invoked = method_name in revert_list and (user !=
         chore.signed_up.who)
     try:
@@ -203,7 +222,6 @@ def act(request, method_name):
     point_value = chore.skeleton.point_value
     #Make no balance change if `user` is the Points Steward changing someone
     #else's chore.
-    print('ongoing_cycle: {cc}'.format(cc=ongoing_cycle))
     balance_change = 0 if stewardship_invoked else {
         'sign_up': point_value if ongoing_cycle else 0,
         'sign_off': 0,
@@ -212,7 +230,6 @@ def act(request, method_name):
         'revert_sign_off': 0,
         'revert_void': point_value if ongoing_cycle and my_chore else 0,
     }[method_name]
-    print('balance_change: {bc}'.format(bc=balance_change))
     return updates_report(request, chores=(chore,), include_balances=False,
                           balance_change=balance_change)
 

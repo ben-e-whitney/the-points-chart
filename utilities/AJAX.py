@@ -8,8 +8,8 @@ def make_form_response(form):
     return HttpResponse(json.dumps({
         #TODO: there should be a better way of doing this.
         'errors': {
-            field: ' '.join(form.errors[field]) for field in form.errors if
-            field != '__all__'
+            field: ' '.join(form.errors[field]) for field in form.errors
+                if field != '__all__'
         },
         'non_field_errors': list(form.non_field_errors())
     }), status=200 if form.is_valid() else 400)
@@ -35,8 +35,10 @@ def create_function_creator(model=None, model_callable=None, model_form=None,
 def edit_function_creator(model=None, model_callable=None, model_form=None,
                           model_form_callable=None, get_id=None):
     if get_id is None:
-        get_id = lambda request: int(getattr(request, request.method)[
-            'choice_id'])
+        #TODO: should add exception catching here.
+        get_id = lambda request: int(
+            getattr(request, request.method).get('choice_id', None)
+        )
     #TODO: IMPORTANT: check that the person making the object and the object
     #they're editing are in the same co-op.
     #TODO: add some parameter letting us specify whether we want to only allow

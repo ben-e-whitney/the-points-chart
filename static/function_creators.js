@@ -52,10 +52,11 @@ var submit_function_creator = function(post_URL, choice_id) {
     e.preventDefault();
     var data = {};
     var form = $(this);
-    form.find('.submit_button').prop('disabled', true);
+    form.unbind()
+      .find('.submit_button').prop('disabled', true);
     //TODO: again, this is probably inefficient. Just getting it working for now.
     form.find('.form_status').empty();
-    form.find('.form_error').remove()
+    form.find('.form_error').remove();
     $.each(form.serializeArray(), function(key, form_element) {
       data[form_element.name] = form_element.value;
     });
@@ -76,4 +77,45 @@ var submit_function_creator = function(post_URL, choice_id) {
     return null;
     };
   return submit_function;
+};
+
+var configure_create_form = function(index, args) {
+  /*
+  `index` is not used. `args` should be an array with entries
+    0: Name of the object to be created (to identify the form).
+    1: Name of the Django application in which the object is defined.
+    2: Name of the object to be created (to determine which Django view function
+       handles the request).
+  */
+  var create_URL = '/'+args[1]+'/actions/create/'+args[2]+'/';
+  $('#'+args[0]+'_create_form').submit(submit_function_creator(create_URL));
+};
+
+var configure_edit_form = function(index, args) {
+  /*
+  `index` is not used. `args` should be an array with entries
+    0: Name of the object to be edited (to identify the form).
+    1: Name of the Django application in which the object is defined.
+    2: Name of the object to be edited (to determine which Django view function
+       handles the request).
+  */
+  var edit_URL = '/'+args[1]+'/actions/edit/'+args[2]+'/';
+  $('#'+args[0]+'_edit_form_selector').find('select').change(function() {
+    var main_form = $('#'+args[0]+'_edit_form');
+    //Get rid of the submit function. It's going to be added again later, so this
+    //prevents it from being called multiple times then. Could probably be made smoother.
+    main_form.unbind()
+    .empty();
+    var choice_id = $(this).val();
+    if (choice_id) {
+      //TODO: add a class for the loading message. Failure message could go there, too.
+      $(this).closest('tr').append("<td id='selector_loading_message'>Loading ...</td>");
+      $.get(edit_URL, {choice_id: choice_id}, function (returnedData, textStatus, jqXHR) {
+        //TODO: instead maybe we could first check whether the td is present, and so on.
+        $('#selector_loading_message').remove();
+        main_form.append(returnedData);
+        $('#'+args[0]+'_edit_form').submit(submit_function_creator(edit_URL, choice_id));
+      });
+    }
+  });
 };
