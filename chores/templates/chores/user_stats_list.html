@@ -19,6 +19,9 @@ stats
 <script src={% static "chores/user_stats_list.js" %}></script>
 {% endblock head %}
 
+{% block body_header %}
+Information for {{ cooper.profile.nickname }}
+{% endblock %}
 {% block body %}
 <!--
     Thinking this should be part of a larger table, put off to the left.
@@ -26,10 +29,6 @@ stats
     Stewardship points, special points, loan balance, anything else.
 -->
 
-<!--
-Will this always have data to display? Might even need to cut this out.
--->
-<h1>Information for {{ cooper.profile.nickname }} </h1>
 <div id="form_accordion">
 <h2>Particulars</h2>
 <table id="selected_information_table">

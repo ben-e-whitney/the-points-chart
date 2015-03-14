@@ -23,7 +23,6 @@ steward
 <!--</div>-->
 <h3>Summary</h3>
 <table>
-	<caption>Balances</caption>
 	<thead>
 	</thead>
 	<tbody>
@@ -61,16 +60,12 @@ custom-template-tags/#inclusion-tags>.
 <h2>Forms for Creating</h2>
 <div id="creating_forms">
 {% for form in create_forms %}
-<!--<div class="form_unit">-->
 <h3>{{ form.title }}</h3>
 	<div class="form_container">
 		<form id="{{ form.html_id }}" method="post">
 			<table>
-				<!--<div class="form_fields">-->
 							{% csrf_token %}
 							{{ form.main_form.as_table }}
-				<!--</div>-->
-				<!--<div>-->
 					<tr>
 						<td></td>
 						<td>
@@ -78,12 +73,9 @@ custom-template-tags/#inclusion-tags>.
 						</td>
 						<td class="form_status"></td>
 					</tr>
-				<!--</div>-->
 		</table>
 		</form>
 	</div>
-	<!--<br>-->
-<!--</div>-->
 {% endfor %}
 </div>
 <h2>Forms for Editing</h2>

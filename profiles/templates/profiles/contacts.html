@@ -17,14 +17,14 @@ contacts
 {% endcomment %}
 {% load staticfiles %}
 
+{% block body_header %}
+Contact List for {{ coop.profile.full_name }}
+<form id="exportForm" action="/contacts/export/">
+	<input type="submit" class="submit_button" value="Export as vCard">
+</form>
+{% endblock %}
 {% block body %}
-
 <table id="contacts_table">
-	<caption>Contact List for {{ coop.profile.full_name }}
-		<form id="exportForm" action="/contacts/export/">
-			<input type="submit" class="submit_button" value="Export as vCard">
-		</form>
-	</caption>
 	<thead>
 		<tr><th>Name</th><th>Phone Number</th><th>Email Address</th><th>Birthday</th><th>Stewardship(s)</th></tr>
 	</thead>
