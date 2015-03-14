@@ -304,18 +304,20 @@ class Timecard(models.Model):
         [
             lambda self, user: not (self.signed_up.who == user or
                 user.profile.points_steward),
-            lambda self, user: self.voided,
+            lambda self, user: not self.signed_up,
             lambda self, user: self.signed_off,
+            lambda self, user: self.voided,
             lambda self, user: (self.too_close_to_revert_sign_up() and
                                 not self.in_grace_period()),
             lambda self, user: (self.in_the_past(user.profile.coop) and
                                 not self.in_grace_period())
         ], [
             "You didn't sign up for that chore.",
-            lambda self, user: self.get_scoop_message(user, 'voided',
-                                                     'voided'),
+            "No one has signed up for that chore.",
             lambda self, user: self.get_scoop_message(user, 'signed_off',
                                                       'signed off'),
+            lambda self, user: self.get_scoop_message(user, 'voided',
+                                                     'voided'),
             lambda self, user: (
                 "It's too close to the chore. Talk to {ste} if you really "
                 "can't do it."
@@ -324,8 +326,14 @@ class Timecard(models.Model):
         ]
     )
     revert_sign_off_permission = permission_creator(
-        [lambda self, user: self.signed_off.who != user],
-        ["You didn't sign off on that chore."])
+        [
+            lambda self, user: not self.signed_up,
+            lambda self, user: self.signed_off.who != user,
+        ],
+        [
+            "No one is signed off on that chore.",
+            "You didn't sign off on that chore.",
+        ])
 
     revert_void_permission = permission_creator(
         [

@@ -28,147 +28,70 @@ def pretty_print_query(query):
     query = str(query).replace(', ', ',\n')
     print(query)
 
-# TODO: another option (attractive) would be to put all of this as methods of
-# the Signature model. I think we would want to subclass that class, but all
-# for the sake of including some view logic in the model? Not sure what is the
-# best course.
 class ChoreSentence():
     chore_attribute = None
     past_participle = None
-    adjectival_phrase = None
-    button_action_text = None
-    button_reversion_text = None
-    JavaScript_action_function = None
-    JavaScript_reversion_function = None
     action_permission_attribute = None
     reversion_permission_attribute = None
-    # Attributes used for the JSON dict. Need to have fallback values.
-    identifier = None
-    button = None
-    button_text = None
-    report = None
-    report_text = None
-    JavaScript_function = None
 
     def __init__(self, user, chore, chore_attribute=None):
         if chore_attribute is not None:
             self.chore_attribute = chore_attribute
-        #TODO: should this use the co-op's timezone? Look to see how chore dates
-        #are stored. Check here and everywhere else.
+        #TODO: should this use the co-op's timezone? Look to see how chore
+        #dates are stored. Check here and everywhere else.
         # Otherwise use the class attribute.
-        self.current_datetime = datetime.datetime.now()
-        self.current_date = self.current_datetime.date()
         self.user = user
         self.chore = chore
         self.signature = getattr(self.chore, self.chore_attribute)
         self.owner = self.signature.who
-        self.identifier = self.chore_attribute
-        self.get_button()
-        self.get_report()
 
     def action_permitted(self):
-        return getattr(self.chore, self.action_permission_attribute)(
-            self.user)['boolean']
+        return any(
+            getattr(self.chore, attribute)(self.user)['boolean']
+            for attribute in (self.action_permission_attribute,
+                              self.reversion_permission_attribute)
+        )
 
-    def reversion_permitted(self):
-        return getattr(self.chore, self.reversion_permission_attribute)(
-            self.user)['boolean']
-
-    def get_button(self):
-        self.button_text = self.button_action_text
-        if self.action_permitted():
-            self.button = True
-            self.JavaScript_function = self.JavaScript_action_function
-        else:
-            if self.reversion_permitted():
-                self.button = True
-                self.JavaScript_function = self.JavaScript_reversion_function
-            else:
-                self.button = False
-
-    def current_report_text(self):
-        return '{beg} {end}.'.format(
-            beg='You are' if self.owner == self.user else '{nam} is'.format(
-                nam=self.owner.profile.nickname),
-            end=self.adjectival_phrase)
-
-    def past_report_text(self):
-        return '{nam} {vpp}.'.format(nam='You' if self.owner == self.user else
-            self.owner.profile.nickname, vpp=self.past_participle)
-
-    def get_report(self):
-        # TODO: worth an `in_the_future`-style method for this? Or give that
-        # method an option or something?
-        self.report = self.signature
-        if self.report:
-            if self.current_date <= self.chore.start_date:
-                self.report_text = self.current_report_text()
-            else:
-                self.report_text = self.past_report_text()
-        else:
-            self.report_text = None
-
-    def dict_for_json(self):
-        return {
-            'identifier': self.identifier,
-            'button': self.button,
-            'button_text': self.button_text,
-            # Need to explicity convert to Boolean here so that JSON doesn't
-            # complain when it is dealt a Signature. For now this is not
-            # necessary with `self.button`.
-            'report': bool(self.report),
-            'report_text': self.report_text,
-            'JavaScript_function': self.JavaScript_function
-        }
+    def text(self):
+        return '{nam} {ppa}.'.format(
+            nam='You' if self.owner == self.user else
+                self.owner.profile.nickname,
+            ppa=self.past_participle
+        ) if self.signature else None
 
 class VoidSentence(ChoreSentence):
     chore_attribute = 'voided'
     past_participle = 'voided'
-    button_action_text = 'Void'
-    button_reversion_text = 'Revert Void'
-    # Remember that `void` is a JavaScript operator.
-    JavaScript_action_function = 'voidChore'
-    JavaScript_reversion_function = 'revertVoidChore'
     action_permission_attribute = 'void_permission'
     reversion_permission_attribute = 'revert_void_permission'
-
-    def current_report_text(self):
-        return '{nam} {vpp}.'.format(
-            nam='You' if self.owner == self.user else
-                self.owner.profile.nickname,
-            vpp=self.past_participle)
-
-    past_report_text = current_report_text
 
 class SignUpSentence(ChoreSentence):
     chore_attribute = 'signed_up'
     past_participle = 'signed up'
-    adjectival_phrase = 'signed up'
-    button_action_text = 'Sign Up'
-    button_reversion_text = 'Revert Sign-Up'
-    JavaScript_action_function = 'signUpChore'
-    JavaScript_reversion_function = 'revertSignUpChore'
     action_permission_attribute = 'sign_up_permission'
     reversion_permission_attribute = 'revert_sign_up_permission'
 
 class SignOffSentence(ChoreSentence):
     chore_attribute = 'signed_off'
     past_participle = 'signed off'
-    adjectival_phrase = 'signed off'
-    button_action_text = 'Sign Off'
-    button_reversion_text = 'Revert Sign-Off'
-    JavaScript_action_function = 'signOffChore'
-    JavaScript_reversion_function = 'revertSignOffChore'
     action_permission_attribute = 'sign_off_permission'
     reversion_permission_attribute = 'revert_sign_off_permission'
 
-def get_chore_sentences(user, chore):
-    return [
-        SignUpSentence(user, chore),
-        SignOffSentence(user, chore),
-        VoidSentence(user, chore)
+def get_chore_button(user, chore):
+    sentences = [
+        constructor(user, chore)
+        for constructor in (SignUpSentence, SignOffSentence, VoidSentence)
     ]
+    texts = [sentence.text() for sentence in sentences]
+    permissions = [sentence.action_permitted() for sentence in sentences]
+    return {
+        'text': ' '.join(filter(None, texts)),
+        #Separate the voiding permissions.
+        'enabled': any(permissions[0:2]),
+        'void_enabled': permissions[2],
+    }
 
+#TODO: THIS IS HORRIBLE. FIX IT.
 def get_obligations(user, coop=None):
 
     def list_processor(items):
@@ -348,7 +271,7 @@ def calculate_load_info(user=None, coop=None):
             #total_points += chore.skeleton.point_value
         #for stewardship in cycle_data['stewardships']:
             #total_points += stewardship.skeleton.point_value
-        olcn = lcn=len(connection.queries)
+        olcn = len(connection.queries)
         presences = {cooper: cooper.profile.presence for cooper in all_coopers}
         shares = {cooper: cooper.profile.share for cooper in all_coopers}
         #TODO: this assumes that all absences are signed up for.
@@ -442,14 +365,14 @@ def user_stats_list(request, username):
 
 @login_required()
 def chores_list(request):
-    return render(request,'chores/chores_list.html')
+    return render(request, 'chores/chores_list.html')
 
 def calendar_create(request, username):
     #TODO: this code is repeated. Could make a function.
     try:
         user = User.objects.get(username=username)
     except User.DoesNotExist:
-            return HttpResponse('No such user.', status=404)
+        return HttpResponse('No such user.', status=404)
     if not user.profile.public_calendar and request.user != user:
         return HttpResponse('User has not enabled a public calendar.',
                             status=403)
