@@ -104,8 +104,3 @@ def format_balance(load=None, balance=None):
         'html_title': 'Exact value: {val}'.format(val=balance),
         'CSS_class': ' '.join(('balance', CSS_class)),
     }
-
-#TODO: this should be handled as a static page. Not sure how to get that
-#working with templates.
-def about(request):
-    return render(request, 'utilities/about.html')

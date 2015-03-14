@@ -5,7 +5,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    url(r'^$', RedirectView.as_view(url='/about/')),
+    url(r'^$', RedirectView.as_view(url='/chores/')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^chores/', include('chores.urls')),
     url(r'^steward/', include('steward.urls')),
@@ -17,5 +17,4 @@ urlpatterns = patterns('',
         {'next_page': '/login/'}, name='logout'),
     url(r'^balances/', 'chores.views.balances_summarize',
         name='balances_summarize'),
-    url(r'^about/', 'utilities.views.about', name='about'),
 )
