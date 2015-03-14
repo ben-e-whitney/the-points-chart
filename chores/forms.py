@@ -11,7 +11,7 @@ class ChoreSkeletonForm(BasicForm):
     class Meta:
         model = ChoreSkeleton
         fields = ['short_name', 'short_description', 'point_value',
-                  'start_time', 'end_time']
+                  'start_time', 'end_time', 'url']
 
     def save(self, commit=True, request=None, **kwargs):
         skeleton = super().save(commit=False)
@@ -19,6 +19,10 @@ class ChoreSkeletonForm(BasicForm):
         if commit:
             skeleton.save()
         return skeleton
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['url'].label = 'URL'
 
 def ChoreFormCreator(request):
     coop = request.user.profile.coop
