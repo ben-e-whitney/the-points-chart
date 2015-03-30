@@ -18,9 +18,6 @@ steward
 <div id="outer_accordion">
 <h2>Overview of the Co-op</h2>
 <div id="overview">
-<!--<h3>Particulars</h3>-->
-<!--<div>-->
-<!--</div>-->
 <h3>Summary</h3>
 <table>
 	<thead>
@@ -34,17 +31,16 @@ steward
 			</th>
 		{% endfor %}
 	</tr>
-	{% for section in rows %}
-		<!--<tr><th>{{ section.title }}</th></tr>-->
-		{% for subsection in section.sections %}
+	{% for section in balance_sections %}
+		{% for subsection in section.children %}
 			<tr>
-				<td style="text-align: left">
-					<a href="/chores/{{ subsection.title.username }}/">
-						{{ subsection.title.username }}
+				<td class="table_subsection">
+					<a href="/chores/{{ subsection.title }}">
+						{{ subsection.title }}
 					</a>
 				</td>
-				{% for dictionary in subsection.dictionaries %}
-				<td class="{{ dictionary.CSS_class }}" title="{{ dictionary.html_title }}">{{ dictionary.formatted_value }}</td>
+				{% for element in subsection.children %}
+					<td class="{{ element.CSS_classes }}" title="{{ element.title }}">{{ element.content }}</td>
 				{% endfor %}
 			</tr>
 		{% endfor %}

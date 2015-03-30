@@ -18,7 +18,7 @@ from stewardships.forms import (ClassicalStewardshipSkeletonForm,
     AbsenceFormCreator, LoanFormCreator, ShareChangeFormCreator)
 from steward.forms import UserFormCreator, ChoiceFormCreator
 
-from utilities.views import DisplayInformation, format_balance
+from utilities.views import TableElement, TableParent, format_balance
 from chores.views import calculate_load_info
 
 # TODO: include also lists of all stewardships, absences, etc.
@@ -31,34 +31,31 @@ def users_stats_summarize(request, coop=None):
         'cycle_stop' : cycle_stop
     } for cycle_num, cycle_start, cycle_stop in coop.profile.cycles()]
     accounts = calculate_load_info(coop=coop)
-    accounts.sort(key=lambda x: x['user'].profile.nickname)
-    # TODO: could move around to iterate through only once.
-    # TODO: `users` is used in a pretty hacky way in the template.
-    users = [row['user'] for row in accounts]
-    user_ids = [row['user'].id for row in accounts]
-    accounts = {
-        row['user'].id: [
+    accounts.sort(key=lambda row: row['user'].username)
+    accounts = [{
+        'username': row['user'].username,
+        'formatted_balances': [
             format_balance(load=cycle_load, balance=cycle_balance)
             for cycle_load, cycle_balance in zip(row['load'], row['balance'])
-        ]
+        ],
+    } for row in accounts]
+    max_width = max(*[len(balance['formatted_value']) for row in accounts
+                      for balance in row['formatted_balances']])
+    def element_maker(balance):
+        value = balance['formatted_value']
+        content = '{sgn}{pad}{val}'.format(sgn=value[0],
+            pad='0'*(max_width-len(value)), val=value[1:])
+        return TableElement(title=balance['html_title'],
+            CSS_classes=balance['CSS_class'], content=content)
+    balance_sections = (TableParent(children=[
+        TableParent(title=row['username'], children=[
+            element_maker(balance) for balance in row['formatted_balances']
+        ])
         for row in accounts
-    }
-    max_width = 0
-    for row, balances in accounts.items():
-        max_width = max(max_width, *[len(balance['formatted_value']) for
-                                     balance in balances])
-    for row, balances in accounts.items():
-        for balance in balances:
-            current = balance['formatted_value']
-            balance['formatted_value'] = '{sgn}{pad}{val}'.format(
-                sgn=current[0], pad='0'*(max_width-len(current)),
-                val=current[1:])
-
-    display_info = DisplayInformation('rows', {'sections': [None],
-        'subsections': [users]}, user_ids, lambda x: x, None)
+    ]),)
     return {
         'point_cycles': cycles,
-        'rows': display_info.create_template_data(accounts)
+        'balance_sections': balance_sections,
     }
 
 @login_required()

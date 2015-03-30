@@ -23,12 +23,6 @@ stats
 Information for {{ cooper.profile.nickname }}
 {% endblock %}
 {% block body %}
-<!--
-    Thinking this should be part of a larger table, put off to the left.
-    Main bit would be the load, and then the other things could explain it a bit.
-    Stewardship points, special points, loan balance, anything else.
--->
-
 <div id="form_accordion">
 <h2>Particulars</h2>
 <table id="selected_information_table">
@@ -36,15 +30,15 @@ Information for {{ cooper.profile.nickname }}
 	</thead>
 	<tbody>
 		<tr>
-			{% for section in list_information %}
+			{% for section in list_sections %}
 				<td class="selected_information_section">
 					<h3>{{ section.title }}</h3>
-					{% for subsection in section.sections %}
+					{% for subsection in section.children %}
 						<h4>{{ subsection.title }}</h4>
 						<!--TODO: consider changing this to just a paragraph. Will save vertical space/use up horizontal space.-->
 						<ul>
-							{% for dictionary in subsection.dictionaries %}
-							<li> {{ dictionary.items }}
+							{% for element in subsection.children %}
+							<li> {{ element.content }}
 							{% endfor %}
 						</ul>
 					{% endfor %}
@@ -66,13 +60,13 @@ Information for {{ cooper.profile.nickname }}
 			</th>
 		{% endfor %}
 	</tr>
-	{% for section in table_information %}
+	{% for section in table_sections %}
 		<tr><th>{{ section.title }}</th></tr>
-		{% for subsection in section.sections %}
+		{% for subsection in section.children %}
 			<tr>
 				<td class="subsection_title">{{ subsection.title }}</td>
-				{% for dictionary in subsection.dictionaries %}
-					<td class="dictionary_item" title="{{ dictionary.html_title }}">{{ dictionary.value }}</td>
+				{% for element in subsection.children %}
+					<td class="dictionary_item" title="{{ element.title }}">{{ element.content }}</td>
 				{% endfor %}
 			</tr>
 		{% endfor %}

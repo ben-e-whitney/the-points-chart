@@ -17,7 +17,7 @@ import math
 import collections
 
 from utilities import timedelta
-from utilities.views import DisplayInformation, format_balance
+from utilities.views import TableElement, TableParent, format_balance
 from chores.models import Chore, ChoreSkeleton
 from profiles.models import UserProfile
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
@@ -91,38 +91,9 @@ def get_chore_button(user, chore):
         'void_enabled': permissions[2],
     }
 
-#TODO: THIS IS HORRIBLE. FIX IT.
 def get_obligations(user, coop=None):
-
-    def list_processor(items):
-        return [
-            {'items': item} for item in items if item
-        ]
-
-    def table_processor(items):
-
-        def make_html_title(chores):
-            return ', '.join(str(chore) for chore in chores)
-
-        return [
-            {'value': sum(chores),
-             'html_title': make_html_title(chores)}
-            for chores in items
-        ]
-
-    def summary_processor(items):
-        def convert_to_integer(x):
-            return decimal.Decimal(x).to_integral_value()
-        return [
-            {'value': convert_to_integer(value),
-             'html_title': 'Exact value: {val}'.format(val=value)}
-            for value in items
-        ]
-
     if coop is None:
         coop = user.profile.coop
-
-    print('    total inside get_obligations: {lcn}'.format(lcn=len(connection.queries)))
     upcoming_lower_boundary = datetime.date.today()
     upcoming_upper_boundary = (upcoming_lower_boundary+
             datetime.timedelta(days=coop.profile.release_buffer))
@@ -131,8 +102,6 @@ def get_obligations(user, coop=None):
                                        'voided')
     all_stewardships = Stewardship.objects.for_coop(coop).signed_up(
         user, True).order_by('start_date')
-    print('    total after getting all_chores and all_stewardships: {lcn}'.format(
-        lcn=len(connection.queries)))
     data = {
         'all chores': all_chores,
         'upcoming chores': all_chores.in_window(upcoming_lower_boundary,
@@ -149,14 +118,12 @@ def get_obligations(user, coop=None):
         'absences': Absence.objects.signed_up(user, True),
         'share changes': ShareChange.objects.signed_up(user, True)
     }
-    print('    total after defining data: {lcn}'.format(lcn=len(connection.queries)))
     #TODO: use `coop.profile` timezone thing.
     data['ready for signature'] = (data['not signed off'].voided(None, False)
                                .filter(start_date__lte=datetime.date.today()))
     # Rearranging.
     for key, item in data.items():
         data[key] = {'original': item, 'per cycle': []}
-    print('    total after rearranging: {lcn}'.format(lcn=len(connection.queries)))
     cycles = []
     accounts = []
     for cycle_num, cycle_start, cycle_stop in coop.profile.cycles():
@@ -166,50 +133,65 @@ def get_obligations(user, coop=None):
             data[key]['per cycle'].append(
                 data[key]['original'].in_window(cycle_start, cycle_stop)
             )
-    # Rearranging again.
-    print('    total after sorting (?): {lcn}'.format(lcn=len(connection.queries)))
     data.update(calculate_load_info(user=user, coop=coop)[0])
-    print('    total after using calculate_load_info: {lcn}'.format(lcn=len(connection.queries)))
 
-    display_infos = [
-        DisplayInformation('list_information', {
-                'sections': ['Chores', 'Stewardships and Similar',
-                             'Benefit Changes'],
-                'subsections': [['Upcoming', 'Voided', 'Ready for Signature'],
-                                ['Stewardships', 'Special Points', 'Loans'],
-                                ['Absences', 'Share Changes']]
-            }, [
-                'upcoming chores', 'voided', 'ready for signature',
-                'stewardships', 'special points', 'loans', 'absences',
-                'share changes'
-            ], list_processor, 'original'),
-        DisplayInformation('table_information', {
-                'sections': ['Chores', 'Stewardships and Similar'],
-                'subsections': [['Signed Up', 'Signed Off', 'Needing Sign Off',
-                                 'Voided'],
-                                ['Stewardships', 'Special Points', 'Loans']]
-            }, [
-                'all chores', 'signed off', 'ready for signature', 'voided',
-                'stewardships', 'special points', 'loans'
-            ], table_processor, 'per cycle'),
-        DisplayInformation('summary_information', {
-                'sections': ['Summary'],
-                'subsections': [['New Due', 'New Credited',
-                                 'Cumulative Balance']]
-            }, [
-                'load', 'credits', 'balance'
-            ], summary_processor, None)
+    list_sections = [
+        TableParent(title=section[0], children=[
+            TableParent(title=title, children=[
+                TableElement(content=str(chore))
+                for chore in data[key]['original']
+            ]) for title, key in zip(section[1], section[2])
+        ]) for section in (
+            ('Chores',
+             ('Upcoming', 'Voided', 'Ready for Signature',),
+             ('upcoming chores', 'voided', 'ready for signature',),),
+            ('Stewardships and Similar',
+             ('Stewardships', 'Special Points', 'Loans',),
+             ('stewardships', 'special points', 'loans',),),
+            ('Benefit Changes',
+             ('Absences', 'Share Changes',),
+             ('absences', 'share changes',),),
+        )
     ]
-    dict_to_return = {
-        display_info.name: display_info.create_template_data(data) for
-        display_info in display_infos
-    }
-    dict_to_return['table_information'].insert(0,
-        dict_to_return['summary_information'][0])
-    dict_to_return.update({'point_cycles': cycles})
-    print('    total just before returning: {lcn}'.format(lcn=len(connection.queries)))
-    #TODO: get rid of temporary variables here.
-    return dict_to_return
+    for section in list_sections:
+        section.children = list(filter(lambda subsection: any(
+            element.content for element in subsection.children),
+            section.children))
+    list_sections = list(filter(lambda section: any(subsection.children for
+        subsection in section.children), list_sections))
+    table_summary_sections = [
+        TableParent(title=section[0], children=[
+            TableParent(title=title, children=[
+                TableElement(title='Exact value: {val}'.format(val=value),
+                    content=decimal.Decimal(value).to_integral_value())
+                for value in data[key]
+            ]) for title, key in zip(section[1], section[2])
+        ]) for section in (
+            ('Summary',
+             ('New Due', 'New Credited', 'Cumulative Balance',),
+             ('load', 'credits', 'balance',),),
+        )
+    ]
+
+    keys = ('all chores', 'signed off', 'ready for signature', 'voided')
+    table_specific_sections = [
+        TableParent(title=section[0], children=[
+            TableParent(title=title, children=[
+                TableElement(content=sum(chores), title=', '.join(
+                    str(chore) for chore in chores))
+                for chores in data[key]['per cycle']
+            ]) for title, key in zip(section[1], section[2])
+        ]) for section in (
+            ('Chores',
+             ('Signed Up', 'Signed Off', 'Needing Sign Off', 'Voided',),
+             ('all chores', 'signed off', 'ready for signature', 'voided',),),
+            ('Stewardships and Similar',
+             ('Stewardships', 'Special Points', 'Loans',),
+             ('stewardships', 'special points', 'loans',),),
+        )
+    ]
+    return {'point_cycles': cycles, 'table_sections': table_summary_sections+
+            table_specific_sections, 'list_sections': list_sections}
 
 # TODO: this method is quite long. See if there's a way to pull some of it out
 # into another function.
@@ -355,11 +337,7 @@ def user_stats_list(request, username):
         'coop': coop,
         'cooper': user,
     }
-    print('total before get_obligations: {lcn}'.format(lcn=len(connection.queries)))
     render_dictionary.update(get_obligations(user, coop=coop))
-    print('total after get_obligations: {lcn}'.format(lcn=len(connection.queries)))
-
-    print('TOTAL before rendering: {lcn}'.format(lcn=len(connection.queries)))
     return render(request, 'chores/user_stats_list.html',
                   dictionary=render_dictionary)
 
