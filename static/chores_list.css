@@ -12,7 +12,7 @@
 }
 
 #right_sidebar {
-  width: 7em;
+	width: 7em;
 }
 
 #load_more_button {
@@ -47,9 +47,9 @@
 
 .button_cell {
 	white-space: nowrap;
-  /*TODO: I do not understand what this is doing*/
-  /*or why it works.*/
-  width: 0em;
+	/*TODO: I do not understand what this is doing*/
+	/*or why it works.*/
+	width: 0em;
 }
 
 /*Hide titlebar in JQuery dialog.*/
@@ -59,7 +59,7 @@
 }
 
 table.chores_list td {
-  display: table-cell;
+	display: table-cell;
 }
 
 
@@ -76,7 +76,7 @@ button.chore_button {
 }
 
 /*Need to repeat this in order to override `button:disabled` styling.*/
-.chore_button:disabled {
+.chore_button:not(.user_signed_up):disabled {
 	color: #000000;
 	background-color: #FFFFFF;
 	border-color: #FFFFFF;
@@ -97,25 +97,19 @@ button.chore_button {
 	color: #CCCCCC;
 }
 
-.chore_dropdown_button {
-
-}
-
 .chore_button.needs_sign_up, .chore_button.needs_sign_off {
 	background-color: #B8D8F5;
 	border-color: #B8D8F5;
 }
 
-button.user_signed_up {
+.chore_button.user_signed_up {
 	background-color: #F1C232;
 	border-color: #F1C232;
 }
 
-button.user_signed_off {
-}
-
 .completed_successfully {
 	text-decoration: line-through;
+	font-size: 0.5em;
 }
 
 .voided {
@@ -123,17 +117,18 @@ button.user_signed_off {
 }
 
 @media screen and (min-width: 681px) {
-  button.chore_button {
-    width: 35em;
-  }
+	button.chore_button {
+		width: 35em;
+	}
 }
 
 @media screen and (max-width: 680px) {
-  table.chores_list {
-    width: 100%;
-  }
+	table.chores_list {
+		width: 100%;
+	}
 
-  button.chore_button {
-    width: 100%;
-  }
+	button.chore_button {
+		width: 100%;
+		font-size: 1.25em;
+	}
 }

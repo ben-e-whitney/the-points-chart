@@ -49,7 +49,7 @@ h2 {
 }
 
 #nav_bar.unauthenticated {
-  display: none;
+	display: none;
 }
 
 
@@ -78,11 +78,10 @@ h2 {
 }
 
 .sidebar {
-  position: fixed;
-  text-align: center;
-  z-index: 1;
+	position: fixed;
+	text-align: center;
+	z-index: 1;
 }
-
 
 #right_sidebar {
 	bottom: 0;
@@ -93,16 +92,35 @@ h2 {
 	pointer-events: none;
 }
 
+#left_sidebar li {
+	position: relative;
+}
+
+#left_sidebar a {
+	display: block;
+}
+
+/*
+//<http://stackoverflow.com/a/3494108>
+#left_sidebar span.nav_icon_spanner {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+
+	z-index: 1;
+}
+*/
+
 #main_content {
 	background-color: #FFFFFF;
 	color: black;
-	/*height: auto;*/
 }
 
 #left_sidebar ul {
 	list-style-type: none;
 	padding: 0;
-	/*margin: 0;*/
 	margin-top: 0;
 	margin-bottom: 0;
 }
@@ -151,11 +169,6 @@ button.styled_button, input[type='submit'].styled_button {
 	color: #FFFFFF;
 }
 
-/*TODO: is this used?*/
-/*button, button:active {*/
-	/*outline-style: none;*/
-/*}*/
-
 /*TODO: decide what to apply this to.*/
 button:disabled {
 	background-color: #CCCCCC;
@@ -174,31 +187,28 @@ button:active {
 }
 
 select {
-  max-width: 16em;
+	max-width: 16em;
 }
 
 @media screen and (min-width: 681px) {
 
-  #left_sidebar ul.unauthenticated {
-    visibility: hidden;
-  }
+	#left_sidebar ul.unauthenticated {
+		visibility: hidden;
+	}
 
 	#unauthenticated_logo {
 		display: none;
 	}
 
 	#main_content {
-		border-top-left-radius: 1em;
-		padding-left: 1em;
-
-		border-left-width: 0.3em;
-		border-top-width: 0.3em;
-
-		border-right-width: 0em;
 		border-bottom-width: 0em;
-
-		border-style: solid;
 		border-color: #F1C232;
+		border-left-width: 0.3em;
+		border-right-width: 0em;
+		border-style: solid;
+		border-top-left-radius: 1em;
+		border-top-width: 0.3em;
+		padding-left: 1em;
 	}
 
 	#left_sidebar {
@@ -207,7 +217,8 @@ select {
 	}
 
 	#left_sidebar ul {
-		display: inline-block;
+		/*Testing.*/
+		/*display: inline-block;*/
 		margin-left: 0.75em;
 		margin-right: 0.75em;
 	}
@@ -218,9 +229,9 @@ select {
 }
 
 @media screen and (max-width: 680px) {
-  #left_sidebar ul.unauthenticated {
-    display: none;
-  }
+	#left_sidebar ul.unauthenticated {
+		display: none;
+	}
 
 	#unauthenticated_logo {
 		text-align: center;
@@ -260,8 +271,8 @@ select {
 	}
 
 	#left_sidebar ul li object {
-		height: 4em;
-		width: 4em;
+		height: 3.5em;
+		width: 3.5em;
 	}
 }
 
