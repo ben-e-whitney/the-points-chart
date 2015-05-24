@@ -43,6 +43,7 @@ class ChoreTestCase(TestCase):
             short_description='Co-op used for unit tests.',
             full_name='The Test Co-op',
             start_date=datetime.date.today(),
+            stop_date=datetime.date.today()+datetime.timedelta(days=100),
             cycle_length=14,
             release_buffer=4,
             time_zone=pytz.UTC
@@ -237,7 +238,7 @@ class ChoreTestCase(TestCase):
             chore.revert_sign_up(user)
 
         with self.assertRaises(ChoreError):
-            close_date = timezone.now().date()+datetime.timedelta(
+            close_date = timezone.now().date()-datetime.timedelta(
                 days=MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP-1)
             chore = self.make_chore(skeleton=skeleton, start_date=close_date)
             chore.sign_up(user)
