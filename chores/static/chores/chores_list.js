@@ -57,7 +57,12 @@ var insertChores = function(data, textStatus, jqXHR) {
   $('#chores').prepend(responseAsObject.html);
   cycleOffsetToFetch -= 1;
   if (firstLoad) {
-    $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1000);
+    try {
+      $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1000);
+    } catch (e) {
+      //There is probably no element named 'today'. Scroll to the top instead.
+      window.scrollTo(0, 0);
+    }
     firstLoad = false;
   } else {
     window.scrollTo(0, 0);
