@@ -90,10 +90,21 @@ def chores_fetch(request):
     except ValueError as e:
         #TODO: here `status` should be pulled from `e` (?).
         return HttpResponse('', reason=e, status=400)
+    if cycle_offset == 0:
+        start_date = None
+        stop_date = None
+    elif cycle_offset < 0:
+        start_date = max(coop.profile.start_date, min(coop.profile.stop_date,
+            coop.profile.today()+cycle_offset*datetime.timedelta(
+                days=coop.profile.cycle_length)))
+        stop_date = start_date
+    else:
+        return HttpResponse('', reason='`cycle_offset` may not be positive.',
+                status=400)
     chores = Chore.objects.for_coop(coop)
     cycles = []
     for cycle_num, start_date, stop_date in coop.profile.cycles(
-        offset=cycle_offset):
+            start_date=start_date, stop_date=stop_date):
         #TODO: look into fetching all chores and then sorting in Python.
         chores_this_cycle = (chores.filter(start_date__gte=start_date,
                                            start_date__lte=stop_date)

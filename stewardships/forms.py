@@ -90,8 +90,9 @@ def LoanFormCreator(request):
                 initial = kwargs.get('initial', {})
                 initial.update({
                     'cooper': instance.signed_up.who.id,
-                    'cycle': coop.profile.get_cycle(instance.start_date,
-                                                    instance.stop_date),
+                    'cycle': coop.profile.get_cycle(
+                        start_date=instance.start_date,
+                        stop_date=instance.stop_date),
                     'point_value': instance.skeleton.point_value,
                     'short_description': instance.skeleton.short_description,
                 })
@@ -241,8 +242,9 @@ def ShareChangeFormCreator(request):
                 initial = kwargs.get('initial', {})
                 initial.update({
                     'cooper': instance.signed_up.who.id,
-                    'cycle': coop.profile.get_cycle(instance.start_date,
-                                                    instance.stop_date),
+                    'cycle': coop.profile.get_cycle(
+                        start_date=instance.start_date,
+                        stop_date=instance.stop_date),
                     'short_description': instance.skeleton.short_description,
                 })
                 kwargs.update({'initial': initial})

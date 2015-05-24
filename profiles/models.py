@@ -14,6 +14,30 @@ import datetime
 # semester in case someone leaves or can't do it.
 
 class UserProfile(models.Model):
+    """
+    Contains settings for and information about a User.
+
+    Attributes:
+        user: corresponding User.
+        coop: Group to which `user`belongs.
+        nickname: display name for `user`.
+        first_name: first name of `user` (used in contact).
+        middle_name: middle name of `user` (used in contact).
+        last_name: last name of `user` (used in contact).
+        email_address: email address of `user`.
+        birthday: birthday of `user`.
+        phone_number: phone number of `user`.
+        phone_carrier: carrier that provides service for `phone_number`.
+            Currently unused.
+        public_calendar: flag for whether to allow web access for `user`'s
+            chores.
+        points_steward: flag for whether `user` is the points steward.
+        share: default points share for `user`, as a multiple of the default
+            share.
+        presence: default presence for `user`, in days per cycle.
+        cached_balance: previously calculated points balance for `user`.
+            Currently unused.
+    """
     #`null` and `blank` are set to be `True` to make editing of users by the
     #steward easier.
     user = models.OneToOneField(User, blank=True, related_name='profile')
@@ -45,18 +69,64 @@ class UserProfile(models.Model):
     # This value should be in days.
     presence = models.PositiveSmallIntegerField()
     cached_balance = models.FloatField(null=True, blank=True)
+
     def __str__(self):
+        """
+        Return string representation of `self`.
+        """
         return 'UserProfile for {use}'.format(use=self.user.username)
-    # TODO: add methods here to calculate presence and share for a given cycle?
+
+def bound_dates(*keywords):
+    def decorator(f):
+        def inner(self, *args, **kwargs):
+            for keyword in keywords:
+                try:
+                    value = kwargs[keyword]
+                    if value is None:
+                        #Sometimes the value might be explicitly given as
+                        #`None`. If this is the case, act as if it hadn't been
+                        #provided.
+                        raise KeyError
+                    if value < self.start_date or value > self.stop_date:
+                        raise ValueError('Invalid date.')
+                except KeyError:
+                    #If the keyword argument is not provided, we will trust the
+                    #method to handle things appropriately.
+                    continue
+            else:
+                return f(self, *args, **kwargs)
+        return inner
+    return decorator
 
 class GroupProfile(models.Model):
+    """
+    Contains settings for an information about a Group.
+
+    Attributes:
+        group: corresponding Group.
+        short_name: short name for `group`.
+        full_name: long name for `group`.
+        short_description: short description for `group`.
+        time_zone: time zone to use for the co-op's Chores, Stewardships, etc.
+        email_address: email address for `group`.
+        email_prefix: prefix to use in subjects of emails sent to
+            `email_address`. For example, if the prefix is 'Points', subjects
+            will begin with '[Points]'. Currently unused.
+        start_date: date on which to start chart for `group`.
+        stop_date: date on which to stop chart for `group`.
+        cycle_length: length in days of `group`'s points cycle.
+        release_buffer: length of time in days before start of new cycle that
+            users of `group` should be able to see new chores.
+    """
     #`null` and `blank` chosen to mirror `UserProfile` setup.
     group = models.OneToOneField(Group, null=True, blank=True,
                                  related_name='profile')
     short_name = models.CharField(max_length=2**6)
-    short_description = models.TextField()
     full_name = models.CharField(max_length=2**6)
+    short_description = models.TextField()
     time_zone = timezone_field.TimeZoneField()
+    #TODO: activate at some point.
+    #email_address = models.EmailField()
     email_prefix = models.CharField(max_length=2**6, default='[Points]',
                                     blank=True)
     start_date = models.DateField()
@@ -66,78 +136,99 @@ class GroupProfile(models.Model):
     # ShareChanges). Maybe this should not be editable by anyone but an admin.
     cycle_length = models.PositiveSmallIntegerField()
     release_buffer = models.PositiveSmallIntegerField()
+
     def __str__(self):
+        """
+        Return string representation of `self`.
+        """
         return 'GroupProfile for {gro}'.format(gro=self.group.name)
 
     def now(self):
+        """
+        Return the current date and time in `self`'s time zone.
+        """
         return datetime.datetime.now(self.time_zone)
 
     def today(self):
+        """
+        Return the current date in `self`'s time zone.
+        """
         return self.now().date()
 
-    def find_cycle(self, date):
-        return 1+(date-self.start_date)//self.cycle_length
+    #TODO: as of this writing this function isn't actually used anywhere.
+    @bound_dates('date')
+    def find_cycle(self, date=None):
+        """
+        Return the number of the cycle that contains `date`.
 
+        Arguments:
+            date: date in question.
+        """
+        if date < self.start_date or date > self.stop_date:
+            raise ValueError('Invalid date.')
+        else:
+            return 1+(date-self.start_date).days//self.cycle_length
 
-    def cycles(self, start_date=None, stop_date=None, offset=None):
+    @bound_dates('start_date', 'stop_date')
+    def cycles(self, start_date=None, stop_date=None):
+        """
+        Yield cycles from `start_date` to `stop_date`.
 
-        def ceil_integer_division(x, y):
-            return x//y+(1 if x%y else 0)
-
+        Keyword arguments:
+            start_date: date at which to start cycles.
+            stop_date: date at which to end cycles.
+            offset: number of cycles by which to shift time interval.
+        """
         if start_date is None:
             start_date = self.start_date
         if stop_date is None:
-            stop_date = self.today()+datetime.timedelta(
-                days=self.release_buffer)
-        window_width = datetime.timedelta(days=self.cycle_length)
-        assert window_width > datetime.timedelta(days=0)
-        assert stop_date >= start_date
-        #Adding one so that `start_date` is counted as a day.
-        num_cycles = ceil_integer_division((stop_date-start_date).days+1,
-                                           self.cycle_length)
-        #TODO: should we be adding 1 here?
-        num_width = len(str(num_cycles))
-        window = [start_date, start_date+window_width]
-
-        if offset is None:
-            index_range = range(num_cycles)
-        else:
-            #TODO: check this.
-            current_cycle = ceil_integer_division(
-                (self.today()-start_date).days+1, self.cycle_length)
-            print('current cycle: {cc}'.format(cc=current_cycle))
-            #Subtract one since these will correspond to indices.
-
-            #TODO: disabling this for now.
-            #lower_bound = min(max(1, current_cycle+offset), num_cycles)-1
-            lower_bound = current_cycle+offset-1
-
-            #Currently a positive `upper_bound` is treated the same as a zero
-            #`upper_bound`: go all the way to the latest cycle.
-            #TODO: when writing docstring, mention this (or change it).
-            upper_bound = lower_bound+1 if offset < 0 else num_cycles
-            index_range = range(lower_bound, upper_bound)
-
-        one_day = datetime.timedelta(days=1)
-        for cycle_index in index_range:
-            #TODO: maybe some better way to do this.
-            lower_bound = start_date+window_width*cycle_index
-            upper_bound = lower_bound+window_width-one_day
-            yield str(1+cycle_index).zfill(num_width), lower_bound, upper_bound
+            stop_date = min(self.today()+datetime.timedelta(
+                days=self.release_buffer), self.stop_date)
+        if stop_date < start_date:
+            raise ValueError('`stop_date` cannot come before `start_date`.')
+        start_cycle = self.find_cycle(start_date)
+        stop_cycle = self.find_cycle(stop_date)
+        num_width = len(str(stop_cycle))
+        intercycle_window = datetime.timedelta(days=self.cycle_length)
+        intracycle_window = datetime.timedelta(days=self.cycle_length-1)
+        for cycle_index in range(start_cycle, stop_cycle+1):
+            first_day = self.start_date+(cycle_index-1)*intercycle_window
+            last_day = first_day+intracycle_window
+            yield str(cycle_index).zfill(num_width), first_day, last_day
 
     def get_cycle_endpoints(self, cycle_num):
+        """
+        Return the start and stop date of a cycle.
+
+        Arguments:
+            cycle_num: number of the cycle in question.
+        """
         cycle_start_date = self.start_date+datetime.timedelta(
             days=self.cycle_length)*(cycle_num-1)
         cycle_stop_date = cycle_start_date+datetime.timedelta(
             days=self.cycle_length-1)
+        if (cycle_start_date < self.start_date or
+                cycle_stop_date > self.stop_date):
+            raise ValueError('Invalid cycle number.')
         return (cycle_start_date, cycle_stop_date)
 
-    def get_cycle(self, cycle_start_date, cycle_stop_date):
-        for cycle_num, start_date, stop_date in self.cycles():
-            if cycle_start_date == start_date and cycle_stop_date == stop_date:
+    @bound_dates('start_date', 'stop_date')
+    def get_cycle(self, start_date=None, stop_date=None):
+        """
+        Return the number of the cycle with the given start and stop dates.
+
+        Arguments:
+            start_date: start date.
+            stop_date: stop date.
+        """
+        for cycle_num, cycle_start_date, cycle_stop_date in self.cycles():
+            if start_date == cycle_start_date and stop_date == cycle_stop_date:
                 return int(cycle_num)
         else:
             raise ValueError('No cycle matched.')
 
     def points_steward(self):
+        """
+        Return the User that is the points steward of `self`.
+        """
         return self.group.user_set.get(profile__points_steward=True)
