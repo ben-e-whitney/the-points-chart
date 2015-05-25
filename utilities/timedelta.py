@@ -2,11 +2,21 @@ import datetime
 #TODO: look into the arrow package. <https://github.com/crsmithdev/arrow>.
 
 def in_interval(left, timedelta, right, unit='days'):
-    '''
-    Tests whether `timedelta` is contained in the half-open interval
-    [`left` days, `right` days). If `left` is `None` then it is interpreted
-    as ∞; similarly for `right`.
-    '''
+    """
+    Tests whether `timedelta` is contained in [`left` `unit`, `right` `unit`).
+
+    If `left` is `None` then it is interpreted as ∞; similarly for `right`. The
+    interval is always half-open, with the left boundary included.
+
+    Arguments:
+        left: left boundary of the interval (included).
+        timedelta: timedelta whose inclusion in the interval is in question.
+        right: right boundary of the interval (exluded).
+
+    Keyword arguments:
+        unit: unit of `left` and `right`.
+    """
+
     if left is None:
         left = datetime.timedelta.min
     else:
@@ -18,7 +28,16 @@ def in_interval(left, timedelta, right, unit='days'):
     return left <= timedelta < right
 
 def pretty_print(timedelta):
-    # TODO: this needs testing (including edge conditions).
+    """
+    Pretty print a timedelta.
+
+    Positive timedeltas are understood as intervals since a time in the past.
+    Negative timedeltas are understood as intervals until a time in the future.
+
+    Arguments:
+        timedelta: timedelta to be printed.
+    """
+
     pretty_print = ''
     abs_td = abs(timedelta)
     if abs_td < datetime.timedelta(seconds=60):
@@ -31,8 +50,6 @@ def pretty_print(timedelta):
         pretty_print += '{num} hours'.format(num=abs_td.seconds//60**2)
     else:
         pretty_print += '{num} days'.format(num=abs_td.days)
-    # TODO: based on this, in the description of this function we should note
-    # whether it expects 'now-then' or 'then-now'.
     if timedelta >= datetime.timedelta(0):
         pretty_print += ' ago'
     else:
@@ -40,6 +57,18 @@ def pretty_print(timedelta):
     return pretty_print
 
 def daterange(start, stop, step=datetime.timedelta(days=1), inclusive=False):
+    """
+    Yields datetimes in an interval.
+
+    Arguments:
+        start: lefthand endpoint of the interval (included).
+        stop: righthand endpoint of the interval (excluded by default).
+
+    Keyword arguments:
+        step: amount by which consecutive datetimes should differ.
+        inclusive: flag for whether to include `stop`.
+    """
+
     if inclusive:
         stop += step
     date = start
