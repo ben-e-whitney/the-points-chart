@@ -43,7 +43,6 @@ class BasicForm(forms.ModelForm):
         Make response following form submission.
         """
         #TODO: there should be a better way of doing this.
-        print('in respond_with_errors')
         return HttpResponse(json.dumps({
             'errors': {
                 field: ' '.join(self.errors[field]) for field in self.errors
@@ -67,7 +66,6 @@ class BasicForm(forms.ModelForm):
         Arguments:
             request -- HTTP request from form submission.
         """
-        print('in edit_from_request')
         try:
             object_id = cls.get_id_from_request(request)
         except KeyError as e:
@@ -76,37 +74,24 @@ class BasicForm(forms.ModelForm):
         except ValueError as e:
             return HttpResponse('', reason='Could not interpret object ID: '
                                 '{msg}.'.format(msg=e), status=400)
-        print('got object_id')
         if request.method not in ('GET', 'POST'):
             return HttpResponse('', status=405)
         else:
-            print('request.method is {rem}'.format(rem=request.method))
             try:
                 instance = cls.Meta.model.objects.get(pk=object_id)
             except ObjectDoesNotExist:
                 return HttpResponse('', reason='Not object found with ID '
                                     '{oid}'.format(oid=object_id), status=404)
-            print('made instance')
             if request.method == 'GET':
-                print('method is GET')
-                try:
-                    x = render(request, 'form.html',
-                                  {'form': cls(instance=instance)})
-                except Exception as e:
-                    print(e)
-                    raise e
-                return x
+                return render(request, 'form.html',
+                              {'form': cls(instance=instance)})
             else:
-                print('method is POST')
                 #`request.method` is 'POST'.
                 form = cls(request.POST, instance=instance)
-                print('got form')
                 if form.is_valid():
-                    print('form is valid')
                     new_instance = form.save(commit=False, request=request)
                     new_instance.id = object_id
                     new_instance.save()
-                print('passing to respond_with_errors now')
                 return form.respond_with_errors()
 
 def cycle_field_creator(coop):

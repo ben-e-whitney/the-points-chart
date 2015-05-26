@@ -1,6 +1,6 @@
 from django.conf.urls import patterns, url
 
-from profiles import views, AJAX
+from profiles import views
 
 urlpatterns = patterns('',
     url(r'^$', views.contacts_list, name='contacts_list'),
