@@ -9,6 +9,10 @@ class UserProfileForm(BasicForm):
                   'email_address', 'phone_number', 'birthday',
                   'public_calendar']
 
+    @staticmethod
+    def get_id_from_request(request):
+        return request.user.profile.id
+
     def clean(self):
         super().clean()
         # if self.receive_email_reminders and self.email_address = '':

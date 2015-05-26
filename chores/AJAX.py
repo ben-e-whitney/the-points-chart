@@ -14,11 +14,8 @@ import collections
 import datetime
 import json
 from chores.models import Chore, ChoreSkeleton, ChoreError
-from chores.forms import ChoreSkeletonForm, ChoreFormCreator
 from chores.views import get_chore_button, calculate_balance
 from utilities import timedelta
-from utilities.AJAX import (make_form_response, create_function_creator,
-    edit_function_creator)
 
 @login_required()
 def updates_fetch(request):
@@ -174,12 +171,12 @@ def updates_report(request, chores=None, include_balances=False,
 def act(request):
     user = request.user
     try:
-        chore_id = int(request.POST.get('choice_id', None))
-    except ValueError as e:
-        #TODO: here `status` should be pulled from `e` (?).
-        return HttpResponse('', reason=e, status=400)
-    if not chore_id:
+        chore_id = int(request.POST.get('choice_id'))
+    except KeyError:
         return HttpResponse('', reason='No chore ID provided.', status=400)
+    except ValueError as e:
+        return HttpResponse('', reason='Request QueryDict has no entry with '
+                            'key {key}.'.format(key=e), status=400)
     #TODO: either use `Chore.DoesNotExist` here or use `ObjectDoesNotExist`
     #everywhere.
     try:
@@ -218,7 +215,6 @@ def act(request):
     try:
         getattr(chore, method_name)(user)
     except ChoreError as e:
-        #TODO: here `status` should be pulled from `e`.
         return HttpResponse('', reason=e, status=403)
 
     #TODO: change to method that gets current cycle if you make one.
@@ -243,12 +239,3 @@ def act(request):
     }[method_name]
     return updates_report(request, chores=(chore,), include_balances=False,
                           balance_change=balance_change)
-
-chore_skeleton_create = create_function_creator(model=ChoreSkeleton,
-                                                model_form=ChoreSkeletonForm)
-chore_skeleton_edit = edit_function_creator(model=ChoreSkeleton,
-                                            model_form=ChoreSkeletonForm)
-chore_create = create_function_creator(model=Chore,
-                                       model_form_callable=ChoreFormCreator)
-chore_edit = edit_function_creator(model=Chore,
-                                   model_form_callable=ChoreFormCreator)
