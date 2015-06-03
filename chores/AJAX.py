@@ -224,6 +224,8 @@ def act(request):
         if stop_date >= today:
             ongoing_cycle = chore.start_date >= start_date
             break
+    else:
+        ongoing_cycle = False
     #TODO: careful here. We might have just cleared `chore.signed_up.who`.
     my_chore = chore.signed_up.who == user
     point_value = chore.skeleton.point_value
