@@ -120,8 +120,8 @@ var displayChoreForm = function(chore_id) {
 		//.find('form')
   $('#chore_edit_form').empty()
     .append(data)
-		.submit(submit_function_creator('/chores/actions/edit/chore/',
-																		chore_id))
+		.submit(functionCreators.submitFunctionCreator(
+      '/chores/actions/edit/chore/', chore_id))
 		.dialog({
       close: function(event, ui) {
         $('#steward_button_'+chore_id).prop('disabled', false);

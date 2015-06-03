@@ -1,3 +1,3 @@
 $(document).ready(function() {
-  $('#profile_form').submit(submit_function_creator('actions/edit/profile/'))
+  $('#profile_form').submit(functionCreators.submitFunctionCreator('actions/edit/profile/'))
 });

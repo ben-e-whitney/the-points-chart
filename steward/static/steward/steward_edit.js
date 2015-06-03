@@ -25,6 +25,6 @@ $(document).ready(function() {
   var edit_args = [
     ['group_profile', 'steward', 'group_profile'],
   ];
-  $.each(create_and_edit_args.concat(create_args), configure_create_form);
-  $.each(create_and_edit_args.concat(edit_args), configure_edit_form);
+  $.each(create_and_edit_args.concat(create_args), functionCreators.configureCreateForm);
+  $.each(create_and_edit_args.concat(edit_args), functionCreators.configureEditForm);
 });

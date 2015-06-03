@@ -71,7 +71,7 @@ class BasicForm(forms.ModelForm):
         except KeyError as e:
             return HttpResponse('', reason='Request QueryDict has no entry '
                                 'with key {key}.'.format(key=e), status=400)
-        except ValueError as e:
+        except (TypeError, ValueError) as e:
             return HttpResponse('', reason='Could not interpret object ID: '
                                 '{msg}.'.format(msg=e), status=400)
         if request.method not in ('GET', 'POST'):

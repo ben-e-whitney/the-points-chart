@@ -7,15 +7,10 @@ profile
 {% block head %}
 {% load staticfiles %}
 <link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
+<script src={% static "jquery-cookie/src/jquery.cookie.js" %}></script>
 <script src={% static "function_creators.js" %}></script>
 <script src={% static "profiles/profile_edit.js" %}></script>
 {% endblock head %}
-
-{% comment %}
-{% block headertext %}
-{{ coop.profile.short_name }}/{{ user }}
-{% endblock %}
-{% endcomment %}
 
 {% block body_header %}
 Settings
