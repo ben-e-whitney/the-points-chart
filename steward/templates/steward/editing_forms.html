@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+steward
+{% endblock %}
+
+{% block head %}
+{% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+<script src={% static "jquery-cookie/src/jquery.cookie.js" %}></script>
+<script src={% static "function_creators.js" %}></script>
+<script src={% static "steward/editing_forms.js" %}></script>
+{% endblock head %}
+
+{% block body_header %}
+<a class="faded" href="/steward/overview/">Overview</a>
+<span class="faded">|</span>
+<a class="faded" href="/steward/creating/">Forms for Creating</a>
+<span class="faded">|</span>
+<a href="/steward/editing/">Forms for Editing</a>
+{% endblock  %}
+
+{% block body %}
+<div id="editing_forms">
+{% for form in forms %}
+<h3>{{ form.edit_title }}</h3>
+	<div class="form_container">
+		{% comment %}
+		TODO: think of a good way to name these.
+		{% endcomment %}
+		<form id="{{ form.html_name }}_edit_form_selector" method="get">
+			<table>
+							{% csrf_token %}
+							{% comment %}
+							TODO: rename this junk as well.
+							{% endcomment %}
+							{{ form.selector_form.as_table }}
+		</table>
+		</form>
+		<form id="{{ form.html_name }}_edit_form" method="post">
+		</form>
+	</div>
+{% endfor %}
+</div>
+{% endblock %}

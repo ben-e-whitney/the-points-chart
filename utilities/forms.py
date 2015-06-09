@@ -23,6 +23,11 @@ class BasicForm(forms.ModelForm):
 
     error_css_class = 'form_error'
 
+    def __init__(self, *args, **kwargs):
+        if 'prefix' not in kwargs:
+            kwargs.update(prefix=self.Meta.model.__name__)
+        super().__init__(*args, **kwargs)
+
     def save(self, *args, **kwargs):
         """
         Extends forms.ModelForm.save, allowing for 'request' keyword.

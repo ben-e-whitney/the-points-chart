@@ -6,7 +6,9 @@ from profiles.forms import GroupProfileForm
 
 urlpatterns = patterns(
     '',
-    url(r'^$', views.steward_forms, name='steward_forms'),
+    url(r'^overview/$', views.users_stats_summarize, name='overview'),
+    url(r'^creating/$', views.steward_creating_forms, name='creating'),
+    url(r'^editing/$', views.steward_editing_forms, name='editing'),
     url(r'actions/create/user/$', lambda request:
         UserFormCreator(request).create_from_request(request),
         name='user_create'),

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+steward
+{% endblock %}
+
+{% block head %}
+{% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+{% endblock head %}
+
+{% block body_header %}
+<a href="/steward/overview/">Overview</a>
+<span class="faded">|</span>
+<a class="faded" href="/steward/creating/">Forms for Creating</a>
+<span class="faded">|</span>
+<a class="faded" href="/steward/editing/">Forms for Editing</a>
+{% endblock  %}
+
+{% block body %}
+<div id="overview">
+{% comment %}
+Use this when you have more than one section.
+<h3>Summary</h3>
+{% endcomment %}
+<table>
+	<thead>
+	</thead>
+	<tbody>
+	<tr>
+		<th>Co-oper</th>
+		{% for point_cycle in point_cycles %}
+			<th title="{{ point_cycle.cycle_start }} to {{ point_cycle.cycle_stop }}">
+				Cycle {{ point_cycle.cycle_num }}
+			</th>
+		{% endfor %}
+	</tr>
+	{% for section in balance_sections %}
+		{% for subsection in section.children %}
+			<tr>
+				<td class="table_subsection">
+					<a href="/chores/{{ subsection.title }}/">
+						{{ subsection.title }}
+					</a>
+				</td>
+				{% for element in subsection.children %}
+					<td class="{{ element.CSS_classes }}" title="{{ element.title }}">{{ element.content }}</td>
+				{% endfor %}
+			</tr>
+		{% endfor %}
+	{% endfor %}
+	</tbody>
+</table>
+</div>
+{% endblock %}

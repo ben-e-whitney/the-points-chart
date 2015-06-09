@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block pagetitle %}
+steward
+{% endblock %}
+
+{% block head %}
+{% load staticfiles %}
+<link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+<script src={% static "jquery-cookie/src/jquery.cookie.js" %}></script>
+<script src={% static "function_creators.js" %}></script>
+<script src={% static "steward/creating_forms.js" %}></script>
+{% endblock head %}
+
+{% block body_header %}
+<a class="faded" href="/steward/overview/">Overview</a>
+<span class="faded">|</span>
+<a href="/steward/creating/">Forms for Creating</a>
+<span class="faded">|</span>
+<a class="faded" href="/steward/editing/">Forms for Editing</a>
+{% endblock  %}
+
+{% block body %}
+{% comment %}
+Use the inclusion tag here. See <https://docs.djangoproject.com/en/dev/howto/
+custom-template-tags/#inclusion-tags>.
+{% endcomment %}
+<div id="creating_forms">
+	{% for form in forms %}
+	<h3>{{ form.create_title }}</h3>
+	<div class="form_container">
+		<form id="{{ form.html_name }}_create_form" method="post">
+			<table>
+				{% csrf_token %}
+				{{ form.main_form.as_table }}
+				<tr>
+					<td></td>
+					<td>
+						<input class="submit_button" type="submit" value="Submit Changes"/>
+					</td>
+					<td class="form_status"></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	{% endfor %}
+</div>
+{% endblock %}

@@ -52,7 +52,6 @@ h2 {
 	display: none;
 }
 
-
 #nav_bar li {
 	display: table-cell;
 	padding-left: 1em;
@@ -138,6 +137,10 @@ table caption {
 	font-size: 1.5em;
 }
 
+.faded {
+	color: #B2B2B2;
+}
+
 a {
 	text-decoration: none;
 	color: inherit;
@@ -191,7 +194,6 @@ select {
 }
 
 @media screen and (min-width: 681px) {
-
 	#left_sidebar ul.unauthenticated {
 		visibility: hidden;
 	}

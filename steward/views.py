@@ -21,10 +21,61 @@ from steward.forms import UserFormCreator, ChoiceFormCreator
 from utilities.views import TableElement, TableParent, format_balance
 from chores.views import calculate_load_info
 
+class HTMLForm:
+    def __init__(self, **kwargs):
+        #TODO: rename the form fields here (and in the view).
+        self.name = kwargs.get('name')
+        self.html_name = self.name.replace(' ', '')
+        self.main_form = kwargs.get('form')()
+        self.create_title = 'Create a New {nam}'.format(nam=self.name)
+        self.edit_title = 'Edit a {nam}'.format(nam=self.name)
+        if 'choices' in kwargs.keys():
+            self.selector_form = ChoiceFormCreator(kwargs.get(
+                'choices'))
+
+def make_forms(request):
+    coop = request.user.profile.coop
+    return (
+        HTMLForm(name='Chore Skeleton', form=ChoreSkeletonForm,
+                 choices=(ChoreSkeleton.objects.for_coop(coop)
+                          .prefetch_related())),
+        HTMLForm(name='Chore', form=ChoreFormCreator(request),
+                 choices=Chore.objects.for_coop(coop).prefetch_related(
+                     'skeleton', 'signed_up__who__profile',
+                     'signed_off__who__profile', 'voided__who__profile')),
+        HTMLForm(name='Stewardship Skeleton',
+                 form=ClassicalStewardshipSkeletonForm,
+                 choices=(StewardshipSkeleton.objects.all().classical()
+                          .for_coop(coop))),
+        HTMLForm(name='Stewardship',
+                 form=ClassicalStewardshipFormCreator(request),
+                 choices=(Stewardship.objects.all().classical().for_coop(coop)
+                          .prefetch_related('skeleton'))),
+        HTMLForm(name='Special Points Grant',
+                 form=SpecialPointsFormCreator(request),
+                 choices=(Stewardship.objects.all().special_points()
+                          .for_coop(coop)
+                          .prefetch_related('signed_up__who__profile'))),
+        HTMLForm(name='Loan', form=LoanFormCreator(request),
+                 choices=(Stewardship.objects.all().loan().for_coop(coop)
+                          .prefetch_related('signed_up__who__profile'))),
+        HTMLForm(name='Absence', form=AbsenceFormCreator(request),
+                 choices=(Absence.objects.for_coop(coop)
+                          .prefetch_related('signed_up__who__profile'))),
+        HTMLForm(name='Share Change', form=ShareChangeFormCreator(request),
+                 choices=ShareChange.objects.for_coop(coop).prefetch_related(
+                     'signed_up__who__profile')),
+        HTMLForm(name='User', form=UserFormCreator(request),
+                 choices=coop.user_set.all().prefetch_related('profile')),
+        HTMLForm(name='Group Profile', form=GroupProfileForm,
+                 choices=(coop.profile,)),
+    )
+
 # TODO: include also lists of all stewardships, absences, etc.
-def users_stats_summarize(request, coop=None):
-    if coop is None:
-        coop = request.user.profile.coop
+@login_required()
+@user_passes_test(lambda user: user.profile.points_steward)
+def users_stats_summarize(request):
+    coop = request.user.profile.coop
     cycles = [{
         'cycle_num'  : cycle_num,
         'cycle_start': cycle_start,
@@ -53,77 +104,19 @@ def users_stats_summarize(request, coop=None):
         ])
         for row in accounts
     ]),)
-    return {
+    return render(request, 'steward/overview.html', {
         'point_cycles': cycles,
         'balance_sections': balance_sections,
-    }
+    })
+@login_required()
+@user_passes_test(lambda user: user.profile.points_steward)
+def steward_creating_forms(request):
+    return render(request, 'steward/creating_forms.html',
+                  {'forms': (form for form in make_forms(request)
+                             if form.name != 'Group Profile')})
 
 @login_required()
 @user_passes_test(lambda user: user.profile.points_steward)
-def steward_forms(request):
-
-    reset_queries()
-
-    coop = request.user.profile.coop
-    #TODO: could pull out common action for these two. Seems like overkill.
-    HTML_create_form = lambda html_id, name, main_form, choice_objects: {
-        'html_id': '{html_id}_create_form'.format(html_id=html_id),
-        'title': 'Create a New {nam}'.format(nam=name),
-        'main_form': main_form
-    }
-    #TODO: change to 'Edit or Delete a {nam}' once you get deleting working.
-    HTML_edit_form = lambda html_id, name, main_form, choice_objects: {
-        'html_id': '{html_id}_edit_form'.format(html_id=html_id),
-        'title': 'Edit a {nam}'.format(nam=name),
-        'main_form': main_form,
-        'selector_form': ChoiceFormCreator(choice_objects)
-    }
-    credit_and_edit_args = (
-        ('chore_skeleton', 'Chore Skeleton', ChoreSkeletonForm(),
-             ChoreSkeleton.objects.for_coop(coop).prefetch_related()),
-        ('chore', 'Chore', ChoreFormCreator(request)(),
-             Chore.objects.for_coop(coop).prefetch_related('skeleton',
-                'signed_up__who__profile', 'signed_off__who__profile',
-                'voided__who__profile')),
-        ('classical_stewardship_skeleton', 'Stewardship Skeleton',
-             ClassicalStewardshipSkeletonForm(), (StewardshipSkeleton.objects
-                .all().classical().for_coop(coop))),
-        ('classical_stewardship', 'Stewardship',
-             ClassicalStewardshipFormCreator(request)(), (Stewardship.objects
-                .all().classical().for_coop(coop)
-                .prefetch_related('skeleton'))),
-        ('special_points', 'Special Points Grant',
-             SpecialPointsFormCreator(request)(),
-             (Stewardship.objects.all().special_points().for_coop(coop)
-                .prefetch_related('signed_up__who__profile'))),
-        ('loan', 'Loan', LoanFormCreator(request)(), (Stewardship.objects
-            .all().loan().for_coop(coop)
-            .prefetch_related('signed_up__who__profile'))),
-        ('absence', 'Absence', AbsenceFormCreator(request)(),
-             Absence.objects.for_coop(coop)
-             .prefetch_related('signed_up__who__profile')),
-        ('share_change', 'Share Change', ShareChangeFormCreator(request)(),
-             ShareChange.objects.for_coop(coop).prefetch_related(
-                 'signed_up__who__profile')),
-        ('user', 'User', UserFormCreator(request)(),
-             coop.user_set.all().prefetch_related('profile')),
-    )
-    create_only_args = ()
-    edit_only_args = (
-        ('group_profile', 'Group Profile', GroupProfileForm(),
-         (coop.profile,)),
-    )
-    create_forms = [HTML_create_form(*args) for args in itertools.chain(
-        credit_and_edit_args, create_only_args)]
-    print('total after making create_forms: {lcn}'.format(
-        lcn=len(connection.queries)))
-    edit_forms = [HTML_edit_form(*args) for args in itertools.chain(
-        credit_and_edit_args, edit_only_args)]
-    print('total after making edit_forms: {lcn}'.format(
-        lcn=len(connection.queries)))
-    render_dictionary = {'create_forms': create_forms,
-                         'edit_forms': edit_forms}
-    render_dictionary.update(users_stats_summarize(request, coop=coop))
-    print('total after calling users_stats_summarize: {lcn}'.format(
-        lcn=len(connection.queries)))
-    return render(request, 'steward/steward_forms.html', render_dictionary)
+def steward_editing_forms(request):
+    return render(request, 'steward/editing_forms.html',
+                  {'forms': make_forms(request)})

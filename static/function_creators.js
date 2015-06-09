@@ -86,46 +86,61 @@ var functionCreators = function() {
     };
   };
 
-  public_methods.configureCreateForm = function(index, args) {
+  public_methods.configureCreateForm = function(index, formSubmitter) {
     /*
-    `index` is not used. `args` should be an array with entries
-    0: Name of the object to be created (to identify the form).
-    1: Name of the Django application in which the object is defined.
-    2: Name of the object to be created (to determine which Django view function
-    handles the request).
+    `index` is not used.
     */
-    var createURL = '/'+args[1]+'/actions/create/'+args[2]+'/';
-    $('#'+args[0]+'_create_form').submit(public_methods.submitFunctionCreator(
-      createURL, undefined));
+    var createURL = '/'+formSubmitter.objectGrouping+ '/actions/create/'+
+      formSubmitter.objectName+'/';
+    console.log('  working on create formSubmitter for', formSubmitter.htmlName);
+    $('#'+formSubmitter.htmlName+'_create_form').submit(
+      public_methods.submitFunctionCreator(createURL, undefined));
+      return null;
   };
 
-  public_methods.configureEditForm = function(index, args) {
+  public_methods.configureEditForm = function(index, formSubmitter) {
     /*
-    `index` is not used. `args` should be an array with entries
-    0: Name of the object to be edited (to identify the form).
-    1: Name of the Django application in which the object is defined.
-    2: Name of the object to be edited (to determine which Django view function
-    handles the request).
+    `index` is not used.
     */
-    var editURL = '/'+args[1]+'/actions/edit/'+args[2]+'/';
-    $('#'+args[0]+'_edit_form_selector').find('select').change(function() {
-      var mainForm = $('#'+args[0]+'_edit_form');
-      //Get rid of the submit function. It's going to be added again later, so this
-      //prevents it from being called multiple times then. Could probably be made smoother.
-      mainForm.unbind()
-        .empty();
-      var choiceID = $(this).val();
-      if (choiceID) {
-        //TODO: add a class for the loading message. Failure message could go there, too.
-        $(this).closest('tr').append("<td id='selector_loading_message'>Loading ...</td>");
-        $.get(editURL, {choice_id: choiceID}, function (returnedData, textStatus, jqXHR) {
-          //TODO: instead maybe we could first check whether the td is present, and so on.
-          $('#selector_loading_message').remove();
-          mainForm.append(returnedData);
-          $('#'+args[0]+'_edit_form').submit(public_methods.submitFunctionCreator(editURL, choiceID));
-        });
-      }
-    });
+   console.log('  working on edit formSubmitter for', formSubmitter.htmlName);
+   var editURL = '/'+formSubmitter.objectGrouping+'/actions/edit/'+formSubmitter.objectName+'/';
+   console.log('#'+formSubmitter.htmlName+'_edit_form_selector');
+   $('#'+formSubmitter.htmlName+'_edit_form_selector').find('select').change(function() {
+     var mainForm = $('#'+formSubmitter.htmlName+'_edit_form');
+     //Get rid of the submit function. It's going to be added again later, so this
+     //prevents it from being called multiple times then. Could probably be made smoother.
+     mainForm.unbind()
+       .empty();
+     console.log('unbound and emptied mainForm');
+     var choiceID = $(this).val();
+     console.log('choiceID is', choiceID);
+     if (choiceID) {
+       //TODO: add a class for the loading message. Failure message could go there, too.
+       $(this).closest('tr').append("<td id='selector_loading_message'>Loading ...</td>");
+       $.get(editURL, {choice_id: choiceID}, function (returnedData, textStatus, jqXHR) {
+         //TODO: instead maybe we could first check whether the td is present, and so on.
+         $('#selector_loading_message').remove();
+         mainForm.append(returnedData)
+           .submit(public_methods.submitFunctionCreator(editURL, choiceID));
+         //Enable any datepickers that have just been added.
+         //TODO: any less crude way to do this?
+         $('.date_picker').datepicker({dateFormat: 'yy-mm-dd'});
+       });
+     }
+     return null;
+   });
+   return null;
+  };
+
+  public_methods.FormSubmitter = function(htmlName, objectGrouping, objectName) {
+    //TODO: adapt this to however you decide to document JavaScript functions.
+    //0: Name of the object to be created (to identify the form).
+    //1: Name of the Django application in which the object is defined.
+    //2: Name of the object to be created (to determine which Django view function
+    //handles the request).
+    this.htmlName = htmlName;
+    this.objectGrouping = objectGrouping;
+    this.objectName = objectName;
   };
 
   return public_methods;

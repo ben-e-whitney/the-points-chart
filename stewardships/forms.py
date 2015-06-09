@@ -48,7 +48,13 @@ def ClassicalStewardshipFormCreator(request):
                 initial = kwargs.get('initial', {})
                 initial.update({'cooper': instance.signed_up.who.id})
                 kwargs.update({'initial': initial})
+            if 'prefix' not in kwargs:
+                kwargs.update(prefix='ClassicalStewardship')
             super().__init__(*args, **kwargs)
+            #See <http://stackoverflow.com/a/1244586>.
+            self.fields['skeleton'].queryset = (
+                StewardshipSkeleton.objects.all().classical().for_coop(coop)
+            )
 
         def clean(self):
             cleaned_data = super().clean()
@@ -97,6 +103,8 @@ def LoanFormCreator(request):
                     'short_description': instance.skeleton.short_description,
                 })
                 kwargs.update({'initial': initial})
+            if 'prefix' not in kwargs:
+                kwargs.update(prefix='Loan')
             super().__init__(*args, **kwargs)
 
         def save(self, commit=True, request=None, **kwargs):
@@ -149,6 +157,8 @@ def SpecialPointsFormCreator(request):
                     'short_description': instance.skeleton.short_description,
                 })
                 kwargs.update({'initial': initial})
+            if 'prefix' not in kwargs:
+                kwargs.update(prefix='SpecialPointsGrant')
             super().__init__(*args, **kwargs)
 
         def save(self, commit=True, request=None, **kwargs):
