@@ -221,7 +221,8 @@ class GroupProfile(models.Model):
             start_date: start date.
             stop_date: stop date.
         """
-        for cycle_num, cycle_start_date, cycle_stop_date in self.cycles():
+        for cycle_num, cycle_start_date, cycle_stop_date in self.cycles(
+                stop_date=self.stop_date):
             if start_date == cycle_start_date and stop_date == cycle_stop_date:
                 return int(cycle_num)
         else:

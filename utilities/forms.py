@@ -88,6 +88,8 @@ class BasicForm(forms.ModelForm):
                 return HttpResponse('', reason='Not object found with ID '
                                     '{oid}'.format(oid=object_id), status=404)
             if request.method == 'GET':
+                #TODO: check that form is successfully created here? There
+                #shouldn't be errors but it might be better to check.
                 return render(request, 'form.html',
                               {'form': cls(instance=instance)})
             else:
@@ -99,21 +101,29 @@ class BasicForm(forms.ModelForm):
                     new_instance.save()
                 return form.respond_with_errors()
 
-def cycle_field_creator(coop):
+def cycle_field_creator(coop, exclude_future=False):
     """
     Find `coop`'s cycles and return a form field with those cycles as choices.
 
     Arguments:
         coop -- Group whose cycles we are interested in.
 
+    Keyword arguments:
+        exclude_future -- If True, limit cycle choices to past cycles, the
+            current cycle, and the next cycle if we are within
+            `coop.profile.release_buffer` of the start date). If False, include
+            all cycles in the future.
+
     Return a CharField with the current cycles as choices. No initial or
     default choice is made.
     """
+    stop_date = None if exclude_future else coop.profile.stop_date
     CYCLE_CHOICES = tuple(
         (int(cycle_num), 'Cycle {num} ({stadat} to {stodat})'
              .format(num=cycle_num, stadat=cycle_start.isoformat(),
                      stodat=cycle_stop.isoformat()))
-        for cycle_num, cycle_start, cycle_stop in coop.profile.cycles()
+        for cycle_num, cycle_start, cycle_stop in coop.profile.cycles(
+            stop_date=stop_date)
     )
     #I have found no way to set a default (not just initial) value. See
     #<https://docs.djangoproject.com/en/dev/ref/forms/fields/#initial>.
