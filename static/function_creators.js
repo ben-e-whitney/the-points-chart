@@ -92,7 +92,6 @@ var functionCreators = function() {
     */
     var createURL = '/'+formSubmitter.objectGrouping+ '/actions/create/'+
       formSubmitter.objectName+'/';
-    console.log('  working on create formSubmitter for', formSubmitter.htmlName);
     $('#'+formSubmitter.htmlName+'_create_form').submit(
       public_methods.submitFunctionCreator(createURL, undefined));
       return null;
@@ -102,18 +101,14 @@ var functionCreators = function() {
     /*
     `index` is not used.
     */
-   console.log('  working on edit formSubmitter for', formSubmitter.htmlName);
    var editURL = '/'+formSubmitter.objectGrouping+'/actions/edit/'+formSubmitter.objectName+'/';
-   console.log('#'+formSubmitter.htmlName+'_edit_form_selector');
    $('#'+formSubmitter.htmlName+'_edit_form_selector').find('select').change(function() {
      var mainForm = $('#'+formSubmitter.htmlName+'_edit_form');
      //Get rid of the submit function. It's going to be added again later, so this
      //prevents it from being called multiple times then. Could probably be made smoother.
      mainForm.unbind()
        .empty();
-     console.log('unbound and emptied mainForm');
      var choiceID = $(this).val();
-     console.log('choiceID is', choiceID);
      if (choiceID) {
        //TODO: add a class for the loading message. Failure message could go there, too.
        $(this).closest('tr').append("<td id='selector_loading_message'>Loading ...</td>");

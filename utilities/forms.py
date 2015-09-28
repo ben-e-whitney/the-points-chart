@@ -47,12 +47,23 @@ class BasicForm(forms.ModelForm):
         """
         Make response following form submission.
         """
-        #TODO: there should be a better way of doing this.
+        errors = self.errors
+        #Remove any non-field errors.
+        #TODO: see if this is the best way to do this.
+        try:
+            errors.pop('__all__')
+        except KeyError:
+            pass
+        if self.prefix is not None:
+            errors = {
+                '{pre}-{fie}'.format(pre=self.prefix, fie=field): value
+                for field, value in errors.items()
+            }
+        errors = {
+            key: ' '.join(value) for key, value in errors.items()
+        }
         return HttpResponse(json.dumps({
-            'errors': {
-                field: ' '.join(self.errors[field]) for field in self.errors
-                    if field != '__all__'
-            },
+            'errors': errors,
             'non_field_errors': list(self.non_field_errors())
         }), status=200 if self.is_valid() else 400)
 
@@ -85,7 +96,7 @@ class BasicForm(forms.ModelForm):
             try:
                 instance = cls.Meta.model.objects.get(pk=object_id)
             except ObjectDoesNotExist:
-                return HttpResponse('', reason='Not object found with ID '
+                return HttpResponse('', reason='No object found with ID '
                                     '{oid}'.format(oid=object_id), status=404)
             if request.method == 'GET':
                 #TODO: check that form is successfully created here? There
