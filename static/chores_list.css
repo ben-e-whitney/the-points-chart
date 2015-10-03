@@ -15,26 +15,6 @@
 	width: 7em;
 }
 
-#load_more_button {
-	font-size: 1.5em;
-	background-color: #073763;
-	color: #FFFFFF;
-	border-color: #073763;
-	width: 100%;
-	border-bottom-left-radius: 0;
-	border-bottom-right-radius: 0;
-	border-top-left-radius: 0.6em;
-	border-top-right-radius: 0;
-}
-
-/*TODO: this is just copying the general `button:disabled` styling from*/
-/*the `common.css` file. Haven't looked into doing this nicely yet.*/
-#load_more_button:disabled {
-	background-color: #CCCCCC;
-	border-color: #CCCCCC;
-	color: #FFFFFF;
-}
-
 #loaderImage {
 	width: 100%;
 }

@@ -51,20 +51,21 @@ var lastFetchMilliseconds = (new Date()).getTime();
 
 var insertChores = function(data, textStatus, jqXHR) {
   var responseAsObject = JSON.parse(data);
-  if (responseAsObject.least_cycle_num == 1) {
-    $('#load_more_button').prop('disabled', true);
-  }
   $('#chores').prepend(responseAsObject.html);
   cycleOffsetToFetch -= 1;
   if (firstLoad) {
     try {
+      console.log('trying to scroll to today');
       $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1000);
+      console.log('apparently, successfully scrolled to today');
     } catch (e) {
+      console.log(e);
       //There is probably no element named 'today'. Scroll to the top instead.
       window.scrollTo(0, 0);
     }
     firstLoad = false;
   } else {
+    //TODO: remove, as Valentine requested.
     window.scrollTo(0, 0);
   }
   return null;
@@ -198,9 +199,16 @@ var fetchChores = function() {
 fetchChores = loaderMessage(fetchChores, 'loading');
 
 $(window).load(function() {
-  fetchChores(0);
+  fetchChores();
   fetchUpdates();
   //See note above.
   fetchUpdates = loaderMessage(fetchUpdates, 'updating');
   setInterval(fetchUpdates, 1000*fetchInterval);
+  $(this).scroll(function() {
+    if (this.pageYOffset == 0) {
+      console.log('going to call fetchChores');
+      fetchChores();
+      console.log('called fetchChores');
+    }
+  });
 });

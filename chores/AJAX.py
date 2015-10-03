@@ -88,7 +88,7 @@ def chores_fetch(request):
         #TODO: here `status` should be pulled from `e` (?).
         return HttpResponse('', reason=e, status=400)
     if cycle_offset == 0:
-        start_date = None
+        start_date = coop.profile.today()
         stop_date = None
     elif cycle_offset < 0:
         start_date = max(coop.profile.start_date, min(coop.profile.stop_date,
