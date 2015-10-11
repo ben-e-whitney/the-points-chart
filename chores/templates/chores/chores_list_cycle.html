@@ -19,15 +19,6 @@
 							<i class="icon-down-open"></i></button>
 					</td>
 					{% endif %}
-					<td class="button_cell">
-						<button id="void_button_{{ schedule_item.chore.id }}"
-							onclick="voidChore({{ schedule_item.chore.id }})"
-							{% if schedule_item.chore_button.void_enabled %}
-							{% else %}
-								disabled=""
-							{% endif %}
-							class="void_button"><i class="icon-cancel"></i></button>
-					</td>
 					<td id="chore_{{ schedule_item.chore.id }}" class="chore_cell">
 						<button class="chore_button styled_button {{ schedule_item.class }}"
 							id="chore_button_{{ schedule_item.chore.id }}"

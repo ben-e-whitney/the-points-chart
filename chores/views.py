@@ -31,8 +31,6 @@ def pretty_print_query(query):
 class ChoreSentence():
     chore_attribute = None
     past_participle = None
-    action_permission_attribute = None
-    reversion_permission_attribute = None
 
     def __init__(self, user, chore, chore_attribute=None):
         if chore_attribute is not None:
@@ -45,13 +43,6 @@ class ChoreSentence():
         self.signature = getattr(self.chore, self.chore_attribute)
         self.owner = self.signature.who
 
-    def action_permitted(self):
-        return any(
-            getattr(self.chore, attribute)(self.user)['boolean']
-            for attribute in (self.action_permission_attribute,
-                              self.reversion_permission_attribute)
-        )
-
     def text(self):
         return '{nam} {ppa}.'.format(
             nam='You' if self.owner == self.user else
@@ -62,33 +53,24 @@ class ChoreSentence():
 class VoidSentence(ChoreSentence):
     chore_attribute = 'voided'
     past_participle = 'voided'
-    action_permission_attribute = 'void_permission'
-    reversion_permission_attribute = 'revert_void_permission'
 
 class SignUpSentence(ChoreSentence):
     chore_attribute = 'signed_up'
     past_participle = 'signed up'
-    action_permission_attribute = 'sign_up_permission'
-    reversion_permission_attribute = 'revert_sign_up_permission'
 
 class SignOffSentence(ChoreSentence):
     chore_attribute = 'signed_off'
     past_participle = 'signed off'
-    action_permission_attribute = 'sign_off_permission'
-    reversion_permission_attribute = 'revert_sign_off_permission'
 
 def get_chore_button(user, chore):
     sentences = [
         constructor(user, chore)
         for constructor in (SignUpSentence, SignOffSentence, VoidSentence)
     ]
-    texts = [sentence.text() for sentence in sentences]
-    permissions = [sentence.action_permitted() for sentence in sentences]
     return {
-        'text': ' '.join(filter(None, texts)),
-        #Separate the voiding permissions.
-        'enabled': any(permissions[0:2]),
-        'void_enabled': permissions[2],
+        'text': ' '.join(filter(None, (sentence.text()
+                                for sentence in sentences))),
+        'enabled': chore.methods_enabled(user),
     }
 
 def get_obligations(user, coop=None):
@@ -315,6 +297,8 @@ def user_stats_list(request, username):
     if username == 'AnonymousUser':
         return redirect('/chores/{usn}/'.format(usn=request.user))
     else:
+        #TODO: here and elsewhere, look into
+        #`django.shortcuts.get_object_or_404`.
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:

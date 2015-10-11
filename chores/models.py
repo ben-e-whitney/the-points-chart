@@ -13,6 +13,7 @@ from utilities import timedelta
 # TODO: how do we tie the `signed_up` property, the `sign_up_permission` etc.
 # methods, 'sign up' as a verb, the JavaScript function names, etc.?
 
+#TODO: make these settings in the Group profile.
 MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP = 2
 REVERT_SIGN_UP_GRACE_PERIOD_HOURS = 1
 
@@ -198,6 +199,7 @@ class Timecard(models.Model):
 
     # TODO: use timedelta.in_interval for these two? Should we pay attention to
     # anything other than days?
+    #TODO: can't we get the coop from the chore?
     def in_the_future(self, coop):
         return self.start_date > coop.profile.today()
 
@@ -210,9 +212,8 @@ class Timecard(models.Model):
 
     #TODO: add optional argument for current time. Will save regenerating it.
     def too_close_to_revert_sign_up(self):
-        return False
-        #return timedelta.in_interval(0, self.start_date-timezone.now().date(),
-                                     #MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
+        return timedelta.in_interval(0, self.start_date-timezone.now().date(),
+                                     MINIMUM_DAYS_BEFORE_TO_REVERT_SIGN_UP)
 
     def get_scoop_message(self, user, attribute, verb):
         owner = getattr(self, attribute).who
@@ -234,147 +235,111 @@ class Timecard(models.Model):
     # the admin interface.
     # TODO: are there going to be timezone problems here?
 
-    #TODO: reverse this? So if `condition` evaluates to `True`, you can do the
-    #action?
-    def permission_creator(conditions, potential_msgs):
-        # TODO: mark in docstring that `conditions`/`potential_msgs` should be
-        # ordered according to decreasing priority.
-        def permission(self, user):
-            for condition, potential_msg in zip(conditions, potential_msgs):
-                # TODO: adapt this so that condition need not be callable. This
-                # might not be possible, since I don't think you have a notion
-                # of `self` whenever these are compiled, or whatever. Would
-                # need to wrap them in another method? Tired.
-                if condition(self, user):
-                    if callable(potential_msg):
-                        message = potential_msg(self, user)
-                    else:
-                        message = potential_msg
-                    return {'boolean': False, 'message': message}
-            return {'boolean': True, 'message': ''}
-        return permission
-
-    sign_up_permission = permission_creator(
-        [
-            lambda self, user: self.voided,
-            lambda self, user: self.signed_up
-        ], [
-            lambda self, user: self.get_scoop_message(user, 'voided',
-                                                      'voided'),
-            lambda self, user: self.get_scoop_message(user, 'signed_up',
-                                             'signed up for')
-        ]
-    )
-    sign_off_permission = permission_creator(
-        [
-            lambda self, user: not self.signed_up,
-            lambda self, user: self.signed_up.who == user,
-            lambda self, user: self.in_the_future(user.profile.coop),
-            lambda self, user: self.signed_off,
-            lambda self, user: self.voided
-        ], [
-            'No one has signed up for that chore.',
-            "You can't sign off on your own chore.",
-            "You can't sign off on a chore before it has been done.",
-            lambda self, user: self.get_scoop_message(user, 'signed_off',
-                                             'signed off on'),
-            lambda self, user: self.get_scoop_message(user, 'voided',
-                                                      'voided')
-        ]
-    )
-    void_permission = permission_creator(
-        [
-            lambda self, user: not (self.signed_up.who == user or
-                user.profile.points_steward),
-            lambda self, user: (self.in_the_future(user.profile.coop) and not
-                user.profile.points_steward),
-            lambda self, user: self.voided,
-            lambda self, user: self.signed_off
-        ], [
-            "You can't void a chore that isn't yours unless you're points "
-                "steward.",
-            "You can't void a chore before it has been done.",
-            lambda self, user: self.get_scoop_message(user, 'voided',
-                                                      'voided'),
-            lambda self, user: self.get_scoop_message(user, 'signed_off',
-                                             'signed off on')
-        ]
-    )
-    revert_sign_up_permission = permission_creator(
-        [
-            lambda self, user: not (self.signed_up.who == user or
-                user.profile.points_steward),
-            lambda self, user: not self.signed_up,
-            lambda self, user: self.signed_off,
-            lambda self, user: self.voided,
-            lambda self, user: (self.too_close_to_revert_sign_up() and
-                                not self.in_grace_period()),
-            lambda self, user: (self.in_the_past(user.profile.coop) and
-                                not self.in_grace_period())
-        ], [
-            "You didn't sign up for that chore.",
-            "No one has signed up for that chore.",
-            lambda self, user: self.get_scoop_message(user, 'signed_off',
-                                                      'signed off'),
-            lambda self, user: self.get_scoop_message(user, 'voided',
-                                                     'voided'),
-            lambda self, user: (
-                "It's too close to the chore. Talk to {ste} if you really "
-                "can't do it."
-            ).format(ste=user.profile.coop.points_steward().profile.nickname),
-            "The chore's already past. Void instead."
-        ]
-    )
-    revert_sign_off_permission = permission_creator(
-        [
-            lambda self, user: not self.signed_up,
-            lambda self, user: self.signed_off.who != user,
-        ],
-        [
-            "No one is signed off on that chore.",
-            "You didn't sign off on that chore.",
-        ])
-
-    revert_void_permission = permission_creator(
-        [
-            lambda self, user: not self.voided,
-            lambda self, user: not (self.voided.who == user or
-                user.profile.points_steward)
-        ],
-        [
-            "That chore hasn't been voided.",
-            "You didn't void that chore."
-        ]
-    )
-
-    def actor_creator(permission_method_name, signature_name, action_name):
-        def actor(self, user, *args, **kwargs):
+    def actor_commit_wrap(f):
+        def inner(self, user, *args, **kwargs):
             commit = kwargs.get('commit', True)
-            permission = getattr(self, permission_method_name)(user)
-            if permission['boolean']:
-                getattr(getattr(self, signature_name), action_name)(
-                    user, *args, **kwargs)
-                #Save the Timecard itself to update the 'updated' field.
-                if commit:
-                    self.save()
-            else:
-                #TODO: figure out how to send down both permission and status.
-                #Half the problem might be in the JavaScript.
-                permission.update({'status': 403})
-                raise ChoreError(permission['message'])
-        return actor
+            output = f(self, user, *args, **kwargs)
+            if commit:
+                self.save()
+            return output
+        return inner
 
-    # TODO: should we be using functools for all of this, then? Or maybe for
-    # none of it?
-    signer_creator   = functools.partial(actor_creator, action_name='sign')
-    reverter_creator = functools.partial(actor_creator, action_name='revert')
-    sign_up  = signer_creator('sign_up_permission', 'signed_up')
-    sign_off = signer_creator('sign_off_permission', 'signed_off')
-    void     = signer_creator('void_permission', 'voided')
-    revert_sign_up  = reverter_creator('revert_sign_up_permission', 'signed_up')
-    revert_sign_off = reverter_creator('revert_sign_off_permission',
-                                       'signed_off')
-    revert_void     = reverter_creator('revert_void_permission', 'voided')
+    @actor_commit_wrap
+    def sign_up(self, user, *args, **kwargs):
+        testing = kwargs.pop('testing', False)
+        if self.voided:
+            raise ChoreError(self.get_scoop_message(user, 'voided', 'voided'))
+        if self.signed_up:
+            raise ChoreError(self.get_scoop_message(user, 'signed_up',
+                                                    'signed up for'))
+        if not testing:
+            self.signed_up.sign(user, *args, **kwargs)
+
+    @actor_commit_wrap
+    def sign_off(self, user, *args, **kwargs):
+        testing = kwargs.pop('testing', False)
+        if not self.signed_up:
+            raise ChoreError('No one has signed up for that chore.')
+        if self.signed_up.who == user:
+            raise ChoreError("You can't sign off on your own chore.")
+        if self.in_the_future(user.profile.coop):
+            raise ChoreError("You can't sign off on a chore before it has "
+                             "been done.")
+        if self.signed_off:
+            raise ChoreError(self.get_scoop_message(user, 'signed_off',
+                                                    'signed off on'))
+        if self.voided:
+            raise ChoreError(self.get_scoop_message(user, 'voided', 'voided'))
+        if not testing:
+            self.signed_off.sign(user, *args, **kwargs)
+
+    @actor_commit_wrap
+    def void(self, user, *args, **kwargs):
+        testing = kwargs.pop('testing', False)
+        if self.signed_up.who != user:
+            raise ChoreError("You can't void a chore that isn't yours.")
+        if self.in_the_future(user.profile.coop):
+            raise ChoreError("You can't void a chore before it has been done.")
+        if self.voided:
+            raise ChoreError(self.get_scoop_message(user, 'voided', 'voided'))
+        if self.signed_off:
+            raise ChoreError(self.get_scoop_message(user, 'signed_off',
+                                                    'signed off on'))
+        if not testing:
+            self.voided.sign(user, *args, **kwargs)
+
+    @actor_commit_wrap
+    def revert_sign_up(self, user, *args, **kwargs):
+        #TODO: include grace period for this, too.
+        testing = kwargs.pop('testing', False)
+        if not self.signed_up.who == user:
+            raise ChoreError("You didn't sign up for that chore.")
+        if not self.signed_up:
+            raise ChoreError("No one has signed up for that chore.")
+        if self.signed_off:
+            raise ChoreError(self.get_scoop_message(user, 'signed_off',
+                                                    'signed off'))
+        if self.voided:
+            raise ChoreError(self.get_scoop_message(user, 'voided', 'voided'))
+        if self.too_close_to_revert_sign_up() and not self.in_grace_period():
+            steward = user.profile.coop.profile.points_steward().profile.nickname
+            raise ChoreError("It's too close to the chore. Talk to {ste} if "
+                             "you really can't do it.".format(ste=steward))
+        if self.in_the_past(user.profile.coop) and not self.in_grace_period():
+            raise ChoreError("The chore's already past. Void instead.")
+        if not testing:
+            self.signed_up.revert(user, *args, **kwargs)
+
+    @actor_commit_wrap
+    def revert_sign_off(self, user, *args, **kwargs):
+        testing = kwargs.pop('testing', False)
+        if not self.signed_up:
+            raise ChoreError("No one is signed off on that chore.")
+        if self.signed_off.who != user:
+            raise ChoreError("You didn't sign off on that chore.")
+        if not testing:
+            self.signed_off.revert(user, *args, **kwargs)
+
+    @actor_commit_wrap
+    def revert_void(self, user, *args, **kwargs):
+        testing = kwargs.pop('testing', False)
+        if not self.voided:
+            raise ChoreError("That chore hasn't been voided.")
+        if self.voided.who != user:
+            raise ChoreError("You didn't void that chore.")
+        if not testing:
+            self.voided.revert(user, *args, **kwargs)
+
+    def methods_enabled(self, user):
+        methods = []
+        for method in ('sign_up', 'revert_sign_up', 'sign_off',
+                       'revert_sign_off', 'void', 'revert_void'):
+            try:
+                getattr(self, method)(user, commit=False, testing=True)
+                methods.append(method)
+            except ChoreError:
+                pass
+        return methods
 
     def find_CSS_classes(self, user):
         '''
@@ -385,26 +350,16 @@ class Timecard(models.Model):
         # GroupProfile time zone.
         current_date = timezone.now().date()
         old_count = len(connection.queries)
+        methods_enabled = self.methods_enabled(user)
         css_classes = {
-            # TODO: names are outdated. Need to fix!
-
-            #TODO: reinstate.
-            'needs_sign_up': self.sign_up_permission(user)['boolean'],
-            'needs_sign_off': self.sign_off_permission(user)['boolean'],
+            'needs_sign_up': 'sign_up' in methods_enabled,
+            'needs_sign_off': 'sign_off' in methods_enabled,
             'completed_successfully': self.completed_successfully(),
-
-            #TODO: reinstate.
             'voided': self.voided,
             'user_signed_up': user == self.signed_up.who,
             'user_signed_off': user == self.signed_off.who,
             'user_voided': user == self.voided.who
         }
-        #TODO: remove when done.
-        #' '.join([key for key, bool_ in css_classes.items() if bool_])
-        #try:
-            #assert len(connection.queries) == old_count
-        #except:
-            #print(len(connection.queries)-old_count)
         return ' '.join([key for key, bool_ in css_classes.items() if bool_])
 
 class Skeleton(models.Model):
@@ -434,6 +389,13 @@ class ChoreSkeleton(Skeleton):
     end_time   = models.TimeField()
     objects = PassThroughManager.for_queryset_class(ChoreSkeletonQuerySet)()
     sort_index = models.IntegerField(default=0)
+
+#TODO: add this in later.
+#class ChoreSchedule(models.Model):
+#    skeleton = models.ForeignKey(ChoreSkeleton, related_name='schedule')
+#    objects = PassThroughManager.for_queryset_class(ChoreQuerySet)()
+#    #TODO: start cycle and stop cycle.
+#    #TODO: days
 
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')

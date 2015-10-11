@@ -62,7 +62,7 @@ button.chore_button {
 	border-color: #FFFFFF;
 }
 
-.void_button, .chore_dropdown_button {
+.chore_dropdown_button {
 	background-color: #FFFFFF;
 	border-color: #FFFFFF;
 	color: #000000;
@@ -71,7 +71,7 @@ button.chore_button {
 	font-size: 1.5em;
 }
 
-.void_button:disabled, .chore_dropdown_button:disabled {
+.chore_dropdown_button:disabled {
 	background-color: #FFFFFF;
 	border-color: #FFFFFF;
 	color: #CCCCCC;

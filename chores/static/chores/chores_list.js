@@ -88,7 +88,6 @@ var replaceSentences = function(data, textStatus, jqXHR) {
       .removeClass()
       .addClass('chore_button styled_button '+chore_HTML.CSS_classes);
     $('#chore_button_text_'+chore_id).empty().append(chore_HTML.button.text);
-    $('#void_button_'+chore_id).prop('disabled', !chore_HTML.button.void_enabled);
     return null;
   });
   var $current_balance = $('#current_balance');
@@ -156,7 +155,6 @@ var AJAXCreator = function(method_name) {
   return loaderMessage(inner, 'saving');
 };
 
-var voidChore  = AJAXCreator('void');
 var clickChore = AJAXCreator('deduce');
 
 var fetchChoreForm = function(chore_id) {

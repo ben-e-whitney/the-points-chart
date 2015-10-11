@@ -183,40 +183,29 @@ def act(request):
         chore = Chore.objects.get(pk=chore_id)
     except ObjectDoesNotExist as e:
         return HttpResponse('', reason=e.args[0], status=404)
-
-    whitelist = ('sign_up', 'sign_off', 'void', 'revert_sign_up',
-                 'revert_sign_off', 'revert_void')
-    revert_list = ('revert_sign_up', 'revert_sign_off', 'revert_void')
+    my_chore = chore.signed_up.who == user
+    point_value = chore.skeleton.point_value
+    whitelist = ('sign_up', 'revert_sign_up', 'sign_off', 'revert_sign_off',
+                 'void', 'revert_void')
     method_name = request.POST.get('method_name', '')
     if not method_name:
-        return HttpResponse('', reason=e, status=400)
-    if method_name == 'deduce':
-        #Here we establish which methods we prefer/assume when a user (possibly
-        #a steward) clicks on the chore button. In particular, we try to sign
-        #off before trying to revert a sign-up.
-        for attribute_name in (
-            'sign_off_permission',
-            'revert_sign_off_permission',
-            'revert_sign_up_permission',
-            'sign_up_permission',
-        ):
-            if getattr(chore, attribute_name)(request.user)['boolean']:
-                method_name = attribute_name.replace('_permission', '')
+        return HttpResponse('', reason='No method provided.', status=400)
+    elif method_name not in whitelist and method_name != 'deduce':
+        return HttpResponse('', reason='Method not permitted.', status=403)
+    else:
+        method_names = (list(whitelist) if method_name == 'deduce' else
+            [method_name])
+        success = False
+        while method_names:
+            method_name = method_names.pop(0)
+            try:
+                getattr(chore, method_name)(user)
+                success = True
                 break
-    elif method_name == 'void':
-        if not chore.void_permission(request.user)['boolean']:
-            method_name = 'revert_void'
-    if method_name not in whitelist:
-        return HttpResponse('', reason='Method name not permitted.',
-                            status=403)
-
-    stewardship_invoked = method_name in revert_list and (user !=
-        chore.signed_up.who)
-    try:
-        getattr(chore, method_name)(user)
-    except ChoreError as e:
-        return HttpResponse('', reason=e, status=403)
-
+            except ChoreError as e:
+                continue
+        if not success:
+            return HttpResponse('', reason=e, status=403)
     #TODO: change to method that gets current cycle if you make one.
     coop = user.profile.coop
     today = coop.profile.today()
@@ -226,18 +215,16 @@ def act(request):
             break
     else:
         ongoing_cycle = False
-    #TODO: careful here. We might have just cleared `chore.signed_up.who`.
-    my_chore = chore.signed_up.who == user
-    point_value = chore.skeleton.point_value
     #Make no balance change if `user` is the Points Steward changing someone
     #else's chore.
-    balance_change = 0 if stewardship_invoked else {
+    #TODO: check this.
+    balance_change = 0 if not my_chore else {
         'sign_up': point_value if ongoing_cycle else 0,
         'sign_off': 0,
-        'void': -point_value if ongoing_cycle and my_chore else 0,
+        'void': -point_value if ongoing_cycle else 0,
         'revert_sign_up': -point_value if ongoing_cycle else 0,
         'revert_sign_off': 0,
-        'revert_void': point_value if ongoing_cycle and my_chore else 0,
+        'revert_void': point_value if ongoing_cycle else 0,
     }[method_name]
     return updates_report(request, chores=(chore,), include_balances=False,
                           balance_change=balance_change)
