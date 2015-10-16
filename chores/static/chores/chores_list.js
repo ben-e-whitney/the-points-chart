@@ -55,11 +55,8 @@ var insertChores = function(data, textStatus, jqXHR) {
   cycleOffsetToFetch -= 1;
   if (firstLoad) {
     try {
-      console.log('trying to scroll to today');
       $('html,body').animate({scrollTop: $('a[name=today]').offset().top}, 1000);
-      console.log('apparently, successfully scrolled to today');
     } catch (e) {
-      console.log(e);
       //There is probably no element named 'today'. Scroll to the top instead.
       window.scrollTo(0, 0);
     }
@@ -120,6 +117,7 @@ var displayChoreForm = function(chore_id) {
 		//.append('</form>')
 		//.find('form')
   $('#chore_edit_form').empty()
+    .unbind('submit')
     .append(data)
 		.submit(functionCreators.submitFunctionCreator(
       '/chores/actions/edit/chore/', chore_id))
@@ -206,9 +204,7 @@ $(window).load(function() {
   setInterval(fetchUpdates, 1000*fetchInterval);
   $(this).scroll(function() {
     if (this.pageYOffset == 0) {
-      console.log('going to call fetchChores');
       fetchChores();
-      console.log('called fetchChores');
     }
   });
 });
