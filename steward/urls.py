@@ -1,4 +1,5 @@
 from django.conf.urls import patterns, url
+from django.views.generic import RedirectView
 
 from steward import views
 from steward.forms import UserFormCreator
@@ -6,6 +7,8 @@ from profiles.forms import GroupProfileForm
 
 urlpatterns = patterns(
     '',
+    url(r'^$', RedirectView.as_view(pattern_name='overview',
+                                    permanent=False)),
     url(r'^overview/$', views.users_stats_summarize, name='overview'),
     url(r'^creating/$', views.steward_creating_forms, name='creating'),
     url(r'^editing/$', views.steward_editing_forms, name='editing'),

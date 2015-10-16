@@ -72,7 +72,7 @@ http://stackoverflow.com/questions/11374059/make-an-html-svg-object-also-a-click
 		<ul class="{% if user.is_authenticated %}{% else %}unauthenticated{% endif %}">
 			{% if user.profile.points_steward %}
 			<li>
-				<a href="/steward/overview/">
+				<a href="/steward/">
 					<object class="nav_icon" data={% static "icons/tool3_big.svg" %}>
 						steward-button
 					</object>
