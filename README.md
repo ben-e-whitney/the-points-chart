@@ -24,13 +24,6 @@ could save you a great deal of effort! If not, you are welcome to fork the code
 to tweak behavior as desired, or even submit a pull request to the main
 repository. Contributions are always welcome.
 
-Authorship
-----------
-The primary author is Ben Whitney. Credit is also due to the many co-opers who
-have used the chart and its predecessors, spotting bugs and suggesting
-features, and, of course, to the many libraries and projects which
-the-points-chart uses.
-
 Licensing
 ---------
 the-points-chart is released under the GPLv3, which is accessible
