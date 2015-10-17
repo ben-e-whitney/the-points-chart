@@ -1,3 +1,7 @@
+table {
+	table-layout: fixed;
+}
+
 form th {
 	text-align: left;
 }
@@ -6,16 +10,24 @@ form.submit_button {
 	float: right;
 }
 
-.form_error, .form_status {
-	color: red;
-}
-
 .form_container {
 	display: table-cell;
 }
 
 .form_fields {
 	display: table-row;
+}
+
+.form_error {
+	color: red;
+}
+
+.form_success {
+	color: green;
+}
+
+.form_status {
+	font-weight: bold;
 }
 
 .form_report {

@@ -1,11 +1,11 @@
 var functionCreators = function() {
   //This should be the same as settings.STATIC_URL.
   var staticURL = '/static/';
-  var Icon = function(URL, description) {
-    this.URL = URL;
-    this.description = description;
-    this.status = '<object data="'+staticURL+this.URL+'">'+this.description+
-      '</object>';
+  var Icon = function(symbol, cssClasses) {
+    this.symbol = symbol;
+    this.cssClasses = cssClasses;
+    this.html = "<span class='"+this.cssClasses+"'>"+
+      this.symbol+"</span>";
   };
 
   var reportSuccessCreator = function(form, postURL, choiceID) {
@@ -18,16 +18,15 @@ var functionCreators = function() {
     return function(returnedData, textStatus, jqXHR) {
       var responseText = JSON.parse(returnedData.responseText);
       var errors = responseText.errors;
-      //TODO: this isn't actually used. Should it be?
       var nonFieldErrors = responseText.non_field_errors;
       $.each(errors, function(key, value) {
-        //TODO: maybe need to like specify that we're looking for the
-        //id thing within the given form.
         form.find('#id_'+key)
           .closest('tr')
-          .append("<td class='form_error'>"+ value+"</td>");
+          .append("<td class='form_error'>"+value+"</td>");
         return null;
       });
+      form.find('.form_report')
+        .append(nonFieldErrors);
       return null;
     };
   };
@@ -39,12 +38,13 @@ var functionCreators = function() {
       var form = $(this);
       var wrapAJAXFunction = function(ajaxFunction, icon) {
         var inner = function(returnedData, textStatus, jqXHR) {
-          ajaxFunction(returnedData, textStatus, jqXHR);
           form.find('.form_status')
             .empty()
-            .append(icon.status);
+            .append(icon.html);
+          ajaxFunction(returnedData, textStatus, jqXHR);
           form.submit(myself(postURL, choiceID))
-          .find('.submit_button').prop('disabled', false);
+            .find('.submit_button')
+            .prop('disabled', false);
           return null;
         };
         return inner;
@@ -55,6 +55,7 @@ var functionCreators = function() {
         .find('.submit_button').prop('disabled', true);
       //TODO: again, this is probably inefficient. Just getting it working for now.
       form.find('.form_status').empty();
+      form.find('.form_report').empty();
       form.find('.form_error').remove();
       var data = {};
       $.each(form.serializeArray(), function(key, formElement) {
@@ -75,21 +76,18 @@ var functionCreators = function() {
         //icon, though. Separate the icon stuff and the recursive call of `myself`?
         success: wrapAJAXFunction(
           reportSuccessCreator(form),
-          new Icon('icons/checkmark.svg', 'success checkmark')
+          new Icon('✔ Accepted.', 'form_success')
         ),
         error: wrapAJAXFunction(
           reportErrorsCreator(form),
-          new Icon('icons/delete.svg', 'error cross')
+          new Icon('✖ Rejected.', 'form_error')
         ),
       });
       return null;
     };
   };
 
-  public_methods.configureCreateForm = function(index, formSubmitter) {
-    /*
-    `index` is not used.
-    */
+  public_methods.configureCreateForm = function(_, formSubmitter) {
     var createURL = '/'+formSubmitter.objectGrouping+ '/actions/create/'+
       formSubmitter.objectName+'/';
     $('#'+formSubmitter.htmlName+'_create_form').submit(
@@ -97,34 +95,43 @@ var functionCreators = function() {
       return null;
   };
 
-  public_methods.configureEditForm = function(index, formSubmitter) {
-    /*
-    `index` is not used.
-    */
-   var editURL = '/'+formSubmitter.objectGrouping+'/actions/edit/'+formSubmitter.objectName+'/';
-   $('#'+formSubmitter.htmlName+'_edit_form_selector').find('select').change(function() {
-     var mainForm = $('#'+formSubmitter.htmlName+'_edit_form');
-     //Get rid of the submit function. It's going to be added again later, so this
-     //prevents it from being called multiple times then. Could probably be made smoother.
-     mainForm.unbind()
-       .empty();
-     var choiceID = $(this).val();
-     if (choiceID) {
-       //TODO: add a class for the loading message. Failure message could go there, too.
-       $(this).closest('tr').append("<td id='selector_loading_message'>Loading ...</td>");
-       $.get(editURL, {choice_id: choiceID}, function (returnedData, textStatus, jqXHR) {
-         //TODO: instead maybe we could first check whether the td is present, and so on.
-         $('#selector_loading_message').remove();
-         mainForm.append(returnedData)
-           .submit(public_methods.submitFunctionCreator(editURL, choiceID));
-         //Enable any datepickers that have just been added.
-         //TODO: any less crude way to do this?
-         $('.date_picker').datepicker({dateFormat: 'yy-mm-dd'});
-       });
-     }
-     return null;
-   });
-   return null;
+  public_methods.configureEditForm = function(_, formSubmitter) {
+    var editURL = '/'+formSubmitter.objectGrouping+'/actions/edit/'+
+      formSubmitter.objectName+'/';
+    $('#'+formSubmitter.htmlName+'_edit_form_selector').find('select')
+      .change(function() {
+        var mainForm = $('#'+formSubmitter.htmlName+'_edit_form');
+        //Get rid of the submit function. It's going to be added again later,
+        //so this prevents it from being called multiple times then. Could
+        //probably be made smoother.
+        mainForm.unbind()
+          .empty();
+        var choiceID = $(this).val();
+        if (choiceID) {
+          var loadingMessageID = 'selector_loading_message';
+          //TODO: add a class for the loading message. Failure message could
+          //go there, too.
+          $(this).closest('tr')
+            .append("<td id='"+loadingMessageID+"'>Loading ...</td>");
+          $.get(
+            editURL,
+            {choice_id: choiceID},
+            function (returnedData, textStatus, jqXHR) {
+              //TODO: instead maybe we could first check whether the td is
+              //present, and so on.
+              $('#'+loadingMessageID).remove();
+              mainForm.append(returnedData)
+                .submit(
+                  public_methods.submitFunctionCreator(editURL, choiceID)
+                );
+              //Enable any datepickers that have just been added.
+              //TODO: any less crude way to do this?
+              $('.date_picker').datepicker({dateFormat: 'yy-mm-dd'});
+            });
+        }
+        return null;
+      });
+    return null;
   };
 
   public_methods.FormSubmitter = function(htmlName, objectGrouping, objectName) {
