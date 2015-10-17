@@ -18,21 +18,7 @@ Settings
 {% block body %}
 <div class="form_container">
 	<form id="profile_form" method="post">
-		<table>
-			<!--<div class="form_fields">-->
-						{% csrf_token %}
-						{{ form.as_table }}
-			<!--</div>-->
-			<!--<div>-->
-				<tr>
-					<td></td>
-					<td>
-						<input class="submit_button" type="submit" value="Submit Changes"/>
-					</td>
-					<td class="form_status"></td>
-				</tr>
-			<!--</div>-->
-	</table>
+		{% include "form.html" %}
 	</form>
 </div>
 {% endblock %}

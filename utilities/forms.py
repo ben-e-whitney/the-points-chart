@@ -48,6 +48,9 @@ class BasicForm(forms.ModelForm):
         Make response following form submission.
         """
         errors = self.errors
+        #Store these before changing `self.errors`.
+        html_status_code = 200 if self.is_valid() else 400
+        non_field_errors = list(self.non_field_errors())
         #Remove any non-field errors.
         #TODO: see if this is the best way to do this.
         try:
@@ -64,8 +67,8 @@ class BasicForm(forms.ModelForm):
         }
         return HttpResponse(json.dumps({
             'errors': errors,
-            'non_field_errors': list(self.non_field_errors())
-        }), status=200 if self.is_valid() else 400)
+            'non_field_errors': non_field_errors,
+        }), status=html_status_code)
 
     @classmethod
     def create_from_request(cls, request):

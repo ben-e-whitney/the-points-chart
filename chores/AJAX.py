@@ -85,7 +85,6 @@ def chores_fetch(request):
     try:
         cycle_offset = int(request.GET.get('cycle_offset', 0))
     except ValueError as e:
-        #TODO: here `status` should be pulled from `e` (?).
         return HttpResponse('', reason=e, status=400)
     if cycle_offset == 0:
         start_date = coop.profile.today()

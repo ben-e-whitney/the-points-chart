@@ -1,7 +1,7 @@
 from django import forms
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.contrib.auth.models import User
 from django.db.models.fields import BLANK_CHOICE_DASH
 
 from chores.models import ChoreSkeleton, Chore, Timecard, Signature, ChoreError
@@ -28,8 +28,6 @@ def ChoreFormCreator(request):
     coop = request.user.profile.coop
 
     class ChoreForm(BasicForm):
-        #repeat_interval = forms.IntegerField(validators=[MinValueValidator(1)])
-        #number_of_repeats = forms.IntegerField(validators=[MinValueValidator(1)])
         #Null values will be converted.
         signed_up  = cooper_field_creator(coop, blank=True, required=False)
         signed_off = cooper_field_creator(coop, blank=True, required=False)
@@ -74,7 +72,9 @@ def ChoreFormCreator(request):
 
         def clean(self):
             cleaned_data = super().clean()
-            #TODO: add code to allow for possibility of failed comparison.
+            #TODO: either this code needs to be repeated elsewhere (e.g. for
+            #the Stewardship form), or we need to somehow pull this out into a
+            #function or superclass or something.
             try:
                 proper_ordering = (cleaned_data.get('stop_date') >=
                     cleaned_data.get('start_date'))
@@ -82,8 +82,11 @@ def ChoreFormCreator(request):
                 # TODO: in Django 1.7 you can use `self.add_error()`. See
                 # <https://docs.djangoproject.com/en/dev/ref/forms/api/
                 # #django.forms.Form.add_error>.
-                raise ValidationError('Stop date is before start date (or '
-                                      'comparison failed).')
+                raise ValidationError('Comparison of start and stop dates '
+                                      'failed.')
+            if not proper_ordering:
+                raise ValidationError('Stop date cannot be before start date.')
+
             timecard = Timecard(
                 start_date=cleaned_data.get('start_date'),
                 stop_date=cleaned_data.get('start_date'),
