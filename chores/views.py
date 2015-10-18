@@ -23,11 +23,6 @@ from profiles.models import UserProfile
 from stewardships.models import (StewardshipSkeleton, Stewardship, Absence,
     ShareChange)
 
-def pretty_print_query(query):
-    import string
-    query = str(query).replace(', ', ',\n')
-    print(query)
-
 class ChoreSentence():
     chore_attribute = None
     past_participle = None
