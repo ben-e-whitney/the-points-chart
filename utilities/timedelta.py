@@ -27,7 +27,7 @@ def in_interval(left, timedelta, right, unit='days'):
         right = datetime.timedelta(**{unit: right})
     return left <= timedelta < right
 
-def pretty_print(timedelta):
+def pretty_str(timedelta):
     """
     Pretty print a timedelta.
 
@@ -38,23 +38,23 @@ def pretty_print(timedelta):
         timedelta: timedelta to be printed.
     """
 
-    pretty_print = ''
+    pretty_str = ''
     abs_td = abs(timedelta)
     if abs_td < datetime.timedelta(seconds=60):
-        pretty_print += '{num} seconds'.format(num=abs_td.seconds)
+        pretty_str += '{num} seconds'.format(num=abs_td.seconds)
     elif abs_td < datetime.timedelta(seconds=60**2):
     # For consistency I am not using rounding for these next two. See
     # <https://docs.python.org/3/library/datetime.html#timedelta-objects>.
-        pretty_print += '{num} minutes'.format(num=abs_td.seconds//60)
+        pretty_str += '{num} minutes'.format(num=abs_td.seconds//60)
     elif abs_td < datetime.timedelta(days=1):
-        pretty_print += '{num} hours'.format(num=abs_td.seconds//60**2)
+        pretty_str += '{num} hours'.format(num=abs_td.seconds//60**2)
     else:
-        pretty_print += '{num} days'.format(num=abs_td.days)
+        pretty_str += '{num} days'.format(num=abs_td.days)
     if timedelta >= datetime.timedelta(0):
-        pretty_print += ' ago'
+        pretty_str += ' ago'
     else:
-        pretty_print += ' from now'
-    return pretty_print
+        pretty_str += ' from now'
+    return pretty_str
 
 def daterange(start, stop, step=datetime.timedelta(days=1), inclusive=False):
     """

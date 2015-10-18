@@ -225,7 +225,7 @@ class Timecard(models.Model):
             # TODO: error can happen here if you have a Signature with a
             # co-oper but no datetime (will be subtracting a datetime with
             # `None`. Figure out what to do.
-            tdp=(timedelta.pretty_print(timezone.now()-
+            tdp=(timedelta.pretty_str(timezone.now()-
                  getattr(self, attribute).when))
         )
 

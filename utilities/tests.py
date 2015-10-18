@@ -1,6 +1,6 @@
 from django.test import TestCase
 from utilities.views import format_balance
-from utilities.timedelta import in_interval, pretty_print, daterange
+from utilities.timedelta import in_interval, pretty_str, daterange
 
 import datetime
 import decimal
@@ -43,7 +43,7 @@ class TimeDeltaTestCase(TestCase):
                                     unit='seconds'))
         return None
 
-    def test_pretty_print(self):
+    def test_pretty_str(self):
         test_pairs = (
             ({'days': -3}, '3 days from now'),
             ({'minutes': -30}, '30 minutes from now'),
@@ -53,7 +53,7 @@ class TimeDeltaTestCase(TestCase):
             ({'seconds': 5.9}, '5 seconds ago'),
         )
         for kwargs, output in test_pairs:
-            self.assertEqual(pretty_print(datetime.timedelta(**kwargs)),
+            self.assertEqual(pretty_str(datetime.timedelta(**kwargs)),
                              output)
         return None
 
