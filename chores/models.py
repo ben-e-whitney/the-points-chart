@@ -276,9 +276,12 @@ class Timecard(models.Model):
     @actor_commit_wrap
     def void(self, user, *args, **kwargs):
         testing = kwargs.pop('testing', False)
+        #TODO: consider checking `user.profile.points_steward` first. Maybe it
+        #will save database calls.
         if self.signed_up.who != user and not user.profile.points_steward:
             raise ChoreError("You can't void a chore that isn't yours.")
-        if self.in_the_future(user.profile.coop):
+        if (self.in_the_future(user.profile.coop) and
+                not user.profile.points_steward):
             raise ChoreError("You can't void a chore before it has been done.")
         if self.voided:
             raise ChoreError(self.get_scoop_message(user, 'voided', 'voided'))
