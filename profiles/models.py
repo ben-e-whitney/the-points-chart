@@ -80,19 +80,12 @@ def bound_dates(*keywords):
     def decorator(f):
         def inner(self, *args, **kwargs):
             for keyword in keywords:
-                try:
-                    value = kwargs[keyword]
-                    if value is None:
-                        #Sometimes the value might be explicitly given as
-                        #`None`. If this is the case, act as if it hadn't been
-                        #provided.
-                        raise KeyError
-                    if value < self.start_date or value > self.stop_date:
-                        raise ValueError('Invalid date.')
-                except KeyError:
-                    #If the keyword argument is not provided, we will trust the
-                    #method to handle things appropriately.
-                    continue
+                value = kwargs.get(keyword, None)
+                #If the keyword argument is not provided, we will trust the
+                #method to handle things appropriately.
+                if value is not None and (value < self.start_date or
+                                          value > self.stop_date):
+                    raise ValueError('Invalid date.')
             else:
                 return f(self, *args, **kwargs)
         return inner

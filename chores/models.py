@@ -387,24 +387,15 @@ class Timecard(models.Model):
         old_count = len(connection.queries)
         css_classes = {
             # TODO: names are outdated. Need to fix!
-
-            #TODO: reinstate.
             'needs_sign_up': self.sign_up_permission(user)['boolean'],
             'needs_sign_off': self.sign_off_permission(user)['boolean'],
             'completed_successfully': self.completed_successfully(),
 
-            #TODO: reinstate.
             'voided': self.voided,
             'user_signed_up': user == self.signed_up.who,
             'user_signed_off': user == self.signed_off.who,
             'user_voided': user == self.voided.who
         }
-        #TODO: remove when done.
-        #' '.join([key for key, bool_ in css_classes.items() if bool_])
-        #try:
-            #assert len(connection.queries) == old_count
-        #except:
-            #print(len(connection.queries)-old_count)
         return ' '.join([key for key, bool_ in css_classes.items() if bool_])
 
 class Skeleton(models.Model):
