@@ -21,6 +21,8 @@ from steward.forms import UserFormCreator, ChoiceFormCreator
 from utilities.views import TableElement, TableParent, format_balance
 from chores.views import calculate_load_info
 
+is_points_steward = lambda user: user.profile.points_steward
+
 class HTMLForm:
     def __init__(self, **kwargs):
         #TODO: rename the form fields here (and in the view).
@@ -73,7 +75,7 @@ def make_forms(request):
 
 # TODO: include also lists of all stewardships, absences, etc.
 @login_required()
-@user_passes_test(lambda user: user.profile.points_steward)
+@user_passes_test(is_points_steward)
 def users_stats_summarize(request):
     coop = request.user.profile.coop
     cycles = [{
@@ -109,14 +111,14 @@ def users_stats_summarize(request):
         'balance_sections': balance_sections,
     })
 @login_required()
-@user_passes_test(lambda user: user.profile.points_steward)
+@user_passes_test(is_points_steward)
 def steward_creating_forms(request):
     return render(request, 'steward/creating_forms.html',
                   {'forms': (form for form in make_forms(request)
                              if form.name != 'Group Profile')})
 
 @login_required()
-@user_passes_test(lambda user: user.profile.points_steward)
+@user_passes_test(is_points_steward)
 def steward_editing_forms(request):
     return render(request, 'steward/editing_forms.html',
                   {'forms': make_forms(request)})
