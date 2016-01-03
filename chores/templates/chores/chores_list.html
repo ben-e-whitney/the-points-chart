@@ -9,6 +9,7 @@
 <link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
 <script src={% static "jquery-cookie/src/jquery.cookie.js" %}></script>
 <script src={% static "function_creators.js" %}></script>
+<script src={% static "chores/chores_functions.js" %}></script>
 <script src={% static "chores/chores_list.js" %}></script>
 {% endblock head %}
 
@@ -29,7 +30,7 @@ Chores
 			<form id="chore_edit_form">
 			</form>	
 		</div>
-	{% endif %}
+{% endif %}
 	<div id="chores"></div>
 {% endblock %}
 

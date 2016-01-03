@@ -36,10 +36,11 @@ def updates_fetch(request):
     return updates_report(request, chores=changed_chores,
                           include_balances=True)
 
-@ensure_csrf_cookie
-@login_required()
-def chores_fetch(request):
-    reset_queries()
+#TODO: you'll get an error if this is called after `stop_date`.
+def cycles_from_chores(coop, user, chores, start_date=None, stop_date=None):
+
+    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+                'Saturday', 'Sunday']
 
     def find_day_id(date):
         return date.isoformat()
@@ -77,27 +78,6 @@ def chores_fetch(request):
         }
         return ' '.join([key for key, value in css_classes.items() if value])
 
-    weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                'Saturday', 'Sunday']
-    # Here (and elsewhere) we assume that a User is a member of only one Group.
-    coop = request.user.profile.coop
-
-    try:
-        cycle_offset = int(request.GET.get('cycle_offset', 0))
-    except ValueError as e:
-        return HttpResponse('', reason=e, status=400)
-    if cycle_offset == 0:
-        start_date = coop.profile.today()
-        stop_date = None
-    elif cycle_offset < 0:
-        start_date = max(coop.profile.start_date, min(coop.profile.stop_date,
-            coop.profile.today()+cycle_offset*datetime.timedelta(
-                days=coop.profile.cycle_length)))
-        stop_date = start_date
-    else:
-        return HttpResponse('', reason='`cycle_offset` may not be positive.',
-                status=400)
-    chores = Chore.objects.for_coop(coop)
     cycles = []
     for cycle_num, start_date, stop_date in coop.profile.cycles(
             start_date=start_date, stop_date=stop_date):
@@ -119,8 +99,8 @@ def chores_fetch(request):
             if chores_today:
                 chore_dicts = [{
                         'chore': chore,
-                        'class': chore.find_CSS_classes(request.user),
-                        'chore_button': get_chore_button(request.user, chore),
+                        'class': chore.find_CSS_classes(user),
+                        'chore_button': get_chore_button(user, chore),
                 } for chore in chores_today]
                 chores_by_date.append({
                     'date'    : date,
@@ -137,6 +117,41 @@ def chores_fetch(request):
                 'class': find_cycle_classes(cycle_num, start_date, stop_date),
                 'id': cycle_num,
             })
+    return cycles
+
+@ensure_csrf_cookie
+@login_required()
+def chores_fetch(request):
+    # Here (and elsewhere) we assume that a User is a member of only one Group.
+    coop = request.user.profile.coop
+    try:
+        cycle_offset = int(request.GET.get('cycle_offset', 0))
+        attention_needed = 'true' == request.GET.get('attention_needed',
+                                                      False)
+    except ValueError as e:
+        return HttpResponse('', reason=e, status=400)
+    if cycle_offset > 0:
+        return HttpResponse('', reason='`cycle_offset` may not be positive.',
+                            status=400)
+    if not attention_needed:
+        chores = Chore.objects.for_coop(coop)
+        if cycle_offset == 0:
+            start_date = max(coop.profile.start_date,
+                             min(coop.profile.stop_date, coop.profile.today()))
+            stop_date = None
+        else:
+            start_date = max(coop.profile.start_date,
+                min(coop.profile.stop_date,
+                    coop.profile.today() + cycle_offset *
+                        datetime.timedelta(days=coop.profile.cycle_length)))
+            stop_date = start_date
+    else:
+        chores = (Chore.objects.for_coop(coop).signed_off(None, False)
+            .voided(None, False).filter(start_date__lte=coop.profile.today()))
+        start_date = None
+        stop_date = None
+    cycles = cycles_from_chores(coop, request.user, chores, start_date,
+                                stop_date)
     if cycles:
         return HttpResponse(json.dumps({
             #Not sure why `user` isn't already available as a variable in the

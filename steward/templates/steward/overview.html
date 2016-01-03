@@ -9,6 +9,13 @@ steward
 <link type="text/css" rel="stylesheet" href="{% static "balances.css" %}"/>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="{% static "fontello/css/fontello.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "chores_list.css" %}"/>
+<link type="text/css" rel="stylesheet" href="{% static "forms.css" %}"/>
+<script src={% static "jquery-cookie/src/jquery.cookie.js" %}></script>
+<script src={% static "function_creators.js" %}></script>
+<script src={% static "chores/chores_functions.js" %}></script>
+<script src={% static "steward/chores_list.js" %}></script>
 {% endblock head %}
 
 {% block body_header %}
@@ -21,10 +28,7 @@ steward
 
 {% block body %}
 <div id="overview">
-{% comment %}
-Use this when you have more than one section.
-<h3>Summary</h3>
-{% endcomment %}
+<h2>Balances</h2>
 <table>
 	<thead>
 	</thead>
@@ -54,4 +58,10 @@ Use this when you have more than one section.
 	</tbody>
 </table>
 </div>
+<h2>Chores Needing Attention</h2>
+<div id="chore_form_dialog">
+	<form id="chore_edit_form">
+	</form>	
+</div>
+<div id="chores"></div>
 {% endblock %}
