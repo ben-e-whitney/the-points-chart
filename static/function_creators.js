@@ -1,6 +1,4 @@
 var functionCreators = function() {
-  //This should be the same as settings.STATIC_URL.
-  var staticURL = '/static/';
   var Icon = function(symbol, cssClasses) {
     this.symbol = symbol;
     this.cssClasses = cssClasses;
