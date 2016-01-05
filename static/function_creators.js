@@ -31,7 +31,14 @@ var functionCreators = function() {
 
   var public_methods = {};
 
-  public_methods.submitFunctionCreator = function myself(postURL, choiceID) {
+  public_methods.submitFunctionCreator = function myself(
+      postURL,
+      choiceID,
+      additionalSuccessFunctions
+  ) {
+    if (additionalSuccessFunctions === undefined) {
+      additionalSuccessFunctions = [];
+    }
     return function(e) {
       var form = $(this);
       var wrapAJAXFunction = function(ajaxFunction, icon) {
@@ -40,7 +47,7 @@ var functionCreators = function() {
             .empty()
             .append(icon.html);
           ajaxFunction(returnedData, textStatus, jqXHR);
-          form.submit(myself(postURL, choiceID))
+          form.submit(myself(postURL, choiceID, additionalSuccessFunctions))
             .find('.submit_button')
             .prop('disabled', false);
           return null;
@@ -60,6 +67,13 @@ var functionCreators = function() {
         data[formElement.name] = formElement.value;
       });
       data.choice_id = choiceID;
+      var successFunctions = [
+        wrapAJAXFunction(
+          reportSuccessCreator(form),
+          new Icon('✔ Accepted.', 'form_success')
+        ),
+      ];
+      successFunctions = successFunctions.concat(additionalSuccessFunctions);
       $.ajax({
         type: 'POST',
         url: postURL,
@@ -72,10 +86,7 @@ var functionCreators = function() {
         },
         //TODO: try using a `complete` function, maybe. It would still depend on the
         //icon, though. Separate the icon stuff and the recursive call of `myself`?
-        success: wrapAJAXFunction(
-          reportSuccessCreator(form),
-          new Icon('✔ Accepted.', 'form_success')
-        ),
+        success: successFunctions,
         error: wrapAJAXFunction(
           reportErrorsCreator(form),
           new Icon('✖ Rejected.', 'form_error')

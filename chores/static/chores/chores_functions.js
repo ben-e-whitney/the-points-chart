@@ -105,24 +105,26 @@ replaceSentences = loaderClear(replaceSentences);
 
 var displayChoreForm = function(chore_id) {
   var inner = function(data, textStatus, jqXHR) {
-	//$('#chore_form_dialog").empty()
-		//.append('<form id="chore_edit_form">')
-		//.append(data)
-		//.append('</form>')
-		//.find('form')
-  $('#chore_edit_form').empty()
-    .unbind('submit')
-    .append(data)
-		.submit(functionCreators.submitFunctionCreator(
-      '/chores/actions/edit/chore/', chore_id))
-		.dialog({
-      close: function(event, ui) {
-        $('#steward_button_'+chore_id).prop('disabled', false);
-				fetchUpdates();
-      },
-			modal: true,
-			width: 'auto',
-		})
+    var $form = $('#chore_edit_form');
+    //It seems that appending `data` after the dialog has already
+    //been created results in the dialog's position being off.
+    $form.empty()
+      .unbind('submit')
+      .append(data)
+      .dialog({
+        close: function(event, ui) {
+          $('#steward_button_'+chore_id).prop('disabled', false);
+          fetchUpdates();
+        },
+        modal: true,
+        width: 'auto',
+      })
+    .submit(functionCreators.submitFunctionCreator(
+      '/chores/actions/edit/chore/',
+      chore_id,
+      [function(returnedData, textStatus, jqXHR) {$form.dialog('close');},]
+    ));
+    return null;
   };
   return loaderClear(inner);
 };
