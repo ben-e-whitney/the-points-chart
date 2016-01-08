@@ -61,8 +61,8 @@ class UserProfile(models.Model):
     # gateways. Where to do this? Actually, this should probably be a choice
     # between a dropdown list of options.
     phone_carrier = models.CharField(max_length=2**6, blank=True)
-    public_calendar = models.BooleanField()
-    points_steward  = models.BooleanField()
+    public_calendar = models.BooleanField(default=True)
+    points_steward  = models.BooleanField(default=False)
 
     # A standard load of 100% will be stored as 1 here.
     share = models.DecimalField(max_digits=3, decimal_places=2)

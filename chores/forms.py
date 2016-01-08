@@ -74,20 +74,24 @@ def ChoreFormCreator(request):
 
         def clean(self):
             cleaned_data = super().clean()
+            necessary_keys = ('skeleton', 'start_date', 'stop_date',
+                              'signed_up', 'signed_off', 'voided')
+            #Only proceed with additional validation if all the necessary
+            #fields have values.
+            if any(key not in cleaned_data for key in necessary_keys):
+                return cleaned_data
             #TODO: either this code needs to be repeated elsewhere (e.g. for
             #the Stewardship form), or we need to somehow pull this out into a
             #function or superclass or something.
             try:
-                proper_ordering = (cleaned_data.get('stop_date') >=
-                    cleaned_data.get('start_date'))
+                proper_ordering = (cleaned_data['stop_date'] >=
+                    cleaned_data['start_date'])
             except TypeError:
-                # TODO: in Django 1.7 you can use `self.add_error()`. See
-                # <https://docs.djangoproject.com/en/dev/ref/forms/api/
-                # #django.forms.Form.add_error>.
-                raise ValidationError('Comparison of start and stop dates '
-                                      'failed.')
+                self.add_error('start_date', ValidationError(
+                    'Comparison of start and stop dates failed.'))
             if not proper_ordering:
-                raise ValidationError('Stop date cannot be before start date.')
+                self.add_error('stop_date', ValidationError(
+                    'Stop date cannot be before start date.'))
 
             timecard = Timecard(
                 start_date=cleaned_data.get('start_date'),
@@ -125,9 +129,6 @@ def ChoreFormCreator(request):
                 cleaned_data.update({
                     field_name: getattr(timecard, field_name)
                 })
-
-            #TODO: seems like '' is getting translated to `None`? Why? See
-            #<https://docs.djangoproject.com/en/dev/ref/models/fields/>.
             return cleaned_data
 
         def destruct(self):
