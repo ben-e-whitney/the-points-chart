@@ -24,7 +24,7 @@ var functionCreators = function() {
         return null;
       });
       form.find('.form_report')
-        .append(nonFieldErrors);
+        .append(nonFieldErrors.join(' '));
       return null;
     };
   };
