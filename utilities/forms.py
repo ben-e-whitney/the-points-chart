@@ -28,6 +28,9 @@ class BasicForm(forms.ModelForm):
             kwargs.update(prefix=self.Meta.model.__name__)
         super().__init__(*args, **kwargs)
 
+    def destruct(self):
+        return None
+
     def save(self, *args, **kwargs):
         """
         Extends forms.ModelForm.save, allowing for 'request' keyword.
@@ -75,6 +78,8 @@ class BasicForm(forms.ModelForm):
         form = cls(request.POST)
         if form.is_valid():
             form.save(request=request)
+        else:
+            form.destruct()
         return form.respond_with_errors()
 
     @classmethod
@@ -143,7 +148,7 @@ def cycle_field_creator(coop, exclude_future=False):
     #<https://docs.djangoproject.com/en/dev/ref/forms/fields/#initial>.
     return forms.CharField(widget=forms.Select(choices=CYCLE_CHOICES))
 
-def cooper_field_creator(coop, blank=False, required=True):
+def cooper_field_creator(coop, required=True):
     """
     Find `coop`'s members and return a form field with those people as choices.
 
@@ -151,20 +156,16 @@ def cooper_field_creator(coop, blank=False, required=True):
         coop -- Group whose members we are interested in.
 
     Keyword arguments:
-        blank -- If True, a blank choice is added to the form field. If False,
-            no action is taken.
-        required -- Passed as a keyword argument to CharField constructor.
+        required -- Passed as a keyword argument to ModelChoiceField
+            constructor.
 
-    Return a CharField with the current members as choices. No initial or
-    default choice is made.
+    Return a ModelChoiceField with the current members as choices.
     """
-    COOPER_CHOICES = [
-        (cooper.id, cooper.profile.nickname)
-        for cooper in coop.user_set.filter(is_active=True).prefetch_related(
-            'profile').order_by('profile__nickname')
-    ]
-    if blank:
-        COOPER_CHOICES = BLANK_CHOICE_DASH+COOPER_CHOICES
-    cooper = forms.CharField(required=required,
-                             widget=forms.Select(choices=COOPER_CHOICES))
-    return cooper
+    #TODO: after upgrading to Django 1.9, use `to_field_name`.
+    return forms.ModelChoiceField(
+        queryset=coop.user_set.filter(is_active=True).prefetch_related(
+            'profile'),
+        required=required,
+        **({'empty_label': None} if required else {})
+    )
+

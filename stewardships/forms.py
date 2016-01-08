@@ -68,9 +68,12 @@ def ClassicalStewardshipFormCreator(request):
 
         def save(self, commit=True, request=None, **kwargs):
             stewardship = super().save(commit=False)
-            stewardship.make_signatures(commit=False,
-                signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
-                signed_off=None, voided=None)
+            stewardship.make_signatures(
+                commit=False,
+                signed_up = self.cleaned_data.get('cooper'),
+                signed_off=None,
+                voided=None
+            )
             if commit:
                 stewardship.save()
             return stewardship
@@ -118,9 +121,12 @@ def LoanFormCreator(request):
             )
             skeleton.save()
             loan.skeleton = skeleton
-            loan.make_signatures(commit=False,
-                signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
-                signed_off=None, voided=None)
+            loan.make_signatures(
+                commit=False,
+                signed_up=self.cleaned_data['cooper'],
+                signed_off=None,
+                voided=None
+            )
             loan.start_date, loan.stop_date = coop.profile.get_cycle_endpoints(
                 # TODO: find where the data is stored as an integer.
                 int(self.cleaned_data.get('cycle'))
@@ -172,9 +178,12 @@ def SpecialPointsFormCreator(request):
             )
             skeleton.save()
             special_points.skeleton = skeleton
-            special_points.make_signatures(commit=False,
-                signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
-                signed_off=None, voided=None)
+            special_points.make_signatures(
+                commit=False,
+                signed_up=self.cleaned_data['cooper'],
+                signed_off=None,
+                voided=None
+            )
             special_points.stop_date = special_points.start_date
             if commit:
                 special_points.save()
@@ -225,9 +234,12 @@ def AbsenceFormCreator(request):
             )
             skeleton.save()
             absence.skeleton = skeleton
-            absence.make_signatures(commit=False,
-                signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
-                signed_off=None, voided=None)
+            absence.make_signatures(
+                commit=False,
+                signed_up=self.cleaned_data['cooper'],
+                signed_off=None,
+                voided=None
+            )
             if commit:
                 absence.save()
             return absence
@@ -269,9 +281,12 @@ def ShareChangeFormCreator(request):
             )
             skeleton.save()
             share_change.skeleton = skeleton
-            share_change.make_signatures(commit=False,
-                signed_up=User.objects.get(pk=self.cleaned_data['cooper']),
-                signed_off=None, voided=None)
+            share_change.make_signatures(
+                commit=False,
+                signed_up=self.cleaned_data['cooper'],
+                signed_off=None,
+                voided=None
+            )
             share_change.start_date, share_change.stop_date = (
                 coop.profile.get_cycle_endpoints(
                     int(self.cleaned_data.get('cycle'))

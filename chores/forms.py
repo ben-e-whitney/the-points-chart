@@ -29,9 +29,9 @@ def ChoreFormCreator(request):
 
     class ChoreForm(BasicForm):
         #Null values will be converted.
-        signed_up  = cooper_field_creator(coop, blank=True, required=False)
-        signed_off = cooper_field_creator(coop, blank=True, required=False)
-        voided     = cooper_field_creator(coop, blank=True, required=False)
+        signed_up  = cooper_field_creator(coop, required=False)
+        signed_off = cooper_field_creator(coop, required=False)
+        voided     = cooper_field_creator(coop, required=False)
         class Meta:
             model = Chore
             fields = ['skeleton', 'start_date', 'stop_date', 'signed_up',
@@ -43,15 +43,17 @@ def ChoreFormCreator(request):
 
         def clean_signature_creator(field_name):
 
-            def clean_field(self):
-                field_value = self.cleaned_data.get(field_name)
-                clean_value = Signature()
-                if field_value != '':
-                    clean_value.sign(User.objects.get(pk=field_value),
-                                     commit=False)
-                return clean_value
+            def clean_signature(self):
+                user = self.cleaned_data.get(field_name)
+                signature = Signature()
+                if user is None:
+                    signature.save()
+                else:
+                    #TODO: check that user is in the coop here?
+                    signature.sign(user)
+                return signature
 
-            return clean_field
+            return clean_signature
 
         clean_signed_up  = clean_signature_creator('signed_up')
         clean_signed_off = clean_signature_creator('signed_off')
@@ -63,10 +65,10 @@ def ChoreFormCreator(request):
                 initial = kwargs.get('initial', {})
                 for sig_name in ('signed_up', 'signed_off', 'voided'):
                     try:
-                        cooper_id = getattr(instance, sig_name).who.id
+                        user_id = getattr(instance, sig_name).who.id
                     except AttributeError:
-                        cooper_id = BLANK_CHOICE_DASH[0][0]
-                    initial.update({sig_name: cooper_id})
+                        user_id = BLANK_CHOICE_DASH[0][0]
+                    initial.update({sig_name: user_id})
                 kwargs.update({'initial': initial})
             super().__init__(*args, **kwargs)
 
@@ -94,7 +96,7 @@ def ChoreFormCreator(request):
                 signed_off=cleaned_data.get('signed_off'),
                 voided=cleaned_data.get('voided'),
             )
-            coopers = {}
+            signers = {}
             #TODO: this is all necessary because the form seems to validate the
             #remaining fields even if a ValidationError is thrown here. Ideally
             #we could define these fields in such a way that the form didn't
@@ -106,14 +108,14 @@ def ChoreFormCreator(request):
                 if user is not None:
                     signature.revert(user, commit=False)
                 signature.save()
-                coopers.update({field_name: user})
+                signers.update({field_name: user})
             #The order is important here.
             for field_name, method_name in zip(
                 ('signed_up', 'signed_off', 'voided'),
                 ('sign_up', 'sign_off', 'void')
             ):
                 signature = cleaned_data.get(field_name)
-                user = coopers.get(field_name)
+                user = signers.get(field_name)
                 if user is not None:
                     try:
                         getattr(timecard, method_name)(user, commit=False)
@@ -127,6 +129,11 @@ def ChoreFormCreator(request):
             #TODO: seems like '' is getting translated to `None`? Why? See
             #<https://docs.djangoproject.com/en/dev/ref/models/fields/>.
             return cleaned_data
+
+        def destruct(self):
+            for sig_name in ('signed_up', 'signed_off', 'voided'):
+                self.cleaned_data.get(sig_name).delete()
+            return None
 
         def save(self, *args, **kwargs):
             request = kwargs.pop('request', None)
