@@ -2,7 +2,6 @@ from django.db import models, connection
 
 from chores.models import (Skeleton, Timecard, ChoreSkeletonQuerySet,
     ChoreQuerySet)
-from model_utils.managers import PassThroughManager
 
 class StewardshipSkeletonQuerySet(ChoreSkeletonQuerySet):
 
@@ -74,13 +73,12 @@ class StewardshipSkeleton(Skeleton):
                                 default=STEWARDSHIP)
     # Per cycle.
     point_value = models.IntegerField()
-    objects = PassThroughManager.for_queryset_class(
-        StewardshipSkeletonQuerySet)()
+    objects = StewardshipSkeletonQuerySet.as_manager()
 
 class Stewardship(Timecard):
     skeleton = models.ForeignKey(StewardshipSkeleton,
                                  related_name='stewardship')
-    objects = PassThroughManager.for_queryset_class(StewardshipQuerySet)()
+    objects = StewardshipQuerySet.as_manager()
 
     def __str__(self):
         return '{cn} on {dat}'.format(cn=self.skeleton.short_name,
@@ -109,7 +107,7 @@ class BenefitChangeQuerySet(StewardshipQuerySet):
 
 class Absence(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton, related_name='absence')
-    objects = PassThroughManager.for_queryset_class(BenefitChangeQuerySet)()
+    objects = BenefitChangeQuerySet.as_manager()
 
     #TODO: is there a use case for this that isn't sensitive to cycles?
     def __radd__(self, other):
@@ -128,7 +126,7 @@ class ShareChange(Timecard):
     skeleton = models.ForeignKey(BenefitChangeSkeleton,
                                  related_name='share_change')
     share_change = models.DecimalField(max_digits=3, decimal_places=2)
-    objects = PassThroughManager.for_queryset_class(BenefitChangeQuerySet)()
+    objects = BenefitChangeQuerySet.as_manager()
 
     def __radd__(self, other):
         return self.share_change+other

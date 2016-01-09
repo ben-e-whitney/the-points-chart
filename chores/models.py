@@ -2,8 +2,6 @@ from django.db import models, connection
 
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
-# See <http://www.dabapps.com/blog/higher-level-query-api-django-orm/>.
-from model_utils.managers import PassThroughManager
 
 import datetime
 import pytz
@@ -390,7 +388,7 @@ class ChoreSkeleton(Skeleton):
     # `start_date` and `stop_date`.
     start_time = models.TimeField()
     end_time   = models.TimeField()
-    objects = PassThroughManager.for_queryset_class(ChoreSkeletonQuerySet)()
+    objects = ChoreSkeletonQuerySet.as_manager()
     sort_index = models.IntegerField(default=0)
 
 #TODO: add this in later.
@@ -402,7 +400,7 @@ class ChoreSkeleton(Skeleton):
 
 class Chore(Timecard):
     skeleton = models.ForeignKey(ChoreSkeleton, related_name='chore')
-    objects = PassThroughManager.for_queryset_class(ChoreQuerySet)()
+    objects = ChoreQuerySet.as_manager()
 
     def __str__(self):
         return '{cn} on {dat}'.format(cn=self.skeleton.short_name,
