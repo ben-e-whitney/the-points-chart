@@ -7,17 +7,17 @@ var columnize = function($element) {
   if (num_columns == 1) {
     return;
   }
-  var entry_htmls = []
+  var entry_htmls = [];
   $.each($element.find('tr'), function(index, row) {
     $row = $(row);
     entry_htmls.push($row.html());
     $row.remove();
   });
   var column;
-  var table_html = ''
+  var table_html = '';
   $.each(entry_htmls, function(index, entry_html) {
     column = index % num_columns;
-    if (column == 0) {
+    if (column === 0) {
       entry_html = '<tr>'+entry_html;
     }
     if (column == num_columns-1) {

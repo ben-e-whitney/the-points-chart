@@ -6,7 +6,7 @@ $(window).load(function() {
   fetchUpdates = loaderMessage(fetchUpdates, 'updating');
   setInterval(fetchUpdates, 1000*fetchInterval);
   $(this).scroll(function() {
-    if (this.pageYOffset == 0) {
+    if (this.pageYOffset === 0) {
       fetchChores();
     }
   });
