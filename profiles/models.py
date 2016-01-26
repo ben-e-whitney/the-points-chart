@@ -52,16 +52,18 @@ class UserProfile(models.Model):
     first_name  = models.CharField(max_length=2**6, blank=True)
     middle_name = models.CharField(max_length=2**6, blank=True)
     last_name   = models.CharField(max_length=2**6, blank=True)
-    email_address = models.EmailField()
+    email_address = models.EmailField(null=True, blank=True)
     birthday = models.DateField(null=True, blank=True)
 
     # TODO: This complains if we give it 'blank=True'.
-    phone_number = localflavor.us.models.PhoneNumberField()
+    phone_number = localflavor.us.models.PhoneNumberField(null=True,
+                                                          blank=True)
     # TODO: somewhere this needs to be checked against a table of carriers and
     # gateways. Where to do this? Actually, this should probably be a choice
     # between a dropdown list of options.
     phone_carrier = models.CharField(max_length=2**6, blank=True)
     public_calendar = models.BooleanField(default=True)
+    edited = models.BooleanField(default=False)
     points_steward  = models.BooleanField(default=False)
 
     # A standard load of 100% will be stored as 1 here.
