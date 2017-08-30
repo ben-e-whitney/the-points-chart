@@ -4,7 +4,6 @@ the_points_chart/SECRET_KEY.txt
 scripts/
 static/icons
 static/400 Hand-Drawn
-manage.py
 
 __pycache__
 *.pyc
